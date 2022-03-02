@@ -16,3 +16,6 @@ npx hardhat compile
 npx hardhat test
 ````
 
+## License
+
+#### All the contracts are under the LGPL-3.0 License
