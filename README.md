@@ -23,3 +23,6 @@ npx hardhat test
 ## License
 
 #### All the contracts are under the LGPL-3.0 License
+
+## Open-source software
+#### We are strong believers of open-source software. 100% of the laser wallet's code is open sourced.
