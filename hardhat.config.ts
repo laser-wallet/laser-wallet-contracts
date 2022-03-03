@@ -5,18 +5,21 @@ import "@nomiclabs/hardhat-ethers";
 import "@nomiclabs/hardhat-solhint";
 
 require("hardhat-storage-layout");
+
 require("dotenv").config();
 
-const GOERLI_URL = process.env.GOERLI_URL;
-const RINKEBY_URL = process.env.RINKEBY_URL;
-const PRIVATE_KEY = process.env.PRIVATE_KEY;
+const INFURA_KEY = process.env.INFURA_KEY;
 const ALCHEMY_URL = process.env.ALCHEMY_URL;
-const ALCHEMY_KEY = process.env.ALCHEMY_KEY;
+const DEPLOYER_PRIVATE_KEY = process.env.DEPLOYER_PRIVATE_KEY;
 
-if (PRIVATE_KEY?.length != 64) {
-  console.error(`Incorrect Private Key!, length should be 64 but it is: ${PRIVATE_KEY?.length}`);
+
+if (DEPLOYER_PRIVATE_KEY?.length != 64) {
+  console.error(`Incorrect Private Key!, length should be 64 but it is: ${DEPLOYER_PRIVATE_KEY?.length}`);
 }
 
+const mainnetUrl = `https://mainnet.infura.io/v3/${INFURA_KEY}`;
+const goerliUrl = `https://goerli.infura.io/v3/${INFURA_KEY}`;
+const rinkebyUrl = `https://rinkeby.infura.io/v3/${INFURA_KEY}`;
 
 module.exports = {
   solidity: {
@@ -34,13 +37,21 @@ module.exports = {
     },
   },
   networks: {
+    mainnet: {
+      url: mainnetUrl,
+      accounts: [`0x${DEPLOYER_PRIVATE_KEY}`]
+    },
     goerli: {
-      url: GOERLI_URL,
-      accounts: [`0x${PRIVATE_KEY}`]
-    }
+      url: goerliUrl,
+      accounts: [`0x${DEPLOYER_PRIVATE_KEY}`]
+    },
+    rinkeby: {
+      url: rinkebyUrl,
+      accounts: [`0x${DEPLOYER_PRIVATE_KEY}`]
+    },
     }, 
     etherscan: {
-      apiKey: ALCHEMY_KEY,
+      apiKey: ALCHEMY_URL,
       // hardhat: {
       //   forking: {
       //     url: ALCHEMY_URL
