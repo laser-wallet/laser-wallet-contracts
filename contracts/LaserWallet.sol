@@ -229,7 +229,7 @@ contract LaserWallet is
         // We also include the 1/64 in the check that is not send along with a call to counteract potential shortings because of EIP-150
         require(
             gasleft() >= ((safeTxGas * 64) / 63).max(safeTxGas + 2500) + 500,
-            "GS010"
+            "Not enough gas to execute the transaction"
         );
         {
             uint256 gasUsed = gasleft();
@@ -278,10 +278,10 @@ contract LaserWallet is
             payment = gasUsed.add(baseGas).mul(
                 gasPrice < tx.gasprice ? gasPrice : tx.gasprice
             );
-            require(receiver.send(payment), "GS011");
+            require(receiver.send(payment), "Could not pay gas costs with ether");
         } else {
             payment = gasUsed.add(baseGas).mul(gasPrice);
-            require(transferToken(gasToken, receiver, payment), "GS012");
+            require(transferToken(gasToken, receiver, payment), "Could not pay gas costs with token");
         }
     }
 
@@ -301,7 +301,7 @@ contract LaserWallet is
         // If a special owner is authorizing this transaction, then threshold is 1.
         uint256 _threshold = specialOwner != address(0) ? 1 : threshold;
         // Check that a threshold is set
-        require(_threshold > 0, "GS001");
+        require(_threshold > 0, "Threshold cannot be 0");
         checkNSignatures(dataHash, data, signatures, _threshold, specialOwner);
     }
 
@@ -320,7 +320,7 @@ contract LaserWallet is
         address specialOwner
     ) public view {
         // Check that the provided signature data is not too short
-        require(signatures.length >= requiredSignatures.mul(65), "GS020");
+        require(signatures.length >= requiredSignatures.mul(65), "Incorrect signature length");
         // There cannot be an owner with address 0.
         address lastOwner = address(0);
         address currentOwner;
@@ -338,10 +338,10 @@ contract LaserWallet is
                 // Check that signature data pointer (s) is not pointing inside the static part of the signatures bytes
                 // This check is not completely accurate, since it is possible that more signatures than the threshold are send.
                 // Here we only check that the pointer is not pointing inside the part that is being processed
-                require(uint256(s) >= requiredSignatures.mul(65), "GS021");
+                require(uint256(s) >= requiredSignatures.mul(65), "Signature error: data pointer (s)");
 
                 // Check that signature data pointer (s) is in bounds (points to the length of data -> 32 bytes)
-                require(uint256(s).add(32) <= signatures.length, "GS022");
+                require(uint256(s).add(32) <= signatures.length, "Signature error: data pointer (s)");
 
                 // Check if the contract signature is in bounds: start of data is s + 32 and end is start + signature length
                 uint256 contractSignatureLen;
@@ -352,7 +352,7 @@ contract LaserWallet is
                 require(
                     uint256(s).add(32).add(contractSignatureLen) <=
                         signatures.length,
-                    "GS023"
+                    "Incorrect signature length"
                 );
 
                 // Check signature
@@ -367,7 +367,7 @@ contract LaserWallet is
                         data,
                         contractSignature
                     ) == EIP1271_MAGIC_VALUE,
-                    "GS024"
+                    "Incorrect EIP1271 MAGIC VALUE"
                 );
             } else if (v == 1) {
                 // If v is 1 then it is an approved hash
@@ -377,7 +377,7 @@ contract LaserWallet is
                 require(
                     msg.sender == currentOwner ||
                         approvedHashes[currentOwner][dataHash] != 0,
-                    "GS025"
+                    "Incorrect owner and/or hash not approved"
                 );
             } else if (v > 30) {
                 // If v > 30 then default va (27,28) has been adjusted for eth_sign flow
@@ -402,14 +402,14 @@ contract LaserWallet is
                 require(
                     currentOwner == specialOwner &&
                     specialOwners[specialOwner] == true,
-                    "Incorrect speical owner"
+                    "Incorrect special owner"
                     );
             } else {
                 require(
                     currentOwner > lastOwner &&
                         owners[currentOwner] != address(0) &&
                         currentOwner != SENTINEL_OWNERS,
-                    "GS026"
+                    "Invalid owner provided"
                 );
             }
             lastOwner = currentOwner;
@@ -421,7 +421,7 @@ contract LaserWallet is
      * @param hashToApprove The hash that should be marked as approved for signatures that are verified by this contract.
      */
     function approveHash(bytes32 hashToApprove) external {
-        require(owners[msg.sender] != address(0), "GS030");
+        require(owners[msg.sender] != address(0), "Only owners can approve a hash");
         approvedHashes[msg.sender][hashToApprove] = 1;
         emit ApproveHash(hashToApprove, msg.sender);
     }
