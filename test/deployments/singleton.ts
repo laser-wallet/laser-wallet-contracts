@@ -55,7 +55,7 @@ describe("Laser Wallet (singleton) deployment", () => {
             const data = encodeFunctionData(abi, "changeThreshold", [2]);
             const signature = paddedSignature(await hacker.getAddress());
             await expect(singleton.execTransaction(singleton.address, 0, data, 0, 0, 0, 0, addressZero, addressZero, signature, addressZero)
-            ).to.be.revertedWith("GS026");
+            ).to.be.revertedWith("Invalid owner provided");
         });
     });
 });
