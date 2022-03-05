@@ -11,6 +11,16 @@ contract EntryPoint is SelfAuthorized {
     // right after the singleton
     address internal entryPoint;
 
+    modifier onlyFromEntryPoint() {
+        _onlyFromEntryPoint();
+
+        _;
+    }
+
+    function _onlyFromEntryPoint() private view {
+        require(msg.sender == entryPoint, "Not Entry Point");
+    }
+
     /**
      * @dev chananges the entry point address.
      * @param _entryPoint  new entry point address.
