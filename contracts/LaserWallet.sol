@@ -12,8 +12,12 @@ import "./base/FallbackManager.sol";
 import "./common/Enum.sol";
 import "./base/Executor.sol";
 import "./interfaces/IEIP4337.sol";
-
 import "./external/SafeMath.sol";
+import "./libraries/ECDSA.sol";
+
+import "hardhat/console.sol";
+
+
 
 /*
  *               * *    ****   ******** * * * *         *              * *   *         *           ******************
@@ -41,6 +45,7 @@ contract LaserWallet is
     IEIP4337
 {
     using SafeMath for uint256;
+    using ECDSA for bytes32;
 
     string public constant VERSION = "1.0.0";
 
@@ -105,22 +110,27 @@ contract LaserWallet is
         );
     }
 
+    /**
+     * @dev pays the required amount to the EntryPoint contract.
+     * @param _requiredPrefund amount to pay to EntryPoint to perform execution.
+     */
     function payPrefund(uint256 _requiredPrefund) internal {
-        require(msg.sender == entryPoint, "Not entryPoint");
-        if (_requiredPrefund != 0) {
-            (bool success, ) = payable(msg.sender).call{
-                value: _requiredPrefund
-            }("");
-            require(success, "payPrefund failed");
+        if (_requiredPrefund > 0) {
+            (bool success,) = payable(msg.sender).call{value : _requiredPrefund, gas : type(uint).max}("");
+            (success);
         }
     }
 
+    /**
+     * @dev Validates that the exeuction from EntryPoint is correct.
+     */
     function validateUserOp(
         UserOperation calldata userOp,
         bytes32 _requestId,
         uint256 _requiredPrefund
-    ) external override {
-        require(msg.sender == entryPoint, "Not entryPoint");
+    ) external override onlyFromEntryPoint {
+        // to silence compiler warning
+        _requestId;
         (
             address to,
             uint256 value,
@@ -165,6 +175,7 @@ contract LaserWallet is
             nonce
         );
         bytes32 txHash = keccak256(txHashData);
+        nonce ++;
         checkSignatures(txHash, txHashData, signatures, specialOwner);
         payPrefund(_requiredPrefund);
     }
@@ -216,12 +227,12 @@ contract LaserWallet is
                 // Signature info
                 nonce
             );
-            // Increase nonce and execute transaction
-            nonce++;
             txHash = keccak256(txHashData);
             // If msg.sender is entry point, we can skip the verification process because it was already
             // done in validateUserOp.
             if (msg.sender != entryPoint) {
+                // Increase nonce and execute transaction
+                nonce++;
                 checkSignatures(txHash, txHashData, signatures, specialOwner);
             }
         }
@@ -396,7 +407,9 @@ contract LaserWallet is
             } else {
                 // Default is the ecrecover flow with the provided data hash
                 // Use ecrecover with the messageHash for EOA signatures
-                currentOwner = ecrecover(dataHash, v, r, s);
+                //currentOwner = ecrecover(dataHash, v, r, s);
+                // We cannot use ecrecover due to the prohibition of the GAS opcode in the EIP4337.
+                currentOwner = dataHash.recover(v, r, s);
             }
             if (specialOwner != address(0)) {
                 require(
