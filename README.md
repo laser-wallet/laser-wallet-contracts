@@ -4,23 +4,31 @@
 
 ### Laser Wallet also implements the EIP-4337 which allows the smart contract wallet to pay for transaction fees itself. 
 
-## Installation 
+## USAGE:
+### 1. Installation 
 
 ```
 npm install
 ```
 
-## Create a dotenv file and add the corresponding keys
+### 2. Create a dotenv file and add the corresponding keys
+```
+touch .env
+```
 
-## Compile the contracts
+### 3. Compile the contracts
 ```
 npx hardhat compile
 ```
 
-## Run all tests
+### 3. Run all tests
 ```
 npx hardhat test
 ````
+### * For single file cases run:
+```
+npx hardhat test test/<path of the file to test>
+```
 
 ## License
 
