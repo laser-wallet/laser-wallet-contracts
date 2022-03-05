@@ -35,7 +35,7 @@ describe("OwnerManager", () => {
         const proxyFactory = await ProxyFactory.deploy();
         owners = [specialOwner.address, owner2.address, owner3.address, owner4.address];
         specialOwners = [specialOwner.address];
-        const data = encodeFunctionData(abi, "setup", [owners, specialOwners, 3, SENTINEL]);
+        const data = encodeFunctionData(abi, "setup", [owners, specialOwners, threshold, SENTINEL]);
         const transaction = await proxyFactory.createProxyWithNonce(singleton.address, data, 1111);
         const receipt = await transaction.wait();
         const walletAddress = receipt.events[1].args.proxy;
@@ -69,13 +69,13 @@ describe("OwnerManager", () => {
         });
         it("should have correct owners and special owners", async () => {
             const _owners = await wallet.getOwners();
-            expect(_owners.length).to.equal(4);
+            expect(_owners.length).to.equal(owners.length);
             expect(await wallet.isOwner(specialOwner.address)).to.equal(true);
             expect(await wallet.isOwner(owner2.address)).to.equal(true);
             expect(await wallet.isOwner(owner3.address)).to.equal(true);
             expect(await wallet.isOwner(owner4.address)).to.equal(true);
             const _specialOwners = await wallet.getSpecialOwners();
-            expect(_specialOwners.length).to.equal(1);
+            expect(_specialOwners.length).to.equal(specialOwners.length);
             expect(await wallet.isSpecialOwner(specialOwner.address)).to.equal(true);
         });
         it("should not allow to call setup()", async () => {

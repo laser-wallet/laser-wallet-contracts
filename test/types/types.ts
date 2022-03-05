@@ -1,5 +1,6 @@
 
 import { BigNumber } from "ethers"
+import { string } from "hardhat/internal/core/params/argumentTypes"
 
 export interface TxMessage {
     to: string;
@@ -28,5 +29,17 @@ export interface SafeTx {
     specialOwner: string;
 }
 
-
-
+export interface UserOp  {
+    sender: string;
+    nonce: Number | string;
+    initCode: string;
+    callData: string;
+    callGas: Number;
+    verificationGas: number | BigNumber;
+    preVerificationGas: number | BigNumber;
+    maxFeePerGas: number | BigNumber;
+    maxPriorityFeePerGas: number | BigNumber;
+    paymaster: string;
+    paymasterData: string;
+    signature: string;
+}
