@@ -24,6 +24,8 @@ contract LaserProxy {
      */
     fallback() external payable {
         // solhint-disable-next-line no-inline-assembly
+        // we cannot use the gas() opcode, it is restricted in EIP4337.
+        uint256 _gas = type(uint).max;
         assembly {
             let _singleton := and(
                 sload(0),
@@ -39,7 +41,7 @@ contract LaserProxy {
             }
             calldatacopy(0, 0, calldatasize())
             let success := delegatecall(
-                gas(),
+                _gas,
                 _singleton,
                 0,
                 calldatasize(),
