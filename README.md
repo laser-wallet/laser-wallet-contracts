@@ -1,6 +1,6 @@
-# Laser Wallet Contracts
+# Laser Smart Wallet Contracts
 
-### Laser Wallet is a modular multi-signature smart contract wallet that runs on Ethereum. The code was originally modified from Gnosis Safe.
+### Laser Smart Wallet is a modular multi-signature smart contract wallet that runs on Ethereum. The code was originally modified from Gnosis Safe.
 
 ### Laser Wallet also implements the EIP-4337 which allows the smart contract wallet to pay for transaction fees itself. 
 
