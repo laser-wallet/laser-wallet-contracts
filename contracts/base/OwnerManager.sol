@@ -4,7 +4,7 @@ pragma solidity ^0.8.9;
 import "../common/SelfAuthorized.sol";
 
 
-import "hardhat/console.sol";
+
 
 /**
  * @title OwnerManager - Manages a set of owners and a threshold to perform actions.
