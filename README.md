@@ -10,6 +10,8 @@
 npm install
 ```
 
+## Create a dotenv file and add the corresponding keys
+
 ## Compile the contracts
 ```
 npx hardhat compile
