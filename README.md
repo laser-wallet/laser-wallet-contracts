@@ -25,7 +25,7 @@ npx hardhat compile
 ```
 npx hardhat test
 ````
-### * For single file cases run:
+### * For single file test cases run:
 ```
 npx hardhat test test/<path of the file to test>
 ```
