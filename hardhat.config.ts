@@ -3,6 +3,7 @@ import "@nomiclabs/hardhat-waffle";
 import "@nomiclabs/hardhat-etherscan";
 import "@nomiclabs/hardhat-ethers";
 import "@nomiclabs/hardhat-solhint";
+import "hardhat-gas-reporter";
 
 require("hardhat-storage-layout");
 
