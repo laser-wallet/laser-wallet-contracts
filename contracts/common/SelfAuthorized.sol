@@ -6,13 +6,9 @@ pragma solidity ^0.8.9;
  * @author Modified from Gnosis Safe.
  */
 contract SelfAuthorized {
-    function requireSelfCall() private view {
-        require(msg.sender == address(this), "Only callable from the wallet");
-    }
 
     modifier authorized() {
-        // This is a function call as it minimized the bytecode size
-        requireSelfCall();
+        require(msg.sender == address(this), "Only callable from the wallet");
         _;
     }
 }
