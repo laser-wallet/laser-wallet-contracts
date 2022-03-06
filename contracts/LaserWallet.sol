@@ -173,8 +173,8 @@ contract LaserWallet is
             refundReceiver,
             nonce
         );
-        bytes32 txHash = keccak256(txHashData);
         nonce ++;
+        bytes32 txHash = keccak256(txHashData);
         checkSignatures(txHash, txHashData, signatures, specialOwner);
         payPrefund(_requiredPrefund);
     }
@@ -211,7 +211,10 @@ contract LaserWallet is
         bytes32 txHash;
         // Use scope here to limit variable lifetime and prevent `stack too deep` errors
         {
-            bytes memory txHashData = encodeTransactionData(
+             // If msg.sender is entry point, we can skip the verification process because it was already
+             // done in validateUserOp.
+            if (msg.sender != entryPoint) {
+                bytes memory txHashData = encodeTransactionData(
                 // Transaction info
                 to,
                 value,
@@ -226,12 +229,9 @@ contract LaserWallet is
                 // Signature info
                 nonce
             );
-            txHash = keccak256(txHashData);
-            // If msg.sender is entry point, we can skip the verification process because it was already
-            // done in validateUserOp.
-            if (msg.sender != entryPoint) {
                 // Increase nonce and execute transaction
-                nonce++;
+                nonce ++;
+                txHash = keccak256(txHashData);
                 checkSignatures(txHash, txHashData, signatures, specialOwner);
             }
         }
@@ -307,7 +307,7 @@ contract LaserWallet is
         bytes memory signatures,
         address specialOwner
     ) public view {
-        // Load threshold to avoid multiple storage loads
+        // Load threshold to avoid multiple storage loads.
         // If a special owner is authorizing this transaction, then threshold is 1.
         uint256 _threshold = specialOwner != address(0) ? 1 : threshold;
         // Check that a threshold is set
