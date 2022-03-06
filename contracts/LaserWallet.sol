@@ -285,12 +285,12 @@ contract LaserWallet is
             : refundReceiver;
         if (gasToken == address(0)) {
             // For ETH we will only adjust the gas price to not be higher than the actual used gas price
-            payment = gasUsed.add(baseGas).mul(
+            payment = (gasUsed  + baseGas) * (
                 gasPrice < tx.gasprice ? gasPrice : tx.gasprice
             );
             require(receiver.send(payment), "Could not pay gas costs with ether");
         } else {
-            payment = gasUsed.add(baseGas).mul(gasPrice);
+            payment = (gasUsed + baseGas) * gasPrice;
             require(transferToken(gasToken, receiver, payment), "Could not pay gas costs with token");
         }
     }
@@ -330,7 +330,7 @@ contract LaserWallet is
         address specialOwner
     ) public view {
         // Check that the provided signature data is not too short
-        require(signatures.length >= requiredSignatures.mul(65), "Incorrect signature length");
+        require(signatures.length >= requiredSignatures * 65, "Incorrect signature length");
         // There cannot be an owner with address 0.
         address lastOwner = address(0);
         address currentOwner;
@@ -348,10 +348,10 @@ contract LaserWallet is
                 // Check that signature data pointer (s) is not pointing inside the static part of the signatures bytes
                 // This check is not completely accurate, since it is possible that more signatures than the threshold are send.
                 // Here we only check that the pointer is not pointing inside the part that is being processed
-                require(uint256(s) >= requiredSignatures.mul(65), "Signature error: data pointer (s)");
+                require(uint256(s) >= requiredSignatures * 65, "Signature error: data pointer (s)");
 
                 // Check that signature data pointer (s) is in bounds (points to the length of data -> 32 bytes)
-                require(uint256(s).add(32) <= signatures.length, "Signature error: data pointer (s)");
+                require(uint256(s) + 32 <= signatures.length, "Signature error: data pointer (s)");
 
                 // Check if the contract signature is in bounds: start of data is s + 32 and end is start + signature length
                 uint256 contractSignatureLen;
@@ -360,7 +360,7 @@ contract LaserWallet is
                     contractSignatureLen := mload(add(add(signatures, s), 0x20))
                 }
                 require(
-                    uint256(s).add(32).add(contractSignatureLen) <=
+                    uint256(s) + 32  + contractSignatureLen <=
                         signatures.length,
                     "Incorrect signature length"
                 );
