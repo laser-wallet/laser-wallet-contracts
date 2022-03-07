@@ -4,7 +4,7 @@
 
 ### Laser Wallet also implements the EIP-4337 which allows the smart contract wallet to pay for transaction fees itself.
 
-## USAGE:
+##  USAGE:
 
 ### 1. Installation
 
