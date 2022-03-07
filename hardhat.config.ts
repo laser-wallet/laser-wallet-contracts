@@ -5,6 +5,8 @@ import "@nomiclabs/hardhat-ethers";
 import "@nomiclabs/hardhat-solhint";
 import "hardhat-gas-reporter";
 
+import { HardhatUserConfig } from "hardhat/types";
+
 require("hardhat-storage-layout");
 
 require("dotenv").config();
@@ -22,7 +24,7 @@ const mainnetUrl = `https://mainnet.infura.io/v3/${INFURA_KEY}`;
 const goerliUrl = `https://goerli.infura.io/v3/${INFURA_KEY}`;
 const rinkebyUrl = `https://rinkeby.infura.io/v3/${INFURA_KEY}`;
 
-module.exports = {
+const config: HardhatUserConfig = {
   solidity: {
     version: "0.8.9",
     settings: {
@@ -63,3 +65,5 @@ module.exports = {
       timeout: 80000
   }
 };
+
+export default config;
