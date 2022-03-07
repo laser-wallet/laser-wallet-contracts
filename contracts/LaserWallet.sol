@@ -15,7 +15,8 @@ import "./interfaces/IEIP4337.sol";
 import "./external/SafeMath.sol";
 import "./libraries/ECDSA.sol";
 
-
+import "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Holder.sol";
+import "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
 
 
 /*
@@ -41,7 +42,9 @@ contract LaserWallet is
     FallbackManager,
     Enum,
     Executor,
-    IEIP4337
+    IEIP4337, 
+    ERC1155Holder,
+    ERC721Holder
 {
     using SafeMath for uint256;
     using ECDSA for bytes32;
@@ -122,6 +125,10 @@ contract LaserWallet is
 
     /**
      * @dev Validates that the exeuction from EntryPoint is correct.
+     * EIP: https://eips.ethereum.org/EIPS/eip-4337
+     * @param userOp UserOperation struct that contains the transaction information.
+     * @param _requestId the hash of the transaction, although it is irrelevant for our use.
+     * @param _requiredPrefund amount to pay to EntryPoint to perform execution.
      */
     function validateUserOp(
         UserOperation calldata userOp,
@@ -404,11 +411,9 @@ contract LaserWallet is
                     s
                 );
             } else {
-                // Default is the ecrecover flow with the provided data hash
-                // Use ecrecover with the messageHash for EOA signatures
-                //currentOwner = ecrecover(dataHash, v, r, s);
                 // We cannot use ecrecover due to the prohibition of the GAS opcode in the EIP4337.
                 currentOwner = dataHash.recover(v, r, s);
+    
             }
             if (specialOwner != address(0)) {
                 require(
