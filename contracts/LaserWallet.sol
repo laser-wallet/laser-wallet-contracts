@@ -7,8 +7,7 @@ import "./common/EntryPoint.sol";
 import "./base/OwnerManager.sol";
 import "./common/SignatureDecoder.sol";
 import "./common/SecuredTokenTransfer.sol";
-import "./interfaces/ISignatureValidator.sol";
-import "./base/FallbackManager.sol";
+import "./interfaces/IERC1271Wallet.sol";
 import "./common/Enum.sol";
 import "./base/Executor.sol";
 import "./interfaces/IEIP4337.sol";
@@ -38,8 +37,7 @@ contract LaserWallet is
     OwnerManager,
     SignatureDecoder,
     SecuredTokenTransfer,
-    ISignatureValidatorConstants,
-    FallbackManager,
+    IERC1271Wallet,
     Enum,
     Executor,
     IEIP4337, 
@@ -60,6 +58,9 @@ contract LaserWallet is
     // );
     bytes32 private constant SAFE_TX_TYPEHASH =
         0xbb8310d486368db6bd6f849402fdd73ad53d316b5a4b2644ad6efe0f941286d8;
+    // Magic value to return for valid contract signatures.
+    // bytes4(keccak256(isValidSignature(bytes32,bytes))
+    bytes4 private constant EIP1271_MAGIC_VALUE = 0x1626ba7e;
 
     event SafeSetup(
         address indexed initiator,
@@ -182,7 +183,7 @@ contract LaserWallet is
         );
         nonce ++;
         bytes32 txHash = keccak256(txHashData);
-        checkSignatures(txHash, txHashData, signatures, specialOwner);
+        checkSignatures(txHash, signatures, specialOwner);
         payPrefund(_requiredPrefund);
     }
 
@@ -239,7 +240,7 @@ contract LaserWallet is
                 // Increase nonce and execute transaction
                 nonce ++;
                 txHash = keccak256(txHashData);
-                checkSignatures(txHash, txHashData, signatures, specialOwner);
+                checkSignatures(txHash, signatures, specialOwner);
             }
         }
         // We require some gas to emit the events (at least 2500) after the execution and some to perform code until the execution (500)
@@ -305,12 +306,10 @@ contract LaserWallet is
     /**
      * @dev Checks whether the signature provided is valid for the provided data, hash. Will revert otherwise.
      * @param dataHash Hash of the data (could be either a message hash or transaction hash)
-     * @param data That should be signed (this is passed to an external validator contract)
      * @param signatures Signature data that should be verified. Can be ECDSA signature, contract signature (EIP-1271) or approved hash.
      */
     function checkSignatures(
         bytes32 dataHash,
-        bytes memory data,
         bytes memory signatures,
         address specialOwner
     ) public view {
@@ -319,19 +318,17 @@ contract LaserWallet is
         uint256 _threshold = specialOwner != address(0) ? 1 : threshold;
         // Check that a threshold is set
         require(_threshold > 0, "Threshold cannot be 0");
-        checkNSignatures(dataHash, data, signatures, _threshold, specialOwner);
+        checkNSignatures(dataHash, signatures, _threshold, specialOwner);
     }
 
     /**
      * @dev Checks whether the signature provided is valid for the provided data, hash. Will revert otherwise.
      * @param dataHash Hash of the data (could be either a message hash or transaction hash)
-     * @param data That should be signed (this is passed to an external validator contract)
      * @param signatures Signature data that should be verified. Can be ECDSA signature, contract signature (EIP-1271) or approved hash.
      * @param requiredSignatures Amount of required valid signatures.
      */
     function checkNSignatures(
         bytes32 dataHash,
-        bytes memory data,
         bytes memory signatures,
         uint256 requiredSignatures,
         address specialOwner
@@ -380,8 +377,8 @@ contract LaserWallet is
                     contractSignature := add(add(signatures, s), 0x20)
                 }
                 require(
-                    ISignatureValidator(currentOwner).isValidSignature(
-                        data,
+                    IERC1271Wallet(currentOwner).isValidSignature(
+                        dataHash,
                         contractSignature
                     ) == EIP1271_MAGIC_VALUE,
                     "Incorrect EIP1271 MAGIC VALUE"
@@ -399,17 +396,12 @@ contract LaserWallet is
             } else if (v > 30) {
                 // If v > 30 then default va (27,28) has been adjusted for eth_sign flow
                 // To support eth_sign and similar we adjust v and hash the messageHash with the Ethereum message prefix before applying ecrecover
-                currentOwner = ecrecover(
-                    keccak256(
+                currentOwner = //hash.recover(v, r, s) --> we avoid using ecrecover due to EIP 4337
+                   keccak256(
                         abi.encodePacked(
                             "\x19Ethereum Signed Message:\n32",
                             dataHash
-                        )
-                    ),
-                    v - 4,
-                    r,
-                    s
-                );
+                )).recover(v -4, r, s);
             } else {
                 // We cannot use ecrecover due to the prohibition of the GAS opcode in the EIP4337.
                 currentOwner = dataHash.recover(v, r, s);
@@ -418,14 +410,14 @@ contract LaserWallet is
             if (specialOwner != address(0)) {
                 require(
                     currentOwner == specialOwner &&
-                    specialOwners[specialOwner] == true,
+                    specialOwners[specialOwner],
                     "Incorrect special owner"
-                    );
+                );
             } else {
                 require(
                     currentOwner > lastOwner &&
-                        owners[currentOwner] != address(0) &&
-                        currentOwner != SENTINEL_OWNERS,
+                    owners[currentOwner] != address(0) &&
+                    currentOwner != SENTINEL_OWNERS,
                     "Invalid owner provided"
                 );
             }
@@ -540,5 +532,58 @@ contract LaserWallet is
         uint256 _nonce
     ) public view returns (bytes32) {
         return keccak256(encodeTransactionData(to, value, data, operation, safeTxGas, baseGas, gasPrice, gasToken, refundReceiver, _nonce));
+    }
+
+    /**
+    * @notice Implementation of EIP 1271: https://eips.ethereum.org/EIPS/eip-1271.
+    * @param _hash Hash of a message signed on the behalf of address(this).
+    * @param _signature Signature byte array associated with _msgHash.
+    * @return Magic value or reverts.
+    */
+    function isValidSignature(bytes32  _hash, bytes memory _signature)
+        external
+        view
+        returns (bytes4)
+    {
+        address currentOwner;
+        uint8 v;
+        bytes32 r;
+        bytes32 s;
+        require(_signature.length >= 65, "Laser Wallet ERROR: INVALID 'isValidSignature(..)'");
+        // we need to do the process again manually to check if the signer is a special owner.
+        if (_signature.length == 65) {
+            // if signature.length is 65, the signer needs to be a special owner or the threshold is 1.
+            (v, r, s) = signatureSplit(_signature, 0);
+            if (v == 1) {
+                currentOwner = address(uint160(uint256(r)));
+                require(
+                    msg.sender == currentOwner ||
+                    approvedHashes[currentOwner][_hash] != 0,
+                     "Laser Wallet ERROR: INVALID 'isValidSignature(..)'"
+                );
+            } else if (v > 30) {
+                currentOwner = 
+                   keccak256(
+                        abi.encodePacked(
+                            "\x19Ethereum Signed Message:\n32",
+                            _hash
+                )).recover(v -4, r, s);
+            } else {
+                currentOwner = _hash.recover(v, r, s);
+                require(
+                    owners[currentOwner] != address(0) &&
+                    currentOwner != SENTINEL_OWNERS,
+                    "Laser Wallet ERROR: INVALID 'isValidSignature(..)'"
+                );
+               require(
+                    specialOwners[currentOwner] || threshold == 1,
+                    "Laser Wallet ERROR: INVALID 'isValidSignature(..)'"
+               );
+            }
+        } else {
+            checkSignatures(_hash, _signature, address(0));
+        }
+        // If everything passed, we can return the magic value
+        return EIP1271_MAGIC_VALUE;
     }
 }
