@@ -54,13 +54,6 @@ describe("Fallback", () => {
             const balance = await ethers.provider.getBalance(wallet.address);
             expect(balance).to.equal(amount);
         });
-        it("should revert, fallback function is not payable", async () => {
-            await expect(sender.sendTransaction({
-                to: wallet.address, 
-                value: 100,
-                data: "0x105e"
-            })).to.be.revertedWith("fallback function is not payable and was called with value 100");
-        });
     });
 
     describe("calldata calls", () => {
