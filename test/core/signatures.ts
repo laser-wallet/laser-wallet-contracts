@@ -216,6 +216,20 @@ describe("Signatures", () => {
             )).to.emit(wallet, "ExecutionSuccess");
             expect(await wallet.getThreshold()).to.equal(1);
         });
+        it("v is greater than 30 (eth _ sign)", async () => {
+            // special owner i owner2Address
+            const _data = encodeFunctionData(abi, "changeThreshold", [1]);
+            const hash = await wallet.getTransactionHash(
+                wallet.address, 0, _data, 0, 0, 0, 0, addressZero, addressZero, 
+                0
+            );
+            const typedDataHash = ethers.utils.arrayify(hash);
+            const sig = (await owner2.signMessage(typedDataHash)).replace(/1b$/, "1f").replace(/1c$/, "20");
+            await wallet.execTransaction(
+                wallet.address, 0, _data, 0, 0, 0, 0, addressZero, addressZero, 
+                sig, owner2Address
+            );
+        });
         it("should fail by impersonating a special owner", async () => {
             safeTx.data  = _data;
             safeTx.signature = paddedSignature(owner2Address);
