@@ -62,7 +62,6 @@ library ECDSA {
 
         // If the signature is valid (and not malleable), return the signer address
         // We cannot use ecrecover in EIP4337 because of the GAS opcode.
-        //address signer = ecrecover(hash, v, r, s);
         address signer = ecrecover2(hash, v, r, s);
         if (signer == address(0)) {
             return (address(0), RecoverError.InvalidSignature);
