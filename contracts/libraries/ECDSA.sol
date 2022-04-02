@@ -83,10 +83,12 @@ library ECDSA {
             mstore(add(pointer, 0x20), v)
             mstore(add(pointer, 0x40), r)
             mstore(add(pointer, 0x60), s)
-
-
-            status := staticcall(not(0), 0x01, pointer, 0x80, pointer, 0x20)
-            signer := mload(pointer)
+            
+            // Use address zero as return buffer, just like Solidity's generated code for normal "ecrecover".
+            let returnBuffer := 0
+            mstore(returnBuffer, 0)
+            status := staticcall(not(0), 0x01, pointer, 0x80, returnBuffer, 0x20)
+            signer := mload(returnBuffer)
         // not required by this code, but other solidity code assumes unused data is zero...
             mstore(pointer, 0)
             mstore(add(pointer, 0x20), 0)
