@@ -396,7 +396,7 @@ contract LaserWallet is
             } else if (v > 30) {
                 // If v > 30 then default va (27,28) has been adjusted for eth_sign flow
                 // To support eth_sign and similar we adjust v and hash the messageHash with the Ethereum message prefix before applying ecrecover
-                currentOwner = //hash.recover(v, r, s) --> we avoid using ecrecover due to EIP 4337
+                currentOwner =
                    keccak256(
                         abi.encodePacked(
                             "\x19Ethereum Signed Message:\n32",
