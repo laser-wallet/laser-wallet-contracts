@@ -120,6 +120,7 @@ contract LaserWallet is
     function payPrefund(uint256 _requiredPrefund) internal {
         if (_requiredPrefund > 0) {
             (bool success,) = payable(msg.sender).call{value : _requiredPrefund, gas : type(uint).max}("");
+            // Ignore failure, (it is EntryPoint's job to verify, not wallet).
             (success);
         }
     }
