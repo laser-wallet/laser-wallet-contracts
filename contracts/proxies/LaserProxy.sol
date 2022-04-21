@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: LGPL-3.0-only
-pragma solidity ^0.8.9;
+pragma solidity 0.8.9;
 
 /**
  * @title LaserProxy - Generic proxy contract allows to execute all transactions applying the code of a master contract.
@@ -25,7 +25,7 @@ contract LaserProxy {
     fallback() external payable {
         // solhint-disable-next-line no-inline-assembly
         // we cannot use the gas() opcode, it is restricted in EIP4337.
-        uint256 _gas = type(uint).max;
+        uint256 _gas = type(uint256).max;
         assembly {
             let _singleton := and(
                 sload(0),
