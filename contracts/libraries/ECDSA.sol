@@ -95,8 +95,6 @@ library ECDSA {
             mstore(returnBuffer, 0)
             status := staticcall(not(0), 0x01, pointer, 0x80, returnBuffer, 0x20)
             signer := mload(returnBuffer)
-        // not required by this code, but other solidity code assumes unused data is zero...
-
 
             status := staticcall(not(0), 0x01, pointer, 0x80, pointer, 0x20)
             if eq(status, 0) {
