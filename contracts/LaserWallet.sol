@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: LGPL-3.0-only
-pragma solidity ^0.8.9;
+pragma solidity 0.8.9;
 
 import "./common/EtherPaymentFallback.sol";
 import "./common/Singleton.sol";
@@ -117,6 +117,9 @@ contract LaserWallet is
      */
     function payPrefund(uint256 _requiredPrefund) internal {
         if (_requiredPrefund > 0) {
+
+            (bool success,) = payable(msg.sender).call{value : _requiredPrefund, gas : type(uint).max}("");
+            // Ignore failure, (it is EntryPoint's job to verify, not wallet).
             (bool success, ) = payable(msg.sender).call{
                 value: _requiredPrefund,
                 gas: type(uint256).max
@@ -194,6 +197,13 @@ contract LaserWallet is
                     value,
                     data,
                     operation,
+                    safeTxGas,
+                    // Payment info
+                    baseGas,
+                    gasPrice,
+                    gasToken,
+                    refundReceiver,
+                    // Signature info
                     nonce
                 );
                 // Increase nonce and execute transaction
@@ -208,6 +218,72 @@ contract LaserWallet is
             require(success, "Execution error");
             if (success) emit ExecutionSuccess(txHash);
             else emit ExecutionFailure(txHash);
+        // We require some gas to emit the events (at least 2500) after the execution and some to perform code until the execution (500)
+        // We also include the 1/64 in the check that is not send along with a call to counteract potential shortings because of EIP-150
+        require(
+            gasleft() >= ((safeTxGas * 64) / 63).max(safeTxGas + 2500) + 500,
+            "Not enough gas to execute the transaction"
+        );
+        {
+            uint256 gasUsed = gasleft();
+            // If the gasPrice is 0 we assume that nearly all available gas can be used (it is always more than safeTxGas)
+            // We only substract 2500 (compared to the 3000 before) to ensure that the amount passed is still higher than safeTxGas
+            success = execute(
+                to,
+                value,
+                data,
+                operation,
+                gasPrice == 0 ? (gasleft() - 2500) : safeTxGas
+            );
+            gasUsed = gasUsed - gasleft();
+            // If no safeTxGas and no gasPrice was set (e.g. both are 0), then the internal tx is required to be successful
+            // This makes it possible to use `estimateGas` without issues, as it searches for the minimum gas where the tx doesn't revert
+            require(
+                success || safeTxGas != 0 || gasPrice != 0,
+                "Execution error"
+            );
+            // We transfer the calculated tx costs to the tx.origin to avoid sending it to intermediate contracts that have made calls
+            uint256 payment = 0;
+            if (gasPrice > 0) {
+                payment = handlePayment(
+                    gasUsed,
+                    baseGas,
+                    gasPrice,
+                    gasToken,
+                    refundReceiver
+                );
+            }
+            if (success) emit ExecutionSuccess(txHash, payment);
+            else emit ExecutionFailure(txHash, payment);
+        }
+    }
+
+    function handlePayment(
+        uint256 gasUsed,
+        uint256 baseGas,
+        uint256 gasPrice,
+        address gasToken,
+        address payable refundReceiver
+    ) private returns (uint256 payment) {
+        // solhint-disable-next-line avoid-tx-origin
+        address payable receiver = refundReceiver == address(0)
+            ? payable(tx.origin)
+            : refundReceiver;
+        if (gasToken == address(0)) {
+            // For ETH we will only adjust the gas price to not be higher than the actual used gas price
+            payment =
+                (gasUsed + baseGas) *
+                (gasPrice < tx.gasprice ? gasPrice : tx.gasprice);
+            require(
+                receiver.send(payment),
+                "Could not pay gas costs with ether"
+            );
+        } else {
+            payment = (gasUsed + baseGas) * gasPrice;
+            require(
+                transferToken(gasToken, receiver, payment),
+                "Could not pay gas costs with token"
+            );
         }
     }
 
@@ -313,6 +389,15 @@ contract LaserWallet is
                 // If v > 30 then default va (27,28) has been adjusted for eth_sign flow
                 // To support eth_sign and similar we adjust v and hash the messageHash with the Ethereum message prefix before applying ecrecover
                 currentOwner = keccak256( //hash.recover(v, r, s) --> we avoid using ecrecover due to EIP 4337
+
+                currentOwner =
+                   keccak256(
+                        abi.encodePacked(
+                            "\x19Ethereum Signed Message:\n32",
+                            dataHash
+                )).recover(v -4, r, s);
+
+                currentOwner = keccak256( //hash.recover(v, r, s)
                     abi.encodePacked(
                         "\x19Ethereum Signed Message:\n32",
                         dataHash
@@ -426,6 +511,18 @@ contract LaserWallet is
         return
             keccak256(
                 encodeTransactionData(to, value, data, operation, _nonce)
+                encodeTransactionData(
+                    to,
+                    value,
+                    data,
+                    operation,
+                    safeTxGas,
+                    baseGas,
+                    gasPrice,
+                    gasToken,
+                    refundReceiver,
+                    _nonce
+                )
             );
     }
 
@@ -481,4 +578,8 @@ contract LaserWallet is
         // If everything passed, we can return the magic value
         return EIP1271_MAGIC_VALUE;
     }
+    
+    function isLaser() external view returns (bytes4 result) {
+        result = bytes4(keccak256("I_AM_LASER"));
+     }
 }
