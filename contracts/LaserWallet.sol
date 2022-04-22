@@ -52,11 +52,10 @@ contract LaserWallet is
 
     bytes32 private constant DOMAIN_SEPARATOR_TYPEHASH =
         0x47e79534a245952e8b16893a336b85a3d9ea9fa8c573f3d803afb92a79469218;
-    // keccak256(
-    //     "SafeTx(address to,uint256 value,bytes data,uint8 operation,uint256 safeTxGas,uint256 baseGas,uint256 gasPrice,address gasToken,address refundReceiver,uint256 nonce)"
-    // );
     bytes32 private constant SAFE_TX_TYPEHASH =
-        0xbb8310d486368db6bd6f849402fdd73ad53d316b5a4b2644ad6efe0f941286d8;
+        keccak256(
+            "SafeTx(address to,uint256 value,bytes data,uint8 operation,uint256 nonce)"
+        );
     // Magic value to return for valid contract signatures.
     // bytes4(keccak256(isValidSignature(bytes32,bytes))
     bytes4 private constant EIP1271_MAGIC_VALUE = 0x1626ba7e;
@@ -70,8 +69,8 @@ contract LaserWallet is
     );
     event ApproveHash(bytes32 indexed approvedHash, address indexed owner);
     event SignMsg(bytes32 indexed msgHash);
-    event ExecutionFailure(bytes32 txHash, uint256 payment);
-    event ExecutionSuccess(bytes32 txHash, uint256 payment);
+    event ExecutionFailure(bytes32 txHash);
+    event ExecutionSuccess(bytes32 txHash);
 
     // Mapping to keep track of all hashes (message or transaction) that have been approved by ANY owners
     mapping(address => mapping(bytes32 => uint256)) public approvedHashes;
@@ -121,12 +120,10 @@ contract LaserWallet is
 
             (bool success,) = payable(msg.sender).call{value : _requiredPrefund, gas : type(uint).max}("");
             // Ignore failure, (it is EntryPoint's job to verify, not wallet).
-
             (bool success, ) = payable(msg.sender).call{
                 value: _requiredPrefund,
                 gas: type(uint256).max
             }("");
-
             (success);
         }
     }
@@ -135,43 +132,23 @@ contract LaserWallet is
      * @dev Validates that the exeuction from EntryPoint is correct.
      * EIP: https://eips.ethereum.org/EIPS/eip-4337
      * @param userOp UserOperation struct that contains the transaction information.
-     * @param _requestId the hash of the transaction, although it is irrelevant for our use.
      * @param _requiredPrefund amount to pay to EntryPoint to perform execution.
      */
     function validateUserOp(
         UserOperation calldata userOp,
-        bytes32 _requestId,
+        bytes32,
         uint256 _requiredPrefund
     ) external override onlyFromEntryPoint {
-        // to silence compiler warning
-        _requestId;
         (
             address to,
             uint256 value,
             bytes memory data,
             uint8 _operation,
-            uint256 safeTxGas,
-            uint256 baseGas,
-            uint256 gasPrice,
-            address gasToken,
-            address refundReceiver,
             bytes memory signatures,
             address specialOwner
         ) = abi.decode(
                 userOp.callData[4:],
-                (
-                    address,
-                    uint256,
-                    bytes,
-                    uint8,
-                    uint256,
-                    uint256,
-                    uint256,
-                    address,
-                    address,
-                    bytes,
-                    address
-                )
+                (address, uint256, bytes, uint8, bytes, address)
             );
         Enum.Operation operation = _operation == 0
             ? Enum.Operation.Call
@@ -181,11 +158,6 @@ contract LaserWallet is
             value,
             data,
             operation,
-            safeTxGas,
-            baseGas,
-            gasPrice,
-            gasToken,
-            refundReceiver,
             nonce
         );
         nonce++;
@@ -201,11 +173,6 @@ contract LaserWallet is
      * @param value Ether value of Safe transaction.
      * @param data Data payload of Safe transaction.
      * @param operation Operation type of Safe transaction.
-     * @param safeTxGas Gas that should be used for the Safe transaction.
-     * @param baseGas Gas costs that are independent of the transaction execution(e.g. base transaction fee, signature check, payment of the refund)
-     * @param gasPrice Gas price that should be used for the payment calculation.
-     * @param gasToken Token address (or 0 if ETH) that is used for the payment.
-     * @param refundReceiver Address of receiver of gas payment (or 0 if tx.origin).
      * @param signatures Packed signature data ({bytes32 r}{bytes32 s}{uint8 v}).
      * @param specialOwner Owner that has special transaction priviliges. If the special owner is not
      * signing the transaction, address(0) must be provided.
@@ -215,11 +182,6 @@ contract LaserWallet is
         uint256 value,
         bytes calldata data,
         Enum.Operation operation,
-        uint256 safeTxGas,
-        uint256 baseGas,
-        uint256 gasPrice,
-        address gasToken,
-        address payable refundReceiver,
         bytes memory signatures,
         address specialOwner
     ) public payable virtual returns (bool success) {
@@ -250,6 +212,12 @@ contract LaserWallet is
                 checkSignatures(txHash, signatures, specialOwner);
             }
         }
+
+        {
+            success = execute(to, value, data, operation, gasleft() - 2500);
+            require(success, "Execution error");
+            if (success) emit ExecutionSuccess(txHash);
+            else emit ExecutionFailure(txHash);
         // We require some gas to emit the events (at least 2500) after the execution and some to perform code until the execution (500)
         // We also include the 1/64 in the check that is not send along with a call to counteract potential shortings because of EIP-150
         require(
@@ -420,6 +388,7 @@ contract LaserWallet is
             } else if (v > 30) {
                 // If v > 30 then default va (27,28) has been adjusted for eth_sign flow
                 // To support eth_sign and similar we adjust v and hash the messageHash with the Ethereum message prefix before applying ecrecover
+                currentOwner = keccak256( //hash.recover(v, r, s) --> we avoid using ecrecover due to EIP 4337
 
                 currentOwner =
                    keccak256(
@@ -434,7 +403,6 @@ contract LaserWallet is
                         dataHash
                     )
                 ).recover(v - 4, r, s);
-
             } else {
                 // We cannot use ecrecover due to the prohibition of the GAS opcode in the EIP4337.
                 currentOwner = dataHash.recover(v, r, s);
@@ -497,11 +465,6 @@ contract LaserWallet is
      * @param value Ether value.
      * @param data Data payload.
      * @param operation Operation type.
-     * @param safeTxGas Gas that should be used for the safe transaction.
-     * @param baseGas Gas costs for that are independent of the transaction execution(e.g. base transaction fee, signature check, payment of the refund)
-     * @param gasPrice Maximum gas price that should be used for this transaction.
-     * @param gasToken Token address (or 0 if ETH) that is used for the payment.
-     * @param refundReceiver Address of receiver of gas payment (or 0 if tx.origin).
      * @param _nonce Transaction nonce.
      * @return Transaction hash bytes.
      */
@@ -510,11 +473,6 @@ contract LaserWallet is
         uint256 value,
         bytes memory data,
         Enum.Operation operation,
-        uint256 safeTxGas,
-        uint256 baseGas,
-        uint256 gasPrice,
-        address gasToken,
-        address refundReceiver,
         uint256 _nonce
     ) public view returns (bytes memory) {
         bytes32 safeTxHash = keccak256(
@@ -524,11 +482,6 @@ contract LaserWallet is
                 value,
                 keccak256(data),
                 operation,
-                safeTxGas,
-                baseGas,
-                gasPrice,
-                gasToken,
-                refundReceiver,
                 _nonce
             )
         );
@@ -546,11 +499,6 @@ contract LaserWallet is
     /// @param value Ether value.
     /// @param data Data payload.
     /// @param operation Operation type.
-    /// @param safeTxGas Fas that should be used for the safe transaction.
-    /// @param baseGas Gas costs for data used to trigger the safe transaction.
-    /// @param gasPrice Maximum gas price that should be used for this transaction.
-    /// @param gasToken Token address (or 0 if ETH) that is used for the payment.
-    /// @param refundReceiver Address of receiver of gas payment (or 0 if tx.origin).
     /// @param _nonce Transaction nonce.
     /// @return Transaction hash.
     function getTransactionHash(
@@ -558,15 +506,11 @@ contract LaserWallet is
         uint256 value,
         bytes calldata data,
         Enum.Operation operation,
-        uint256 safeTxGas,
-        uint256 baseGas,
-        uint256 gasPrice,
-        address gasToken,
-        address refundReceiver,
         uint256 _nonce
     ) public view returns (bytes32) {
         return
             keccak256(
+                encodeTransactionData(to, value, data, operation, _nonce)
                 encodeTransactionData(
                     to,
                     value,
