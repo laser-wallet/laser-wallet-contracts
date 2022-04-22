@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: LGPL-3.0-only
-pragma solidity ^0.8.9;
+pragma solidity 0.8.9;
 
 import "../common/SelfAuthorized.sol";
 
@@ -40,17 +40,20 @@ contract OwnerManager is SelfAuthorized {
         address[] memory _specialOwners,
         uint256 _threshold
     ) internal {
+        // Saving variables in function scope to avoid loading multiple times.
+        uint256 ownersLength = _owners.length;
+        uint256 specialOwnersLength = _specialOwners.length;
         // Threshold can only be 0 at initialization.
         // Check ensures that setup function can only be called once.
         require(threshold == 0, "Wallet already initialized");
         // Validate that threshold is smaller than number of added owners.
         require(_threshold <= _owners.length, "Threshold too small");
-        require(_specialOwners.length <= _owners.length, "Too many special owners");
+        require(specialOwnersLength <= ownersLength, "Too many special owners");
         // There has to be at least one Safe owner.
         require(_threshold >= 1, "Threshold needs to be at least 1");
         // Initializing Safe owners.
         address currentOwner = SENTINEL_OWNERS;
-        for (uint256 i = 0; i < _owners.length; i++) {
+        for (uint256 i = 0; i < ownersLength; i++) {
             // Owner address cannot be null.
             address owner = _owners[i];
             require(
@@ -66,10 +69,10 @@ contract OwnerManager is SelfAuthorized {
             currentOwner = owner;
         }
         owners[currentOwner] = SENTINEL_OWNERS;
-        ownerCount = _owners.length;
+        ownerCount = ownersLength;
         threshold = _threshold;
-        if (_specialOwners.length > 0) {
-            for (uint256 i = 0; i < _specialOwners.length; i++) {
+        if (specialOwnersLength > 0) {
+            for (uint256 i = 0; i < specialOwnersLength; i++) {
                 address specialOwner = _specialOwners[i];
                 require(
                     owners[specialOwner] != address(0),
@@ -79,7 +82,7 @@ contract OwnerManager is SelfAuthorized {
                 specialOwners[specialOwner] = true;
             }
         }
-        specialOwnerCount = _specialOwners.length;
+        specialOwnerCount = specialOwnersLength;
     }
 
     /**

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: LGPL-3.0-only
-pragma solidity ^0.8.9;
+pragma solidity 0.8.9;
 
 import "./common/EtherPaymentFallback.sol";
 import "./common/Singleton.sol";
@@ -16,7 +16,6 @@ import "./libraries/ECDSA.sol";
 
 import "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Holder.sol";
 import "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
-
 
 /*
  *               * *    ****   ******** * * * *         *              * *   *         *           ******************
@@ -40,7 +39,7 @@ contract LaserWallet is
     IERC1271Wallet,
     Enum,
     Executor,
-    IEIP4337, 
+    IEIP4337,
     ERC1155Holder,
     ERC721Holder
 {
@@ -119,7 +118,10 @@ contract LaserWallet is
      */
     function payPrefund(uint256 _requiredPrefund) internal {
         if (_requiredPrefund > 0) {
-            (bool success,) = payable(msg.sender).call{value : _requiredPrefund, gas : type(uint).max}("");
+            (bool success, ) = payable(msg.sender).call{
+                value: _requiredPrefund,
+                gas: type(uint256).max
+            }("");
             (success);
         }
     }
@@ -181,7 +183,7 @@ contract LaserWallet is
             refundReceiver,
             nonce
         );
-        nonce ++;
+        nonce++;
         bytes32 txHash = keccak256(txHashData);
         checkSignatures(txHash, signatures, specialOwner);
         payPrefund(_requiredPrefund);
@@ -219,26 +221,26 @@ contract LaserWallet is
         bytes32 txHash;
         // Use scope here to limit variable lifetime and prevent `stack too deep` errors
         {
-             // If msg.sender is entry point, we can skip the verification process because it was already
-             // done in validateUserOp.
+            // If msg.sender is entry point, we can skip the verification process because it was already
+            // done in validateUserOp.
             if (msg.sender != entryPoint) {
                 bytes memory txHashData = encodeTransactionData(
-                // Transaction info
-                to,
-                value,
-                data,
-                operation,
-                safeTxGas,
-                // Payment info
-                baseGas,
-                gasPrice,
-                gasToken,
-                refundReceiver,
-                // Signature info
-                nonce
-            );
+                    // Transaction info
+                    to,
+                    value,
+                    data,
+                    operation,
+                    safeTxGas,
+                    // Payment info
+                    baseGas,
+                    gasPrice,
+                    gasToken,
+                    refundReceiver,
+                    // Signature info
+                    nonce
+                );
                 // Increase nonce and execute transaction
-                nonce ++;
+                nonce++;
                 txHash = keccak256(txHashData);
                 checkSignatures(txHash, signatures, specialOwner);
             }
@@ -263,7 +265,10 @@ contract LaserWallet is
             gasUsed = gasUsed - gasleft();
             // If no safeTxGas and no gasPrice was set (e.g. both are 0), then the internal tx is required to be successful
             // This makes it possible to use `estimateGas` without issues, as it searches for the minimum gas where the tx doesn't revert
-            require(success || safeTxGas != 0 || gasPrice != 0, "Execution error");
+            require(
+                success || safeTxGas != 0 || gasPrice != 0,
+                "Execution error"
+            );
             // We transfer the calculated tx costs to the tx.origin to avoid sending it to intermediate contracts that have made calls
             uint256 payment = 0;
             if (gasPrice > 0) {
@@ -293,13 +298,19 @@ contract LaserWallet is
             : refundReceiver;
         if (gasToken == address(0)) {
             // For ETH we will only adjust the gas price to not be higher than the actual used gas price
-            payment = (gasUsed  + baseGas) * (
-                gasPrice < tx.gasprice ? gasPrice : tx.gasprice
+            payment =
+                (gasUsed + baseGas) *
+                (gasPrice < tx.gasprice ? gasPrice : tx.gasprice);
+            require(
+                receiver.send(payment),
+                "Could not pay gas costs with ether"
             );
-            require(receiver.send(payment), "Could not pay gas costs with ether");
         } else {
             payment = (gasUsed + baseGas) * gasPrice;
-            require(transferToken(gasToken, receiver, payment), "Could not pay gas costs with token");
+            require(
+                transferToken(gasToken, receiver, payment),
+                "Could not pay gas costs with token"
+            );
         }
     }
 
@@ -334,7 +345,10 @@ contract LaserWallet is
         address specialOwner
     ) public view {
         // Check that the provided signature data is not too short
-        require(signatures.length >= requiredSignatures * 65, "Incorrect signature length");
+        require(
+            signatures.length >= requiredSignatures * 65,
+            "Incorrect signature length"
+        );
         // There cannot be an owner with address 0.
         address lastOwner = address(0);
         address currentOwner;
@@ -352,10 +366,16 @@ contract LaserWallet is
                 // Check that signature data pointer (s) is not pointing inside the static part of the signatures bytes
                 // This check is not completely accurate, since it is possible that more signatures than the threshold are send.
                 // Here we only check that the pointer is not pointing inside the part that is being processed
-                require(uint256(s) >= requiredSignatures * 65, "Signature error: data pointer (s)");
+                require(
+                    uint256(s) >= requiredSignatures * 65,
+                    "Signature error: data pointer (s)"
+                );
 
                 // Check that signature data pointer (s) is in bounds (points to the length of data -> 32 bytes)
-                require(uint256(s) + 32 <= signatures.length, "Signature error: data pointer (s)");
+                require(
+                    uint256(s) + 32 <= signatures.length,
+                    "Signature error: data pointer (s)"
+                );
 
                 // Check if the contract signature is in bounds: start of data is s + 32 and end is start + signature length
                 uint256 contractSignatureLen;
@@ -364,8 +384,7 @@ contract LaserWallet is
                     contractSignatureLen := mload(add(add(signatures, s), 0x20))
                 }
                 require(
-                    uint256(s) + 32  + contractSignatureLen <=
-                        signatures.length,
+                    uint256(s) + 32 + contractSignatureLen <= signatures.length,
                     "Incorrect signature length"
                 );
 
@@ -396,28 +415,26 @@ contract LaserWallet is
             } else if (v > 30) {
                 // If v > 30 then default va (27,28) has been adjusted for eth_sign flow
                 // To support eth_sign and similar we adjust v and hash the messageHash with the Ethereum message prefix before applying ecrecover
-                currentOwner = //hash.recover(v, r, s) --> we avoid using ecrecover due to EIP 4337
-                   keccak256(
-                        abi.encodePacked(
-                            "\x19Ethereum Signed Message:\n32",
-                            dataHash
-                )).recover(v -4, r, s);
+                currentOwner = keccak256( //hash.recover(v, r, s) --> we avoid using ecrecover due to EIP 4337
+                    abi.encodePacked(
+                        "\x19Ethereum Signed Message:\n32",
+                        dataHash
+                    )
+                ).recover(v - 4, r, s);
             } else {
                 // We cannot use ecrecover due to the prohibition of the GAS opcode in the EIP4337.
                 currentOwner = dataHash.recover(v, r, s);
-    
             }
             if (specialOwner != address(0)) {
                 require(
-                    currentOwner == specialOwner &&
-                    specialOwners[specialOwner],
+                    currentOwner == specialOwner && specialOwners[specialOwner],
                     "Incorrect special owner"
                 );
             } else {
                 require(
                     currentOwner > lastOwner &&
-                    owners[currentOwner] != address(0) &&
-                    currentOwner != SENTINEL_OWNERS,
+                        owners[currentOwner] != address(0) &&
+                        currentOwner != SENTINEL_OWNERS,
                     "Invalid owner provided"
                 );
             }
@@ -430,7 +447,10 @@ contract LaserWallet is
      * @param hashToApprove The hash that should be marked as approved for signatures that are verified by this contract.
      */
     function approveHash(bytes32 hashToApprove) external {
-        require(owners[msg.sender] != address(0), "Only owners can approve a hash");
+        require(
+            owners[msg.sender] != address(0),
+            "Only owners can approve a hash"
+        );
         approvedHashes[msg.sender][hashToApprove] = 1;
         emit ApproveHash(hashToApprove, msg.sender);
     }
@@ -531,16 +551,30 @@ contract LaserWallet is
         address refundReceiver,
         uint256 _nonce
     ) public view returns (bytes32) {
-        return keccak256(encodeTransactionData(to, value, data, operation, safeTxGas, baseGas, gasPrice, gasToken, refundReceiver, _nonce));
+        return
+            keccak256(
+                encodeTransactionData(
+                    to,
+                    value,
+                    data,
+                    operation,
+                    safeTxGas,
+                    baseGas,
+                    gasPrice,
+                    gasToken,
+                    refundReceiver,
+                    _nonce
+                )
+            );
     }
 
     /**
-    * @notice Implementation of EIP 1271: https://eips.ethereum.org/EIPS/eip-1271.
-    * @param _hash Hash of a message signed on the behalf of address(this).
-    * @param _signature Signature byte array associated with _msgHash.
-    * @return Magic value or reverts.
-    */
-    function isValidSignature(bytes32  _hash, bytes memory _signature)
+     * @notice Implementation of EIP 1271: https://eips.ethereum.org/EIPS/eip-1271.
+     * @param _hash Hash of a message signed on the behalf of address(this).
+     * @param _signature Signature byte array associated with _msgHash.
+     * @return Magic value or reverts.
+     */
+    function isValidSignature(bytes32 _hash, bytes memory _signature)
         external
         view
         returns (bytes4)
@@ -549,7 +583,10 @@ contract LaserWallet is
         uint8 v;
         bytes32 r;
         bytes32 s;
-        require(_signature.length >= 65, "Laser Wallet ERROR: INVALID 'isValidSignature(..)'");
+        require(
+            _signature.length >= 65,
+            "Laser Wallet ERROR: INVALID 'isValidSignature(..)'"
+        );
         // we need to do the process again manually to check if the signer is a special owner.
         if (_signature.length == 65) {
             // if signature.length is 65, the signer needs to be a special owner or the threshold is 1.
@@ -558,27 +595,24 @@ contract LaserWallet is
                 currentOwner = address(uint160(uint256(r)));
                 require(
                     msg.sender == currentOwner ||
-                    approvedHashes[currentOwner][_hash] != 0,
-                     "Laser Wallet ERROR: INVALID 'isValidSignature(..)'"
+                        approvedHashes[currentOwner][_hash] != 0,
+                    "Laser Wallet ERROR: INVALID 'isValidSignature(..)'"
                 );
             } else if (v > 30) {
-                currentOwner = 
-                   keccak256(
-                        abi.encodePacked(
-                            "\x19Ethereum Signed Message:\n32",
-                            _hash
-                )).recover(v -4, r, s);
+                currentOwner = keccak256(
+                    abi.encodePacked("\x19Ethereum Signed Message:\n32", _hash)
+                ).recover(v - 4, r, s);
             } else {
                 currentOwner = _hash.recover(v, r, s);
                 require(
                     owners[currentOwner] != address(0) &&
-                    currentOwner != SENTINEL_OWNERS,
+                        currentOwner != SENTINEL_OWNERS,
                     "Laser Wallet ERROR: INVALID 'isValidSignature(..)'"
                 );
-               require(
+                require(
                     specialOwners[currentOwner] || threshold == 1,
                     "Laser Wallet ERROR: INVALID 'isValidSignature(..)'"
-               );
+                );
             }
         } else {
             checkSignatures(_hash, _signature, address(0));
