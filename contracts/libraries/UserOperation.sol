@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity ^0.8.9;
+pragma solidity 0.8.9;
 
 /**
  * @param sender The wallet making the operation (should be address(this)).
@@ -29,5 +29,3 @@ struct UserOperation {
     bytes paymasterData;
     bytes signature;
 }
-
-

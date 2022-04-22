@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: LGPL-3.0-only
-pragma solidity ^0.8.9;
+pragma solidity 0.8.9;
 
 /// @title LaserStorage - Storage layout of the Safe contracts to be used in libraries.
 contract LaserWalletStorage {
@@ -15,6 +15,6 @@ contract LaserWalletStorage {
     uint256 internal threshold;
 
     // From /LaserWallet.sol
-    bytes32 public nonce;
+    uint256 public nonce;
     mapping(address => mapping(bytes32 => uint256)) internal approvedHashes;
 }
