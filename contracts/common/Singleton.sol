@@ -3,7 +3,7 @@ pragma solidity 0.8.9;
 
 /**
  * @title Singleton - Base for singleton contracts (should always be first super contract).
- * This contract is tightly coupled to our proxy contract (see `proxies/GnosisSafeProxy.sol`).
+ * This contract is tightly coupled to our proxy contract (see `proxies/LaserProxy.sol`).
  * @author Modified from Gnosis Safe.
  */
 contract Singleton {
