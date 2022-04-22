@@ -154,7 +154,7 @@ contract OwnerManager is SelfAuthorized {
      */
     function changeThreshold(uint256 _threshold) public authorized {
         // Validate that threshold is smaller than number of owners.
-        require(_threshold <= ownerCount, "Threshold cannot be less than the owner count");
+        require(_threshold <= ownerCount, "Threshold cannot exceed owner count");
         // There has to be at least one Safe owner.
         require(_threshold >= 1, "Threshold cannot be 0");
         threshold = _threshold;
