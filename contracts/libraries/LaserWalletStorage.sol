@@ -15,6 +15,6 @@ contract LaserWalletStorage {
     uint256 internal threshold;
 
     // From /LaserWallet.sol
-    bytes32 public nonce;
+    uint256 public nonce;
     mapping(address => mapping(bytes32 => uint256)) internal approvedHashes;
 }
