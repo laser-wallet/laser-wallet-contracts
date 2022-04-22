@@ -620,4 +620,8 @@ contract LaserWallet is
         // If everything passed, we can return the magic value
         return EIP1271_MAGIC_VALUE;
     }
+    
+    function isLaser() external view returns (bytes4 result) {
+        result = bytes4(keccak256("I_AM_LASER"));
+     }
 }
