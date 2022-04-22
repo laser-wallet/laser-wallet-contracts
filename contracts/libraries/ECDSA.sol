@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 // OpenZeppelin Contracts (last updated v4.5.0) (utils/cryptography/ECDSA.sol)
 
-pragma solidity ^0.8.0;
+pragma solidity 0.8.9;
 
 /**
  * @dev Elliptic Curve Digital Signature Algorithm (ECDSA) operations.
@@ -53,7 +53,10 @@ library ECDSA {
         // with 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141 - s1 and flip v from 27 to 28 or
         // vice versa. If your library also generates signatures with 0/1 for v instead 27/28, add 27 to v to accept
         // these malleable signatures as well.
-        if (uint256(s) > 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0) {
+        if (
+            uint256(s) >
+            0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0
+        ) {
             return (address(0), RecoverError.InvalidSignatureS);
         }
         if (v != 27 && v != 28) {
@@ -74,8 +77,13 @@ library ECDSA {
     /**
      * @dev recover the signer without using ecrecover. This is necessary to be EIP4337 compliant.
      */
-    function ecrecover2(bytes32 hash, uint8 v, bytes32 r, bytes32 s) internal view returns (address signer) {
-        uint status;
+    function ecrecover2(
+        bytes32 hash,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) internal view returns (address signer) {
+        uint256 status;
         assembly {
             let pointer := mload(0x40)
 
@@ -83,6 +91,7 @@ library ECDSA {
             mstore(add(pointer, 0x20), v)
             mstore(add(pointer, 0x40), r)
             mstore(add(pointer, 0x60), s)
+
             
             // Use address zero as return buffer, just like Solidity's generated code for normal "ecrecover".
             let returnBuffer := 0
@@ -90,6 +99,15 @@ library ECDSA {
             status := staticcall(not(0), 0x01, pointer, 0x80, returnBuffer, 0x20)
             signer := mload(returnBuffer)
         // not required by this code, but other solidity code assumes unused data is zero...
+
+
+            status := staticcall(not(0), 0x01, pointer, 0x80, pointer, 0x20)
+            if eq(status, 0) {
+                revert(0, returndatasize())
+            }
+            signer := mload(pointer)
+            // not required by this code, but other solidity code assumes unused data is zero...
+
             mstore(pointer, 0)
             mstore(add(pointer, 0x20), 0)
         }
@@ -110,4 +128,3 @@ library ECDSA {
         return recovered;
     }
 }
-
