@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: LGPL-3.0-only
-pragma solidity ^0.8.9;
+pragma solidity 0.8.9;
 
 import "../libraries/LaserWalletStorage.sol";
 
@@ -15,6 +15,8 @@ contract Migration is LaserWalletStorage {
     bytes32 private constant DOMAIN_SEPARATOR_TYPEHASH =
         0x035aff83d86937d35b32e04f0ddc6ff469290eef2f1b692d8a815c89404d4749;
     bytes4 private constant IS_LASER = bytes4(keccak256("I_AM_LASER"));
+
+
     address public immutable migrationSingleton;
     address public immutable safe120Singleton;
 
