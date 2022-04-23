@@ -1,44 +1,43 @@
-
-import { BigNumber } from "ethers"
-import { string } from "hardhat/internal/core/params/argumentTypes"
+import { BigNumber } from "ethers";
+import { string } from "hardhat/internal/core/params/argumentTypes";
 
 export interface TxMessage {
     to: string;
-    value: string | number | BigNumber;
+    value: number | BigNumber;
     data: string;
-    operation: number | string;
-    safeTxGas: number | string;
-    baseGas: number | string;
-    gasPrice: number | string;
-    gasToken: string;
-    refundReceiver: string;
-    nonce: string | number | BigNumber;
+    nonce: string | number;
 }
 
 export interface SafeTx {
     to: string;
-    value: BigNumber | number | string;
+    value: BigNumber | number;
     data: string;
-    operation: number;
-    safeTxGas: number | string;
-    baseGas: number | string;
-    gasPrice: number | string;
-    gasToken: string;
-    refundReceiver: string;
     signature: string;
-    specialOwner: string;
 }
 
-export interface UserOp  {
+export interface LaserOp {
     sender: string;
-    nonce: Number | string;
+    nonce: string | number;
+    callData: string;
+    callGas: string | number | BigNumber;
+    verificationGas: string | number | BigNumber;
+    preVerificationGas: string | number | BigNumber;
+    maxFeePerGas: string | number | BigNumber;
+    maxPriorityFeePerGas: string | number | BigNumber;
+    paymaster: string;
+    paymasterData: string;
+}
+
+export interface UserOp {
+    sender: string;
+    nonce: string | number;
     initCode: string;
     callData: string;
-    callGas: Number;
-    verificationGas: number | BigNumber;
-    preVerificationGas: number | BigNumber;
-    maxFeePerGas: number | BigNumber;
-    maxPriorityFeePerGas: number | BigNumber;
+    callGas: string | number | BigNumber;
+    verificationGas: string | number | BigNumber;
+    preVerificationGas: string | number | BigNumber;
+    maxFeePerGas: string | number | BigNumber;
+    maxPriorityFeePerGas: string | number | BigNumber;
     paymaster: string;
     paymasterData: string;
     signature: string;

@@ -1,31 +1,41 @@
 // SPDX-License-Identifier: LGPL-3.0-only
-pragma solidity ^0.8.9;
+pragma solidity 0.8.9;
 
+import "../interfaces/IERC165.sol";
 import "./LaserProxy.sol";
-import "./IProxyCreationCallback.sol";
 
 /**
  * @title Proxy Factory - Allows to create new proxy contact and execute a message call to the new proxy within one transaction.
- * @author Gnosis.
+ * @author Modified from Gnosis.
  */
 contract LaserProxyFactory {
+    address public immutable singleton;
+
     event ProxyCreation(LaserProxy proxy, address singleton);
 
     /**
-     * @dev Allows to create new proxy contact and execute a message call to the new proxy within one transaction.
-     * @param singleton Address of singleton contract.
-     * @param data Payload for message call sent to new proxy contract.
+     * @param _singleton Master copy of the proxy.
      */
-    function createProxy(address singleton, bytes memory data)
-        public
-        returns (LaserProxy proxy)
-    {
+    constructor(address _singleton) {
+        require(
+            // Laser Wallet contract: bytes4(keccak256("I_AM_LASER"))
+            IERC165(_singleton).supportsInterface(0xae029e0b),
+            "FACTORY: Incorrect singleton"
+        );
+        singleton = _singleton;
+    }
+
+    /**
+     * @dev Allows to create new proxy contact and execute a message call to the new proxy within one transaction.
+     * @param _data Payload for message call sent to new proxy contract.
+     */
+    function createProxy(bytes memory _data) public returns (LaserProxy proxy) {
         proxy = new LaserProxy(singleton);
-        if (data.length > 0)
+        if (_data.length > 0)
             // solhint-disable-next-line no-inline-assembly
             assembly {
                 if eq(
-                    call(gas(), proxy, 0, add(data, 0x20), mload(data), 0, 0),
+                    call(gas(), proxy, 0, add(_data, 0x20), mload(_data), 0, 0),
                     0
                 ) {
                     revert(0, 0)
@@ -51,22 +61,21 @@ contract LaserProxyFactory {
     /**
      * @dev Allows to create new proxy contact using CREATE2 but it doesn't run the initializer.
      * This method is only meant as an utility to be called from other methods.
-     * @param _singleton Address of singleton contract.
-     * @param initializer Payload for message call sent to new proxy contract.
-     * @param saltNonce Nonce that will be used to generate the salt to calculate the address of the new proxy contract.
+     * @param _initializer Payload for message call sent to new proxy contract.
+     * @param _saltNonce Nonce that will be used to generate the salt to calculate the address of the new proxy contract.
      */
-    function deployProxyWithNonce(
-        address _singleton,
-        bytes memory initializer,
-        uint256 saltNonce
-    ) internal returns (LaserProxy proxy) {
+    function deployProxyWithNonce(bytes memory _initializer, uint256 _saltNonce)
+        internal
+        returns (LaserProxy proxy)
+    {
         // If the initializer changes the proxy address should change too. Hashing the initializer data is cheaper than just concatinating it
         bytes32 salt = keccak256(
-            abi.encodePacked(keccak256(initializer), saltNonce)
+            abi.encodePacked(keccak256(_initializer), _saltNonce)
         );
+
         bytes memory deploymentData = abi.encodePacked(
             type(LaserProxy).creationCode,
-            uint256(uint160(_singleton))
+            uint256(uint160(singleton))
         );
         // solhint-disable-next-line no-inline-assembly
         assembly {
@@ -82,26 +91,24 @@ contract LaserProxyFactory {
 
     /**
      * @dev Allows to create new proxy contact and execute a message call to the new proxy within one transaction.
-     * @param _singleton Address of singleton contract.
-     * @param initializer Payload for message call sent to new proxy contract.
-     * @param saltNonce Nonce that will be used to generate the salt to calculate the address of the new proxy contract.
+     * @param _initializer Payload for message call sent to new proxy contract.
+     * @param _saltNonce Nonce that will be used to generate the salt to calculate the address of the new proxy contract.
      */
-    function createProxyWithNonce(
-        address _singleton,
-        bytes memory initializer,
-        uint256 saltNonce
-    ) public returns (LaserProxy proxy) {
-        proxy = deployProxyWithNonce(_singleton, initializer, saltNonce);
-        if (initializer.length > 0)
-            // solhint-disable-next-line no-inline-assembly
+    function createProxyWithNonce(bytes memory _initializer, uint256 _saltNonce)
+        public
+        returns (LaserProxy proxy)
+    {
+        proxy = deployProxyWithNonce(_initializer, _saltNonce);
+
+        if (_initializer.length > 0)
             assembly {
                 if eq(
                     call(
                         gas(),
                         proxy,
                         0,
-                        add(initializer, 0x20),
-                        mload(initializer),
+                        add(_initializer, 0x20),
+                        mload(_initializer),
                         0,
                         0
                     ),
@@ -110,6 +117,31 @@ contract LaserProxyFactory {
                     revert(0, 0)
                 }
             }
-        emit ProxyCreation(proxy, _singleton);
+        emit ProxyCreation(proxy, singleton);
+    }
+
+    /**
+     * @dev Precomputes the address of a proxy that is created through 'create2'.
+     */
+    function preComputeAddress(bytes memory _initializer, uint256 _saltNonce)
+        external
+        view
+        returns (address)
+    {
+        bytes memory creationCode = proxyCreationCode();
+        bytes memory data = abi.encodePacked(
+            creationCode,
+            uint256(uint160(singleton))
+        );
+
+        bytes32 salt = keccak256(
+            abi.encodePacked(keccak256(_initializer), _saltNonce)
+        );
+
+        bytes32 hash = keccak256(
+            abi.encodePacked(bytes1(0xff), address(this), salt, keccak256(data))
+        );
+
+        return address(uint160(uint256(hash)));
     }
 }

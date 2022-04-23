@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 // OpenZeppelin Contracts (last updated v4.5.0) (utils/cryptography/ECDSA.sol)
-
-pragma solidity ^0.8.0;
+pragma solidity 0.8.9;
 
 /**
  * @dev Elliptic Curve Digital Signature Algorithm (ECDSA) operations.
@@ -13,7 +12,6 @@ library ECDSA {
     enum RecoverError {
         NoError,
         InvalidSignature,
-        InvalidSignatureLength,
         InvalidSignatureS,
         InvalidSignatureV
     }
@@ -23,8 +21,6 @@ library ECDSA {
             return; // no error: do nothing
         } else if (error == RecoverError.InvalidSignature) {
             revert("ECDSA: invalid signature");
-        } else if (error == RecoverError.InvalidSignatureLength) {
-            revert("ECDSA: invalid signature length");
         } else if (error == RecoverError.InvalidSignatureS) {
             revert("ECDSA: invalid signature 's' value");
         } else if (error == RecoverError.InvalidSignatureV) {
@@ -53,7 +49,10 @@ library ECDSA {
         // with 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141 - s1 and flip v from 27 to 28 or
         // vice versa. If your library also generates signatures with 0/1 for v instead 27/28, add 27 to v to accept
         // these malleable signatures as well.
-        if (uint256(s) > 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0) {
+        if (
+            uint256(s) >
+            0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0
+        ) {
             return (address(0), RecoverError.InvalidSignatureS);
         }
         if (v != 27 && v != 28) {
@@ -63,6 +62,7 @@ library ECDSA {
         // If the signature is valid (and not malleable), return the signer address
         // We cannot use ecrecover in EIP4337 because of the GAS opcode.
         address signer = ecrecover2(hash, v, r, s);
+
         if (signer == address(0)) {
             return (address(0), RecoverError.InvalidSignature);
         }
@@ -73,8 +73,14 @@ library ECDSA {
     /**
      * @dev recover the signer without using ecrecover. This is necessary to be EIP4337 compliant.
      */
-    function ecrecover2(bytes32 hash, uint8 v, bytes32 r, bytes32 s) internal view returns (address signer) {
-        uint status;
+    function ecrecover2(
+        bytes32 hash,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) internal view returns (address signer) {
+        uint256 status;
+        // We execute a staticcall to address(0x1) to replicate "ecrecover" without using the gas opcode.
         assembly {
             let pointer := mload(0x40)
 
@@ -83,12 +89,22 @@ library ECDSA {
             mstore(add(pointer, 0x40), r)
             mstore(add(pointer, 0x60), s)
 
-
-            status := staticcall(not(0), 0x01, pointer, 0x80, pointer, 0x20)
-            signer := mload(pointer)
-        // not required by this code, but other solidity code assumes unused data is zero...
-            mstore(pointer, 0)
-            mstore(add(pointer, 0x20), 0)
+            // Use address zero as return buffer, just like Solidity's generated code for normal "ecrecover".
+            let returnBuffer := 0
+            mstore(returnBuffer, 0)
+            status := staticcall(
+                not(0), // Forwards gas.
+                0x01, // Target: Pre compiled ecrecover --> address(0x1).
+                pointer, // Start of the calldata.
+                0x80, // Calldata length.
+                returnBuffer, // Place to write the return data.
+                0x20 // Length of the return data.
+            )
+            if eq(status, 0) {
+                returndatacopy(0, 0, returndatasize())
+                revert(0, returndatasize())
+            }
+            signer := mload(returnBuffer) // Copy return data into signer.
         }
     }
 
@@ -107,4 +123,3 @@ library ECDSA {
         return recovered;
     }
 }
-

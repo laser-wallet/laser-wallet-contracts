@@ -8,9 +8,8 @@ import "hardhat/console.sol";
  * paymaster must stake some of the deposit.
  */
 contract StakeManager {
-
     /// minimum number of blocks to after 'unlock' before amount can be withdrawn.
-    uint32 immutable public unstakeDelaySec;
+    uint32 public immutable unstakeDelaySec;
 
     constructor(uint32 _unstakeDelaySec) {
         unstakeDelaySec = _unstakeDelaySec;
@@ -22,12 +21,8 @@ contract StakeManager {
         uint256 unstakeDelaySec
     );
 
-
     /// Emitted once a stake is scheduled for withdrawal
-    event DepositUnstaked(
-        address indexed account,
-        uint256 withdrawTime
-    );
+    event DepositUnstaked(address indexed account, uint256 withdrawTime);
 
     event Withdrawn(
         address indexed account,
@@ -47,11 +42,15 @@ contract StakeManager {
     /// maps accounts to their deposits
     mapping(address => DepositInfo) public deposits;
 
-    function getDepositInfo(address account) external view returns (DepositInfo memory info) {
+    function getDepositInfo(address account)
+        external
+        view
+        returns (DepositInfo memory info)
+    {
         return deposits[account];
     }
 
-    function balanceOf(address account) public view returns (uint) {
+    function balanceOf(address account) public view returns (uint256) {
         return deposits[account].amount;
     }
 
@@ -59,11 +58,15 @@ contract StakeManager {
         depositTo(msg.sender);
     }
 
-    function internalIncrementDeposit(address account, uint amount) internal {
+    function internalIncrementDeposit(address account, uint256 amount)
+        internal
+    {
         deposits[account].amount += uint112(amount);
     }
 
-    function internalDecrementDeposit(address account, uint amount) internal {
+    function internalDecrementDeposit(address account, uint256 amount)
+        internal
+    {
         deposits[account].amount -= uint112(amount);
     }
 
@@ -82,14 +85,17 @@ contract StakeManager {
      * can also set (or increase) the deposit with call.
      * @param _unstakeDelaySec the new lock time before the deposit can be withdrawn.
      */
-    function addStakeTo(address account, uint32 _unstakeDelaySec) public payable {
+    function addStakeTo(address account, uint32 _unstakeDelaySec)
+        public
+        payable
+    {
         DepositInfo storage info = deposits[account];
-        require(_unstakeDelaySec >= info.unstakeDelaySec, "cannot decrease unstake time");
+        require(
+            _unstakeDelaySec >= info.unstakeDelaySec,
+            "cannot decrease unstake time"
+        );
         uint112 amount = deposits[msg.sender].amount + uint112(msg.value);
-        deposits[account] = DepositInfo(
-            amount,
-            _unstakeDelaySec,
-            0);
+        deposits[account] = DepositInfo(amount, _unstakeDelaySec, 0);
         emit Deposited(account, amount, _unstakeDelaySec);
     }
 
@@ -113,11 +119,16 @@ contract StakeManager {
      * @param withdrawAddress the address to send withdrawn value.
      * @param withdrawAmount the amount to withdraw.
      */
-    function withdrawTo(address payable withdrawAddress, uint withdrawAmount) external {
+    function withdrawTo(address payable withdrawAddress, uint256 withdrawAmount)
+        external
+    {
         DepositInfo memory info = deposits[msg.sender];
         if (info.unstakeDelaySec != 0) {
             require(info.withdrawTime > 0, "must call unstakeDeposit() first");
-            require(info.withdrawTime <= block.timestamp, "Withdrawal is not due");
+            require(
+                info.withdrawTime <= block.timestamp,
+                "Withdrawal is not due"
+            );
         }
         require(withdrawAmount <= info.amount, "Withdraw amount too large");
 
@@ -125,7 +136,8 @@ contract StakeManager {
         deposits[msg.sender] = DepositInfo(
             info.amount - uint112(withdrawAmount),
             0,
-            0);
+            0
+        );
         withdrawAddress.transfer(withdrawAmount);
         emit Withdrawn(msg.sender, withdrawAddress, withdrawAmount);
     }
@@ -136,10 +148,15 @@ contract StakeManager {
      * @param requiredStake the minimum deposit
      * @param requiredDelaySec the minimum required stake time.
      */
-    function isStaked(address account, uint requiredStake, uint requiredDelaySec) public view returns (bool) {
+    function isStaked(
+        address account,
+        uint256 requiredStake,
+        uint256 requiredDelaySec
+    ) public view returns (bool) {
         DepositInfo memory info = deposits[account];
-        return info.amount >= requiredStake &&
-        info.unstakeDelaySec >= requiredDelaySec &&
-        info.withdrawTime == 0;
+        return
+            info.amount >= requiredStake &&
+            info.unstakeDelaySec >= requiredDelaySec &&
+            info.withdrawTime == 0;
     }
 }

@@ -1,21 +1,19 @@
 // SPDX-License-Identifier: LGPL-3.0-only
-pragma solidity ^0.8.9;
+pragma solidity 0.8.9;
 
 /**
- * @title LaserProxy - Generic proxy contract allows to execute all transactions applying the code of a master contract.
- * @author Gnosis.
+ * @title LaserProxy - Proxy contract that delegates all calls to a master copy.
  */
 contract LaserProxy {
-    // singleton always needs to be first declared variable, to ensure that it is at the same location in the contracts to which calls are delegated.
-    // To reduce deployment costs this variable is internal and needs to be retrieved via `getStorageAt`
+    // The singleton always needs to be at storage slot 0.
     address internal singleton;
 
     /**
-     * @dev Constructor function sets address of singleton contract.
      * @param _singleton Singleton address.
      */
     constructor(address _singleton) {
-        require(_singleton != address(0), "Invalid singleton address provided");
+        // The proxy creation is done through the LaserProxyFactory.
+        // The singleton is created at the factory's creation, so there is no need to do checks here.
         singleton = _singleton;
     }
 
@@ -23,31 +21,12 @@ contract LaserProxy {
      * @dev Fallback function forwards all transactions and returns all received return data.
      */
     fallback() external payable {
-        // solhint-disable-next-line no-inline-assembly
-        // we cannot use the gas() opcode, it is restricted in EIP4337.
-        uint256 _gas = type(uint).max;
+        // We cannot use the gas() opcode, it is restricted in EIP4337.
+        uint256 _gas = type(uint256).max;
+        address master = singleton;
         assembly {
-            let _singleton := and(
-                sload(0),
-                0xffffffffffffffffffffffffffffffffffffffff
-            )
-            // 0xa619486e == keccak("masterCopy()"). The value is right padded to 32-bytes with 0s
-            if eq(
-                calldataload(0),
-                0xa619486e00000000000000000000000000000000000000000000000000000000
-            ) {
-                mstore(0, _singleton)
-                return(0, 0x20)
-            }
             calldatacopy(0, 0, calldatasize())
-            let success := delegatecall(
-                _gas,
-                _singleton,
-                0,
-                calldatasize(),
-                0,
-                0
-            )
+            let success := delegatecall(_gas, master, 0, calldatasize(), 0, 0)
             returndatacopy(0, 0, returndatasize())
             if eq(success, 0) {
                 revert(0, returndatasize())

@@ -1,510 +1,798 @@
 import { expect } from "chai";
 import { ethers } from "hardhat";
-import { BigNumber, Contract, Signer, Wallet } from "ethers";
+import { Contract, Signer, Wallet } from "ethers";
 
-import { encodeFunctionData, addressZero, SENTINEL, signMessage, fakeSignature, paddedSignature} from "../utils";
-import { Domain, types, TxMessage, SafeTx } from "../types";
+import {
+    encodeFunctionData,
+    addressZero,
+    SENTINEL,
+    paddedSignature,
+    specialOwner,
+    owner1,
+    owner2,
+    owner3,
+    walletSetup,
+    walletSetup2,
+    safeTx,
+    execTx,
+    guardian,
+    contractSignature,
+    oneEth
+} from "../utils";
+import { SafeTx, types, TxMessage, Domain } from "../types";
+import { signTypedData, sign } from "../utils/sign";
 
-const { abi } = require("../../artifacts/contracts/LaserWallet.sol/LaserWallet.json");
-
+const {
+    abi
+} = require("../../artifacts/contracts/LaserWallet.sol/LaserWallet.json");
 
 describe("Signatures", () => {
-    let owner1: Wallet;
-    let owner2: Wallet;
     let relayer: Signer;
-    let owner1Address: string;
-    let owner2Address: string;
-    let relayerAddress: string;
-    let wallet: Contract;
-    let domain: Domain;
+    let randy: Signer;
+    let randyAddress: string;
     let txMessage: TxMessage;
-    let threshold: number;
-    let safeTx: SafeTx;
-    let singleton: Contract;
-    let _data: string;
+    let exampleData: string;
+    let _owner2: Signer;
+    let domain: Domain;
 
     beforeEach(async () => {
-        owner1 = new ethers.Wallet("0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80");
-        owner2 = new ethers.Wallet("0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d");
-        owner1Address = await owner1.getAddress();
-        owner2Address = await owner2.getAddress();
-        const owners = [owner1Address, owner2Address];
-        const specialOwners = [owner2Address];
-        threshold = 2;
         const accounts = await ethers.getSigners();
-        relayer = accounts[10];
-        relayerAddress = await relayer.getAddress();
-        const LaserWallet = await ethers.getContractFactory("LaserWallet");
-        // Deploying the base contract (implementation contract). To delegate all calls.
-        singleton = await LaserWallet.deploy();
-
-        // proxy factory
-        const ProxyFactory = await ethers.getContractFactory("LaserProxyFactory");
-        // Deploying the proxy factory to create proxies.
-        const proxyFactory = await ProxyFactory.deploy();
-        
-        const data = encodeFunctionData(abi, "setup", [owners, specialOwners, threshold, SENTINEL]);
-
-        const transaction = await proxyFactory.createProxyWithNonce(singleton.address, data, 1111);
-        const receipt = await transaction.wait();
-        const walletAddress = receipt.events[1].args.proxy;
-
-        wallet = new ethers.Contract(walletAddress, abi, relayer);
-
-        safeTx = {
-            to: wallet.address,
-            value: 0,
-            data: "0x",
-            operation: 0,
-            safeTxGas: 0,
-            baseGas: 0,
-            gasPrice: 0,
-            gasToken: addressZero,
-            refundReceiver: addressZero,
-            signature : "",
-            specialOwner : ""
-        }
-
+        relayer = accounts[19]; // account[0] is the special owner.
+        _owner2 = accounts[2];
+        randy = ethers.Wallet.createRandom();
+        randyAddress = await randy.getAddress();
         txMessage = {
-            to: wallet.address,
+            to: "",
             value: 0,
             data: "0x",
-            operation: 0,
-            safeTxGas: 0,
-            baseGas: 0,
-            gasPrice: 0,
-            gasToken: addressZero,
-            refundReceiver: addressZero,
-            nonce: await wallet.nonce()
-        }
-
+            nonce: 0
+        };
+        exampleData = encodeFunctionData(abi, "changeThreshold", [1]);
+        const { address, wallet } = await walletSetup(relayer);
         domain = {
             chainId: await wallet.getChainId(),
-            verifyingContract: wallet.address
-        }
-        // this is calldata to change the threshold. To use it as main example.
-        _data = encodeFunctionData(abi, "changeThreshold", [1]);
+            verifyingContract: ""
+        };
     });
 
     describe("Correct setup", () => {
-        it("should have correct threshold", async () => {
-            const _threshold = await wallet.getThreshold();
-            expect(_threshold).to.equal(threshold);
-        });
-        it("should have correct owners and special owners", async () => {
-            const _owners = await wallet.getOwners();
-            expect(_owners.length).to.equal(2);
-            expect(await wallet.isOwner(owner1Address)).to.equal(true);
-            expect(await wallet.isOwner(owner2Address)).to.equal(true);
-            expect(await wallet.isSpecialOwner(owner1Address)).to.equal(false);
-            expect(await wallet.isSpecialOwner(owner2Address)).to.equal(true);
-            expect(await wallet.isOwner(relayerAddress)).to.equal(false);
+        it("Init", async () => {
+            const { address, wallet } = await walletSetup(relayer);
+            await guardian(address);
         });
     });
 
     describe("Correct data", () => {
         it("should have correct domain separator", async () => {
+            const { address, wallet } = await walletSetup(relayer);
             const domainSeparator = ethers.utils._TypedDataEncoder.hashDomain({
-                verifyingContract: wallet.address, chainId: await wallet.getChainId()
+                verifyingContract: address,
+                chainId: await wallet.getChainId()
             });
             expect(domainSeparator).to.equal(await wallet.domainSeparator());
         });
-        it("should correctly calculate the transaction hash", async () => {
-            const transactionHash = ethers.utils._TypedDataEncoder.hash({
-                verifyingContract: wallet.address, chainId: await wallet.getChainId()
-            }, types, txMessage
+
+        it("should calculate correctly the transaction hash", async () => {
+            const { address, wallet } = await walletSetup(relayer);
+            txMessage.to = address;
+            const transactionHash = ethers.utils._TypedDataEncoder.hash(
+                {
+                    verifyingContract: wallet.address,
+                    chainId: await wallet.getChainId()
+                },
+                types,
+                txMessage
             );
             const _transactionHash = await wallet.getTransactionHash(
-                txMessage.to, txMessage.value, txMessage.data, txMessage.operation, 
-                txMessage.safeTxGas, txMessage.baseGas, txMessage.gasPrice, txMessage.gasToken, 
-                txMessage.refundReceiver, txMessage.nonce
+                txMessage.to,
+                txMessage.value,
+                txMessage.data,
+
+                txMessage.nonce
             );
             expect(transactionHash).to.equal(_transactionHash);
         });
+
         it("should have correct chain id", async () => {
+            const { address, wallet } = await walletSetup(relayer);
             const { chainId } = await ethers.provider.getNetwork();
             expect(chainId).to.equal(await wallet.getChainId());
         });
     });
 
-    describe("approveHash", () => {
-        it("should revert, only owners can approve a hash", async () => {
-            txMessage.data = _data;
-            const hash = await wallet.getTransactionHash(
-                txMessage.to, txMessage.value, txMessage.data, txMessage.operation, 
-                txMessage.safeTxGas, txMessage.baseGas, txMessage.gasPrice, txMessage.gasToken, 
-                txMessage.refundReceiver, txMessage.nonce
-            );
-            await expect(wallet.approveHash(hash)).to.be.revertedWith("Only owners can approve a hash");
-        });
-        it("should approve hash and emit event", async () => {
-            txMessage.data = _data;
-            const hash = await wallet.getTransactionHash(
-                txMessage.to, txMessage.value, txMessage.data, txMessage.operation, 
-                txMessage.safeTxGas, txMessage.baseGas, txMessage.gasPrice, txMessage.gasToken, 
-                txMessage.refundReceiver, txMessage.nonce
-            );
-            // owner1 is signer 0.
-            const accounts = await ethers.getSigners();
-            const _owner1 = accounts[0];
-            await expect(
-                wallet.connect(_owner1).approveHash(hash)
-            ).to.emit(wallet, "ApproveHash").withArgs(hash, owner1Address);
-        });
-    });
-
     describe("Special Owner", () => {
-        it("should exec a transaction by an approved hash", async () => {
+        it("should execute an EIP712 transaction", async () => {
+            const { address, wallet } = await walletSetup(relayer);
+            expect(await wallet.getThreshold()).to.equal(3);
+            domain.verifyingContract = address;
+            safeTx.to = address;
+            safeTx.value = 0;
+            safeTx.data = encodeFunctionData(abi, "changeThreshold", [2]);
+            safeTx.signature = await signTypedData(
+                specialOwner,
+                domain,
+                safeTx.to,
+                safeTx.value,
+                safeTx.data
+            );
+            await execTx(wallet, safeTx);
             expect(await wallet.getThreshold()).to.equal(2);
-            txMessage.data = _data;
+        });
+
+        it("should execute a transaction by signing the transaction hash", async () => {
+            const { address, wallet } = await walletSetup(relayer);
+            expect(await wallet.getThreshold()).to.equal(3);
+            safeTx.to = address;
+            safeTx.value = 0;
+            safeTx.data = encodeFunctionData(abi, "changeThreshold", [2]);
             const hash = await wallet.getTransactionHash(
-                txMessage.to, txMessage.value, txMessage.data, txMessage.operation, 
-                txMessage.safeTxGas, txMessage.baseGas, txMessage.gasPrice, txMessage.gasToken, 
-                txMessage.refundReceiver, txMessage.nonce
+                safeTx.to,
+                safeTx.value,
+                safeTx.data,
+                0
             );
-            // owner2 is signer 1.
-            const accounts = await ethers.getSigners();
-            const _owner2 = accounts[1];
+            safeTx.signature = await sign(specialOwner, hash);
+            await execTx(wallet, safeTx);
+            expect(await wallet.getThreshold()).to.equal(2);
+        });
+
+        it("should fail by signing an incorrect hash", async () => {
+            const { address, wallet } = await walletSetup(relayer);
+            safeTx.to = address;
+            safeTx.value = 0;
+            safeTx.data = encodeFunctionData(abi, "changeThreshold", [2]);
+            const hash = await wallet.getTransactionHash(
+                specialOwner.address, // incoherent value.
+                safeTx.value,
+                safeTx.data,
+                0
+            );
+            safeTx.signature = await sign(specialOwner, hash);
             await expect(
-                wallet.connect(_owner2).approveHash(hash)
-            ).to.emit(wallet, "ApproveHash").withArgs(hash, owner2Address);
-            safeTx.value = 0;
-            safeTx.data  = _data;
-            // v = 1. Hash already approved, relayer can submit transaction.
-            safeTx.signature = paddedSignature(owner2Address);
-            safeTx.specialOwner = owner2Address;
-            await wallet.execTransaction(
-                safeTx.to, safeTx.value, safeTx.data, safeTx.operation, safeTx.safeTxGas, safeTx.baseGas, 
-                safeTx.gasPrice, safeTx.gasToken, safeTx.refundReceiver, safeTx.signature, safeTx.specialOwner
+                execTx(wallet.connect(_owner2), safeTx)
+            ).to.be.revertedWith(
+                "LW: Incorrect signature length || Incorrect Special Owner signature"
             );
-            expect(await wallet.getThreshold()).to.equal(1);
         });
-        it("should exec a transaction by being msg.sender", async () => {
-            expect(await wallet.getThreshold()).to.equal(2);
-            safeTx.to = wallet.address;
+
+        it("should fail if 'v' is incorrect", async () => {
+            const { address, wallet } = await walletSetup(relayer);
+            safeTx.to = address;
             safeTx.value = 0;
-            safeTx.data  = _data;
-            // v = 1. There needs to be approved hashes or the special owner needs to be msg.sender
-            safeTx.signature = paddedSignature(owner2Address);
-            safeTx.specialOwner = owner2Address;
-            // owner2 is signer 1.
-            const accounts = await ethers.getSigners();
-            const _owner2 = accounts[1];
-            await wallet.connect(_owner2).execTransaction(
-                safeTx.to, safeTx.value, safeTx.data, safeTx.operation, safeTx.safeTxGas, safeTx.baseGas, 
-                safeTx.gasPrice, safeTx.gasToken, safeTx.refundReceiver, safeTx.signature, safeTx.specialOwner
-            );
-            expect(await wallet.getThreshold()).to.equal(1);
+            safeTx.data = encodeFunctionData(abi, "changeThreshold", [2]);
+            safeTx.signature = paddedSignature(specialOwner.address);
+            await expect(
+                wallet.execTransaction(
+                    safeTx.to,
+                    safeTx.value,
+                    safeTx.data,
+                    safeTx.signature
+                )
+            ).to.be.revertedWith("ECDSA: invalid signature 'v' value");
         });
-        it("should exec a transaction through eip712 signing", async () => {
-            expect(await wallet.getThreshold()).to.equal(2);
-            // creating the message to sign
-            txMessage.data = _data;
 
-            // signing the transaction eip712 compliant
-            const txSignature = await owner2._signTypedData(domain, types, txMessage);
-
-             // generating the transaction
-             safeTx.data = _data;
-             safeTx.signature = txSignature;
-             safeTx.specialOwner = owner2Address;
-
-              // executing the transaction
-            await expect(wallet.execTransaction(
-                safeTx.to, safeTx.value, safeTx.data, safeTx.operation, safeTx.safeTxGas, safeTx.baseGas, 
-                safeTx.gasPrice, safeTx.gasToken, safeTx.refundReceiver, safeTx.signature, safeTx.specialOwner
-            )).to.emit(wallet, "ExecutionSuccess");
-            expect(await wallet.getThreshold()).to.equal(1);
-        });
-        it("should fail by impersonating a special owner", async () => {
-            safeTx.data  = _data;
-            safeTx.signature = paddedSignature(owner2Address);
-            safeTx.specialOwner = owner2Address;
-            await expect(wallet.execTransaction(
-                safeTx.to, safeTx.value, safeTx.data, safeTx.operation, safeTx.safeTxGas, safeTx.baseGas, 
-                safeTx.gasPrice, safeTx.gasToken, safeTx.refundReceiver, safeTx.signature, safeTx.specialOwner
-            )).to.be.revertedWith("Incorrect owner and/or hash not approved");
-        });
-        it("should fail if a regular owner tries to exec a transaction with lower threshold", async () => {
-            safeTx.data  = _data;
-            safeTx.signature = paddedSignature(owner1Address);
-            safeTx.specialOwner = addressZero;
-            // owner1 is signer 0.
-            const accounts = await ethers.getSigners();
-            const _owner1 = accounts[0];
-            await expect(wallet.connect(_owner1).execTransaction(
-                safeTx.to, safeTx.value, safeTx.data, safeTx.operation, safeTx.safeTxGas, safeTx.baseGas, 
-                safeTx.gasPrice, safeTx.gasToken, safeTx.refundReceiver, safeTx.signature, safeTx.specialOwner
-            )).to.be.revertedWith("Incorrect signature length");
-        });
-        it("should fail if a regular owner tries to impersonate a special owner", async () => {
-            safeTx.data  = _data;
-            safeTx.signature = paddedSignature(owner1Address);
-            safeTx.specialOwner = owner2Address;
-            // owner1 is signer 0.
-            const accounts = await ethers.getSigners();
-            const _owner1 = accounts[0];
-            await expect(wallet.connect(_owner1).execTransaction(
-                safeTx.to, safeTx.value, safeTx.data, safeTx.operation, safeTx.safeTxGas, safeTx.baseGas, 
-                safeTx.gasPrice, safeTx.gasToken, safeTx.refundReceiver, safeTx.signature, safeTx.specialOwner
-            )).to.be.revertedWith("Incorrect special owner");
-        });
-        it("should fail by signing with incorrect domain address", async () => {
-            const _domain = {
-                chainId: await wallet.getChainId(),
-                verifyingContract: singleton.address
-            }
-            // creating the message to sign
-            txMessage.data = _data;
-            // If we sign a transaction with incorrect data, another "signer" will show.
-            const txSignature = await owner2._signTypedData(_domain, types, txMessage);
-
-            // generating the transaction
-            safeTx.data = _data;
-            safeTx.signature = txSignature;
-            safeTx.specialOwner = owner2Address;
-
-             // executing the transaction
-           await expect(wallet.execTransaction(
-               safeTx.to, safeTx.value, safeTx.data, safeTx.operation, safeTx.safeTxGas, safeTx.baseGas, 
-               safeTx.gasPrice, safeTx.gasToken, safeTx.refundReceiver, safeTx.signature, safeTx.specialOwner
-           )).to.be.revertedWith("Incorrect special owner");
-        });
         it("should fail by signing with incorrect chainId", async () => {
-            const _domain = {
-                chainId: 2,
-                verifyingContract: wallet.address
-            }
-            // creating the message to sign
-            txMessage.data = _data;
-
-            // If we sign a transaction with incorrect data, another "signer" will show.
-            const txSignature = await owner2._signTypedData(_domain, types, txMessage);
-
-            // generating the transaction
-            safeTx.data = _data;
-            safeTx.signature = txSignature;
-            safeTx.specialOwner = owner2Address;
-
-             // executing the transaction
-           await expect(wallet.execTransaction(
-               safeTx.to, safeTx.value, safeTx.data, safeTx.operation, safeTx.safeTxGas, safeTx.baseGas, 
-               safeTx.gasPrice, safeTx.gasToken, safeTx.refundReceiver, safeTx.signature, safeTx.specialOwner
-           )).to.be.revertedWith("Incorrect special owner");
+            const { address, wallet } = await walletSetup(relayer);
+            expect(await wallet.getThreshold()).to.equal(3);
+            domain.chainId = 12;
+            domain.verifyingContract = address;
+            safeTx.to = address;
+            safeTx.value = 0;
+            safeTx.data = encodeFunctionData(abi, "changeThreshold", [2]);
+            safeTx.signature = await signTypedData(
+                specialOwner,
+                domain,
+                safeTx.to,
+                safeTx.value,
+                safeTx.data
+            );
+            await expect(
+                wallet.execTransaction(
+                    safeTx.to,
+                    safeTx.value,
+                    safeTx.data,
+                    safeTx.signature
+                )
+            ).to.be.revertedWith(
+                "LW: Incorrect signature length || Incorrect Special Owner signature"
+            );
         });
-        it("should fail by signing with an incorrect nonce", async () => {
-            txMessage.data = _data;
-            txMessage.nonce = 1;
-            const txSignature = await owner2._signTypedData(domain, types, txMessage);
-            safeTx.data = _data;
-            safeTx.signature = txSignature;
-            safeTx.specialOwner = owner2Address;
-            await expect(wallet.execTransaction(
-                safeTx.to, safeTx.value, safeTx.data, safeTx.operation, safeTx.safeTxGas, safeTx.baseGas, 
-                safeTx.gasPrice, safeTx.gasToken, safeTx.refundReceiver, safeTx.signature, safeTx.specialOwner
-            )).to.be.revertedWith("Incorrect special owner");
+
+        it("should fail by signing with incorrect domain address", async () => {
+            const { address, wallet } = await walletSetup(relayer);
+            expect(await wallet.getThreshold()).to.equal(3);
+            domain.verifyingContract = specialOwner.address;
+            safeTx.to = address;
+            safeTx.value = 0;
+            safeTx.data = encodeFunctionData(abi, "changeThreshold", [2]);
+            safeTx.signature = await signTypedData(
+                specialOwner,
+                domain,
+                safeTx.to,
+                safeTx.value,
+                safeTx.data
+            );
+            await expect(
+                wallet.execTransaction(
+                    safeTx.to,
+                    safeTx.value,
+                    safeTx.data,
+                    safeTx.signature
+                )
+            ).to.be.revertedWith(
+                "LW: Incorrect signature length || Incorrect Special Owner signature"
+            );
         });
+
+        it("should fail by signing with incorrect nonce EIP712", async () => {
+            const { address, wallet } = await walletSetup(relayer);
+            expect(await wallet.getThreshold()).to.equal(3);
+            domain.verifyingContract = specialOwner.address;
+            safeTx.to = address;
+            safeTx.value = 0;
+            safeTx.data = encodeFunctionData(abi, "changeThreshold", [2]);
+            safeTx.signature = await signTypedData(
+                specialOwner,
+                domain,
+                safeTx.to,
+                safeTx.value,
+                safeTx.data,
+                1 //incorrect nonce
+            );
+            await expect(
+                wallet.execTransaction(
+                    safeTx.to,
+                    safeTx.value,
+                    safeTx.data,
+                    safeTx.signature
+                )
+            ).to.be.revertedWith(
+                "LW: Incorrect signature length || Incorrect Special Owner signature"
+            );
+        });
+
+        it("should fail by signing with incorrect nonce (regular hash)", async () => {
+            const { address, wallet } = await walletSetup(relayer);
+            expect(await wallet.getThreshold()).to.equal(3);
+            safeTx.to = address;
+            safeTx.value = 0;
+            safeTx.data = encodeFunctionData(abi, "changeThreshold", [2]);
+            const hash = await wallet.getTransactionHash(
+                safeTx.to,
+                safeTx.value,
+                safeTx.data,
+                1 // incorrect
+            );
+            safeTx.signature = await sign(specialOwner, hash);
+            await expect(
+                wallet.execTransaction(
+                    safeTx.to,
+                    safeTx.value,
+                    safeTx.data,
+                    safeTx.signature
+                )
+            ).to.be.revertedWith(
+                "LW: Incorrect signature length || Incorrect Special Owner signature"
+            );
+        });
+
         it("should fail if signature is too short", async () => {
-            const sig = "0x000000000000000000000070997970C51812dc3A010C7d01b50e0d17dc79C8000000000000000000000000000000000000000000000000000000000000000001";
-            safeTx.data  = _data;
-            safeTx.signature = sig;
-            safeTx.specialOwner = owner2Address;
-            await expect(wallet.execTransaction(
-                safeTx.to, safeTx.value, safeTx.data, safeTx.operation, safeTx.safeTxGas, safeTx.baseGas, 
-                safeTx.gasPrice, safeTx.gasToken, safeTx.refundReceiver, safeTx.signature, safeTx.specialOwner
-            )).to.be.revertedWith("Incorrect signature length");
+            const { address, wallet } = await walletSetup(relayer);
+            safeTx.to = address;
+            safeTx.value = 0;
+            safeTx.data = encodeFunctionData(abi, "changeThreshold", [2]);
+            safeTx.signature =
+                "0x000000000000000000000070997970C51812dc3A010C7d01b50e0d17dc79C8000000000000000000000000000000000000000000000000000000000000000001";
+            await expect(
+                wallet.execTransaction(
+                    safeTx.to,
+                    safeTx.value,
+                    safeTx.data,
+                    safeTx.signature
+                )
+            ).to.be.revertedWith("SD: Invalid signature length");
+        });
+
+        it("should fail by trying to replay a signature", async () => {
+            const { address, wallet } = await walletSetup(relayer);
+            safeTx.to = address;
+            safeTx.value = 0;
+            safeTx.data = encodeFunctionData(abi, "changeThreshold", [2]);
+            const hash = await wallet.getTransactionHash(
+                safeTx.to,
+                safeTx.value,
+                safeTx.data,
+                0
+            );
+            safeTx.signature = await sign(specialOwner, hash);
+
+            for (let i = 0; i < 10; i++) {
+                // The first transaction should work.
+                if (i === 0) {
+                    await execTx(wallet, safeTx);
+                    expect(await wallet.getThreshold()).to.equal(2);
+                } else {
+                    await expect(
+                        wallet.execTransaction(
+                            safeTx.to,
+                            safeTx.value,
+                            safeTx.data,
+                            safeTx.signature
+                        )
+                    ).to.be.revertedWith(
+                        "LW: Incorrect signature length || Incorrect Special Owner signature"
+                    );
+                }
+            }
+        });
+
+        it("nonce should be updated after transaction", async () => {
+            const { address, wallet } = await walletSetup(relayer);
+            expect(await wallet.nonce()).to.equal(0);
+            safeTx.to = address;
+            safeTx.value = 0;
+            safeTx.data = encodeFunctionData(abi, "changeThreshold", [2]);
+            const hash = await wallet.getTransactionHash(
+                safeTx.to,
+                safeTx.value,
+                safeTx.data,
+                0
+            );
+            safeTx.signature = await sign(specialOwner, hash);
+            await execTx(wallet, safeTx);
+            expect(await wallet.nonce()).to.equal(1);
+        });
+
+        it("nonce should not be updated on a failed transaction", async () => {
+            const { address, wallet } = await walletSetup(relayer);
+            expect(await wallet.nonce()).to.equal(0);
+            safeTx.to = address;
+            safeTx.value = 0;
+            safeTx.data = encodeFunctionData(abi, "changeThreshold", [2]);
+            const hash = await wallet.getTransactionHash(
+                safeTx.to,
+                safeTx.value,
+                safeTx.data,
+                1
+            );
+            safeTx.signature = await sign(specialOwner, hash);
+            await expect(execTx(wallet, safeTx)).to.be.reverted;
+            expect(await wallet.nonce()).to.equal(0);
         });
     });
 
     describe("Owners", () => {
-        it("should exec transactions by approved hashes", async () => {
-            expect(await wallet.getThreshold()).to.equal(2);
-            txMessage.data = _data;
+        it("single owner should execute an EIP712 transaction", async () => {
+            const { address, wallet } = await walletSetup(
+                relayer,
+                [owner1.address],
+                [],
+                1
+            );
+            const owners = await wallet.getOwners();
+            expect(owners.length).to.equal(1);
+            expect(owners[0]).to.equal(owner1.address);
+            domain.verifyingContract = address;
+            safeTx.to = address;
+            safeTx.value = 0;
+            safeTx.data = encodeFunctionData(abi, "addSpecialOwner", [
+                specialOwner.address
+            ]);
+            safeTx.signature = await signTypedData(
+                owner1,
+                domain,
+                safeTx.to,
+                safeTx.value,
+                safeTx.data
+            );
+            await execTx(wallet, safeTx);
+            expect((await wallet.getOwners()).length).to.equal(2);
+            const specialOwners = await wallet.getSpecialOwners();
+            expect(specialOwners.length).to.equal(1);
+            expect(await wallet.isSpecialOwner(specialOwner.address)).to.equal(
+                true
+            );
+        });
+
+        it("single owner should execute a transaction by signing the transaction hash", async () => {
+            const { address, wallet } = await walletSetup(
+                relayer,
+                [owner1.address],
+                [],
+                1
+            );
+            const owners = await wallet.getOwners();
+            expect(owners.length).to.equal(1);
+            expect(owners[0]).to.equal(owner1.address);
+            safeTx.to = address;
+            safeTx.value = 0;
+            safeTx.data = encodeFunctionData(abi, "addSpecialOwner", [
+                specialOwner.address
+            ]);
             const hash = await wallet.getTransactionHash(
-                txMessage.to, txMessage.value, txMessage.data, txMessage.operation, 
-                txMessage.safeTxGas, txMessage.baseGas, txMessage.gasPrice, txMessage.gasToken, 
-                txMessage.refundReceiver, txMessage.nonce
+                safeTx.to,
+                safeTx.value,
+                safeTx.data,
+                0
             );
-            const [ _owner1, _owner2] = await ethers.getSigners();
-            await expect(
-                wallet.connect(_owner1).approveHash(hash)
-            ).to.emit(wallet, "ApproveHash").withArgs(hash, owner1Address);
-            await expect(
-                wallet.connect(_owner2).approveHash(hash)
-            ).to.emit(wallet, "ApproveHash").withArgs(hash, owner2Address);
-            safeTx.data = _data;
-            //owner2 address < owner1 address.
-            safeTx.signature = paddedSignature(owner2Address) + (paddedSignature(owner1Address)).slice(2);
-            safeTx.specialOwner = addressZero;
-            await wallet.execTransaction(
-                safeTx.to, safeTx.value, safeTx.data, safeTx.operation, safeTx.safeTxGas, safeTx.baseGas, 
-                safeTx.gasPrice, safeTx.gasToken, safeTx.refundReceiver, safeTx.signature, safeTx.specialOwner
+            safeTx.signature = await sign(owner1, hash);
+            await execTx(wallet, safeTx);
+            expect((await wallet.getOwners()).length).to.equal(2);
+            const specialOwners = await wallet.getSpecialOwners();
+            expect(specialOwners.length).to.equal(1);
+            expect(await wallet.isSpecialOwner(specialOwner.address)).to.equal(
+                true
             );
+        });
+
+        it("two owners should execute an EIP712 transaction", async () => {
+            const { address, wallet } = await walletSetup(
+                relayer,
+                [owner1.address, owner2.address],
+                [],
+                2
+            );
+            expect(await wallet.getThreshold()).to.equal(2);
+            domain.verifyingContract = address;
+            safeTx.to = address;
+            safeTx.value = 0;
+            safeTx.data = encodeFunctionData(abi, "changeThreshold", [1]);
+            const sig1 = await signTypedData(
+                owner1,
+                domain,
+                safeTx.to,
+                safeTx.value,
+                safeTx.data
+            );
+            const sig2 = await signTypedData(
+                owner2,
+                domain,
+                safeTx.to,
+                safeTx.value,
+                safeTx.data
+            );
+            safeTx.signature = sig2 + sig1.slice(2);
+            await execTx(wallet, safeTx);
             expect(await wallet.getThreshold()).to.equal(1);
         });
-        it("last owner should exec a transaction by being msg.sender", async () => {
+
+        it("should fail by sending the signatures unordered", async () => {
+            const { address, wallet } = await walletSetup(
+                relayer,
+                [owner1.address, owner2.address],
+                [],
+                2
+            );
+            domain.verifyingContract = address;
+            safeTx.to = address;
+            safeTx.value = 0;
+            safeTx.data = encodeFunctionData(abi, "changeThreshold", [1]);
+            const sig1 = await signTypedData(
+                owner1,
+                domain,
+                safeTx.to,
+                safeTx.value,
+                safeTx.data
+            );
+            const sig2 = await signTypedData(
+                owner2,
+                domain,
+                safeTx.to,
+                safeTx.value,
+                safeTx.data
+            );
+            safeTx.signature = sig1 + sig2.slice(2);
+            await expect(
+                wallet.execTransaction(
+                    safeTx.to,
+                    safeTx.value,
+                    safeTx.data,
+                    safeTx.signature
+                )
+            ).to.be.revertedWith("LW: Invalid owner provided");
+        });
+
+        it("should fail by sending only one signature when the threshold is 2", async () => {
+            const { address, wallet } = await walletSetup(
+                relayer,
+                [owner1.address, owner2.address],
+                [],
+                2
+            );
             expect(await wallet.getThreshold()).to.equal(2);
-            txMessage.data = _data;
+            domain.verifyingContract = address;
+            safeTx.to = address;
+            safeTx.value = 0;
+            safeTx.data = encodeFunctionData(abi, "changeThreshold", [1]);
+            safeTx.signature = await signTypedData(
+                owner1,
+                domain,
+                safeTx.to,
+                safeTx.value,
+                safeTx.data
+            );
+            await expect(
+                wallet.execTransaction(
+                    safeTx.to,
+                    safeTx.value,
+                    safeTx.data,
+                    safeTx.signature
+                )
+            ).to.be.revertedWith(
+                "LW: Incorrect signature length || Incorrect Special Owner signature"
+            );
+        });
+
+        it("should fail by sending a signature not belonging to an owner when the threshold is 1", async () => {
+            const { address, wallet } = await walletSetup(
+                relayer,
+                [owner1.address, owner2.address],
+                [],
+                1
+            );
+            expect(await wallet.getThreshold()).to.equal(1);
+            const randy = ethers.Wallet.createRandom();
+            safeTx.to = address;
+            safeTx.value = 0;
+            safeTx.data = encodeFunctionData(abi, "addSpecialOwner", [
+                specialOwner.address
+            ]);
             const hash = await wallet.getTransactionHash(
-                txMessage.to, txMessage.value, txMessage.data, txMessage.operation, 
-                txMessage.safeTxGas, txMessage.baseGas, txMessage.gasPrice, txMessage.gasToken, 
-                txMessage.refundReceiver, txMessage.nonce
+                safeTx.to,
+                safeTx.value,
+                safeTx.data,
+                0
             );
-            const [ _owner1, _owner2] = await ethers.getSigners();
-            // first owner approving hash.
+            safeTx.signature = await sign(randy, hash);
             await expect(
-                wallet.connect(_owner1).approveHash(hash)
-            ).to.emit(wallet, "ApproveHash").withArgs(hash, owner1Address);
-            safeTx.data = _data;
-            //owner2 address < owner1 address.
-            safeTx.signature = paddedSignature(owner2Address) + (paddedSignature(owner1Address)).slice(2);
-            safeTx.specialOwner = addressZero;
-            // owner2 is msg.sender.
-            await wallet.connect(_owner2).execTransaction(
-                safeTx.to, safeTx.value, safeTx.data, safeTx.operation, safeTx.safeTxGas, safeTx.baseGas, 
-                safeTx.gasPrice, safeTx.gasToken, safeTx.refundReceiver, safeTx.signature, safeTx.specialOwner
-            );
-            expect(await wallet.getThreshold()).to.equal(1);
+                wallet.execTransaction(
+                    safeTx.to,
+                    safeTx.value,
+                    safeTx.data,
+                    safeTx.signature
+                )
+            ).to.be.revertedWith("LW: Invalid owner provided");
         });
-        it("should exec a transaction through eip712 signing", async () => {
-            expect(await wallet.getThreshold()).to.equal(2);
-            txMessage.data = _data;
-            const owner1Sig = await owner1._signTypedData(domain, types, txMessage);
-            const owner2Sig = await owner2._signTypedData(domain, types, txMessage);
-            const sigs = owner2Sig + owner1Sig.slice(2);
 
-            // generating the transaction
-            safeTx.data = _data;
-            safeTx.signature = sigs;
-            safeTx.specialOwner = addressZero;
+        it("3 owners should execute an EIP712 transaction", async () => {
+            const { address, wallet } = await walletSetup(relayer);
+            const randy = ethers.Wallet.createRandom();
+            await relayer.sendTransaction({ to: address, value: oneEth });
+            expect(await ethers.provider.getBalance(address)).to.equal(oneEth);
+            expect(await ethers.provider.getBalance(randy.address)).to.equal(0);
+            domain.verifyingContract = address;
+            safeTx.to = randy.address;
+            safeTx.value = oneEth;
+            safeTx.data = "0x";
 
-            await wallet.execTransaction(
-                safeTx.to, safeTx.value, safeTx.data, safeTx.operation, safeTx.safeTxGas, safeTx.baseGas, 
-                safeTx.gasPrice, safeTx.gasToken, safeTx.refundReceiver, safeTx.signature, safeTx.specialOwner
-            );
-            expect(await wallet.getThreshold()).to.equal(1);
-        });
-        it("should exec a transaction with different signatures schemes", async () => {
-            const [_owner1, _owner2] = await ethers.getSigners();
-            expect(await wallet.getThreshold()).to.equal(2);
-            txMessage.data = _data;
-            
-            // owner 1 signs throug eip712
-            const owner1Sig = await owner1._signTypedData(domain, types, txMessage);
-            // msg.sender signature
-            const owner2Sig = paddedSignature(owner2Address);
-            const sigs = owner2Sig + owner1Sig.slice(2);
-
-             // generating the transaction
-             safeTx.data = _data;
-             safeTx.signature = sigs;
-             safeTx.specialOwner = addressZero;
-
-             await wallet.connect(_owner2).execTransaction(
-                safeTx.to, safeTx.value, safeTx.data, safeTx.operation, safeTx.safeTxGas, safeTx.baseGas, 
-                safeTx.gasPrice, safeTx.gasToken, safeTx.refundReceiver, safeTx.signature, safeTx.specialOwner
+            const sig1 = await signTypedData(
+                owner1,
+                domain,
+                safeTx.to,
+                safeTx.value,
+                safeTx.data
             );
 
-            expect(await wallet.getThreshold()).to.equal(1);
+            const sig2 = await signTypedData(
+                owner2,
+                domain,
+                safeTx.to,
+                safeTx.value,
+                safeTx.data
+            );
 
-        });
-        it("should fail by impersonating owner2", async () => {
-            const [_owner1] = await ethers.getSigners();
-            txMessage.data = _data;
-            const owner1Sig = await _owner1._signTypedData(domain, types, txMessage);
-            const owner2Sig = paddedSignature(owner2Address);
-            const sigs = owner2Sig + owner1Sig.slice(2);
-            // generating the transaction
-            safeTx.data = _data;
-            safeTx.signature = sigs;
-            safeTx.specialOwner = addressZero;
-            await expect(wallet.connect(_owner1).execTransaction(
-                safeTx.to, safeTx.value, safeTx.data, safeTx.operation, safeTx.safeTxGas, safeTx.baseGas, 
-                safeTx.gasPrice, safeTx.gasToken, safeTx.refundReceiver, safeTx.signature, safeTx.specialOwner
-            )).to.be.revertedWith("Incorrect owner and/or hash not approved");
+            const sig3 = await signTypedData(
+                owner3,
+                domain,
+                safeTx.to,
+                safeTx.value,
+                safeTx.data
+            );
 
+            safeTx.signature = sig2 + sig1.slice(2) + sig3.slice(2);
+            await execTx(wallet, safeTx);
+            expect(await ethers.provider.getBalance(address)).to.equal(0);
+            expect(await ethers.provider.getBalance(randy.address)).to.equal(
+                oneEth
+            );
         });
-        it("should fail by repeating signature", async () => {
-            const [_owner1] = await ethers.getSigners();
-            txMessage.data = _data;
-            const sigs = paddedSignature(owner1Address) + (paddedSignature(owner1Address)).slice(2);
-            // generating the transaction
-            safeTx.data = _data;
-            safeTx.signature = sigs;
-            safeTx.specialOwner = addressZero;
-            await expect(wallet.connect(_owner1).execTransaction(
-                safeTx.to, safeTx.value, safeTx.data, safeTx.operation, safeTx.safeTxGas, safeTx.baseGas, 
-                safeTx.gasPrice, safeTx.gasToken, safeTx.refundReceiver, safeTx.signature, safeTx.specialOwner
-            )).to.be.revertedWith("Invalid owner provided");
-        });
-        it("should fail by repeating owner signature (different schemes)", async () => {
-            const [_owner1] = await ethers.getSigners();
-            // approving hash
-            txMessage.data = _data;
+
+        it("should fail if an owner repeats signatures multiple times", async () => {
+            const { address, wallet } = await walletSetup(relayer);
+            domain.verifyingContract = address;
+            safeTx.to = address;
+            safeTx.value = 0;
+            safeTx.data = encodeFunctionData(abi, "changeThreshold", [2]);
+
+            const sig1 = await signTypedData(
+                owner1,
+                domain,
+                safeTx.to,
+                safeTx.value,
+                safeTx.data
+            );
+
             const hash = await wallet.getTransactionHash(
-                txMessage.to, txMessage.value, txMessage.data, txMessage.operation, 
-                txMessage.safeTxGas, txMessage.baseGas, txMessage.gasPrice, txMessage.gasToken, 
-                txMessage.refundReceiver, txMessage.nonce
+                safeTx.to,
+                safeTx.value,
+                safeTx.data,
+                0
             );
+
+            const sig2 = await sign(owner1, hash);
+            const sigs = sig1 + sig2.slice(2) + sig2.slice(2);
             await expect(
-                wallet.connect(_owner1).approveHash(hash)
-            ).to.emit(wallet, "ApproveHash").withArgs(hash, owner1Address);
-            const sigs = paddedSignature(owner1Address) + (paddedSignature(owner1Address)).slice(2);
-            safeTx.data = _data;
-            safeTx.signature = sigs;
-            safeTx.specialOwner = addressZero;
-            await expect(wallet.connect(_owner1).execTransaction(
-                safeTx.to, safeTx.value, safeTx.data, safeTx.operation, safeTx.safeTxGas, safeTx.baseGas, 
-                safeTx.gasPrice, safeTx.gasToken, safeTx.refundReceiver, safeTx.signature, safeTx.specialOwner
-            )).to.be.revertedWith("Invalid owner provided");
+                wallet.execTransaction(
+                    safeTx.to,
+                    safeTx.value,
+                    safeTx.data,
+                    sigs
+                )
+            ).to.be.revertedWith("'LW: Invalid owner provided'");
         });
-        it("should fail to impersonate owner2 as special owner", async () => {
-            const [_owner1] = await ethers.getSigners();
-            const fakeSig = paddedSignature(owner2Address);
-            safeTx.data = _data;
-            safeTx.signature = fakeSig;
-            safeTx.specialOwner = owner2Address;
-            await expect(wallet.connect(_owner1).execTransaction(
-                safeTx.to, safeTx.value, safeTx.data, safeTx.operation, safeTx.safeTxGas, safeTx.baseGas, 
-                safeTx.gasPrice, safeTx.gasToken, safeTx.refundReceiver, safeTx.signature, safeTx.specialOwner
-            )).to.be.revertedWith("Incorrect owner and/or hash not approved");
+
+        it("should execute a transaction with different signatures schemes", async () => {
+            const { address, wallet } = await walletSetup(relayer);
+            expect(await wallet.getThreshold()).to.equal(3);
+            domain.verifyingContract = address;
+            safeTx.to = address;
+            safeTx.value = 0;
+            safeTx.data = encodeFunctionData(abi, "changeThreshold", [2]);
+
+            const sig1 = await signTypedData(
+                owner1,
+                domain,
+                safeTx.to,
+                safeTx.value,
+                safeTx.data
+            );
+
+            const sig2 = await signTypedData(
+                owner2,
+                domain,
+                safeTx.to,
+                safeTx.value,
+                safeTx.data
+            );
+
+            const hash = await wallet.getTransactionHash(
+                safeTx.to,
+                safeTx.value,
+                safeTx.data,
+                0
+            );
+            const sig3 = await sign(owner3, hash);
+            safeTx.signature = sig2 + sig1.slice(2) + sig3.slice(2);
+            execTx(wallet, safeTx);
+            expect(await wallet.getThreshold()).to.equal(3);
         });
-        it("should fail: signatures not in correct order", async () => {
-            const [_owner1] = await ethers.getSigners();
 
-            txMessage.data = _data;
-            
-            const owner2Sig = await owner2._signTypedData(domain, types, txMessage);
-            // msg.sender signature
-            const owner1Sig = paddedSignature(owner1Address);
-            const sigs = owner1Sig + owner2Sig.slice(2);
+        it("should fail by providing 2 signatures when the threshold is 3", async () => {
+            const { address, wallet } = await walletSetup(relayer);
+            domain.verifyingContract = address;
+            safeTx.to = address;
+            safeTx.value = 0;
+            safeTx.data = encodeFunctionData(abi, "changeThreshold", [2]);
 
-            // generating the transaction
-            safeTx.data = _data;
-            safeTx.signature = sigs;
-            safeTx.specialOwner = addressZero;
+            const sig1 = await signTypedData(
+                owner1,
+                domain,
+                safeTx.to,
+                safeTx.value,
+                safeTx.data
+            );
 
-            await expect(wallet.connect(_owner1).execTransaction(
-                safeTx.to, safeTx.value, safeTx.data, safeTx.operation, safeTx.safeTxGas, safeTx.baseGas, 
-                safeTx.gasPrice, safeTx.gasToken, safeTx.refundReceiver, safeTx.signature, safeTx.specialOwner
-            )).to.be.revertedWith("Invalid owner provided");
+            const sig2 = await signTypedData(
+                owner2,
+                domain,
+                safeTx.to,
+                safeTx.value,
+                safeTx.data
+            );
+
+            safeTx.signature = sig2 + sig1.slice(2);
+
+            await expect(
+                wallet.execTransaction(
+                    safeTx.to,
+                    safeTx.value,
+                    safeTx.data,
+                    safeTx.signature
+                )
+            ).to.be.revertedWith(
+                "LW: Incorrect signature length || Incorrect Special Owner signature"
+            );
         });
+
         it("should fail if owners sign different data", async () => {
-            txMessage.data = _data;
-            const owner1Sig = await owner1._signTypedData(domain, types, txMessage);
-            txMessage.data = encodeFunctionData(abi, "changeThreshold", [2]);
-            const owner2Sig = await owner2._signTypedData(domain, types, txMessage);
-            const sigs = owner2Sig + owner1Sig.slice(2);
+            const { address, wallet } = await walletSetup(
+                relayer,
+                [owner1.address, owner2.address],
+                [],
+                2
+            );
+            domain.verifyingContract = address;
+            safeTx.to = address;
+            safeTx.value = 0;
+            safeTx.data = encodeFunctionData(abi, "changeThreshold", [2]);
 
-            // generating the transaction
-            safeTx.data = _data;
-            safeTx.signature = sigs;
-            safeTx.specialOwner = addressZero;
+            const sig1 = await signTypedData(
+                owner1,
+                domain,
+                safeTx.to,
+                safeTx.value,
+                safeTx.data
+            );
+            domain.verifyingContract = ethers.Wallet.createRandom().address;
+            const sig2 = await signTypedData(
+                owner2,
+                domain,
+                safeTx.to,
+                safeTx.value,
+                safeTx.data
+            );
 
-            await expect(wallet.execTransaction(
-                safeTx.to, safeTx.value, safeTx.data, safeTx.operation, safeTx.safeTxGas, safeTx.baseGas, 
-                safeTx.gasPrice, safeTx.gasToken, safeTx.refundReceiver, safeTx.signature, safeTx.specialOwner
-            )).to.be.revertedWith("Invalid owner provided");
+            safeTx.signature = sig2 + sig1.slice(2);
+
+            await expect(
+                wallet.execTransaction(
+                    safeTx.to,
+                    safeTx.value,
+                    safeTx.data,
+                    safeTx.signature
+                )
+            ).to.be.revertedWith("LW: Invalid owner provided");
+        });
+    });
+
+    describe("EIP1271", () => {
+        it("should return correct magic value by signing hash", async () => {
+            const { address, wallet } = await walletSetup(
+                relayer,
+                [owner1.address],
+                [],
+                1
+            );
+            const magicValue = "0x1626ba7e";
+            const owners = await wallet.getOwners();
+            safeTx.to = address;
+            safeTx.value = 0;
+            safeTx.data = encodeFunctionData(abi, "addSpecialOwner", [
+                specialOwner.address
+            ]);
+            const hash = await wallet.getTransactionHash(
+                safeTx.to,
+                safeTx.value,
+                safeTx.data,
+                0
+            );
+            safeTx.signature = await sign(owner1, hash);
+            expect(
+                await wallet.isValidSignature(hash, safeTx.signature)
+            ).to.equal(magicValue);
+        });
+
+        it("should revert by providing an incorrect signature", async () => {
+            const { address, wallet } = await walletSetup(relayer);
+            const owners = await wallet.getOwners();
+            safeTx.to = address;
+            safeTx.value = 0;
+            safeTx.data = encodeFunctionData(abi, "addSpecialOwner", [
+                specialOwner.address
+            ]);
+            const hash = await wallet.getTransactionHash(
+                safeTx.to,
+                safeTx.value,
+                safeTx.data,
+                0
+            );
+            const randy = ethers.Wallet.createRandom();
+            safeTx.signature = await sign(randy, hash);
+            await expect(
+                wallet.isValidSignature(hash, safeTx.signature)
+            ).to.be.revertedWith(
+                "LW: Incorrect signature length || Incorrect Special Owner signature"
+            );
         });
     });
 });

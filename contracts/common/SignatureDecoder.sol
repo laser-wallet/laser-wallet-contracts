@@ -1,11 +1,15 @@
 // SPDX-License-Identifier: LGPL-3.0-only
-pragma solidity ^0.8.9;
+pragma solidity 0.8.9;
+
+import "../libraries/ECDSA.sol";
 
 /**
  * @title SignatureDecoder - Decodes signatures that a encoded as bytes.
  * @author Modified from Gnosis Safe.
  */
 contract SignatureDecoder {
+    using ECDSA for bytes32;
+
     /**
      * @dev divides bytes signature into `uint8 v, bytes32 r, bytes32 s`.
      * @notice Make sure to perform a bounds check for @param pos, to avoid out of bounds access on @param signatures.
@@ -35,6 +39,28 @@ contract SignatureDecoder {
             // 'byte' is not working due to the Solidity parser, so lets
             // use the second best option, 'and'
             v := and(mload(add(signatures, add(signaturePos, 0x41))), 0xff)
+        }
+    }
+
+    /**
+     * @dev Gets the first signer of a given signature (first 65 bytes).
+     */
+    function getFirstSigner(bytes32 _hash, bytes memory _signatures)
+        internal
+        view
+        returns (address signer)
+    {
+        uint8 v;
+        bytes32 r;
+        bytes32 s;
+        require(_signatures.length >= 65, "SD: Invalid signature length");
+        (v, r, s) = signatureSplit(_signatures, 0);
+        if (v > 30) {
+            signer = keccak256(
+                abi.encodePacked("\x19Ethereum Signed Message:\n32", _hash)
+            ).recover(v - 4, r, s);
+        } else {
+            signer = _hash.recover(v, r, s);
         }
     }
 }

@@ -3,26 +3,23 @@ import "@nomiclabs/hardhat-waffle";
 import "@nomiclabs/hardhat-etherscan";
 import "@nomiclabs/hardhat-ethers";
 import "@nomiclabs/hardhat-solhint";
-import "hardhat-gas-reporter";
-
 import { HardhatUserConfig } from "hardhat/types";
+import "hardhat-gas-reporter";
+import "hardhat-storage-layout";
+import "hardhat-deploy";
+import dotenv from "dotenv";
 
-require("hardhat-storage-layout");
 
-require("dotenv").config();
-
+dotenv.config();
 const INFURA_KEY = process.env.INFURA_KEY;
 const ALCHEMY_URL = process.env.ALCHEMY_URL;
 const DEPLOYER_PRIVATE_KEY = process.env.DEPLOYER_PRIVATE_KEY;
 
 
-if (DEPLOYER_PRIVATE_KEY?.length != 64) {
-  console.error(`Incorrect Private Key!, length should be 64 but it is: ${DEPLOYER_PRIVATE_KEY?.length}`);
-}
+const MAINNET_URL = `https://mainnet.infura.io/v3/${INFURA_KEY}`;
+const GOERLI_URL = `https://goerli.infura.io/v3/${INFURA_KEY}`;
+const RINKEBY_URL = `https://rinkeby.infura.io/v3/${INFURA_KEY}`;
 
-const mainnetUrl = `https://mainnet.infura.io/v3/${INFURA_KEY}`;
-const goerliUrl = `https://goerli.infura.io/v3/${INFURA_KEY}`;
-const rinkebyUrl = `https://rinkeby.infura.io/v3/${INFURA_KEY}`;
 
 const config: HardhatUserConfig = {
   solidity: {
@@ -32,6 +29,7 @@ const config: HardhatUserConfig = {
         enabled: true,
         runs: 800
       },
+      evmVersion: "london",
       outputSelection: {
         "*": {
           "*": ["storageLayout"],
@@ -41,29 +39,35 @@ const config: HardhatUserConfig = {
   },
   networks: {
     mainnet: {
-      url: mainnetUrl,
+      url: MAINNET_URL,
       accounts: [`0x${DEPLOYER_PRIVATE_KEY}`]
     },
     goerli: {
-      url: goerliUrl,
+      url: GOERLI_URL,
       accounts: [`0x${DEPLOYER_PRIVATE_KEY}`]
-    },
-    rinkeby: {
-      url: rinkebyUrl,
-      accounts: [`0x${DEPLOYER_PRIVATE_KEY}`]
-    },
     }, 
-    etherscan: {
-      apiKey: ALCHEMY_URL,
-      // hardhat: {
-      //   forking: {
-      //     url: ALCHEMY_URL
-      //   }
-      // }
+    optimism: {
+      url: "https://mainnet.optimism.io", 
+      accounts : [`0x${DEPLOYER_PRIVATE_KEY}`]
     },
-    mocha: {
-      timeout: 80000
+    "optimism-kovan": {
+      url: "https://kovan.optimism.io", 
+      accounts: [`0x${DEPLOYER_PRIVATE_KEY}`]
+    },
+    hardhat: {
+      forking: {
+        enabled: process.env.FORKING === "true",
+        url: `${ALCHEMY_URL}`
+      }
+    }
+  }, 
+  gasReporter: {
+    enabled: process.env.REPORT_GAS === "true"
   }
 };
 
 export default config;
+
+
+
+
