@@ -206,7 +206,7 @@ describe("Account Abstraction", () => {
             await expect(
                 EntryPoint.handleOp(userOp, address)
             ).to.be.revertedWith(
-                "ECDSA: invalid signature 'v' value"
+                "LW: Incorrect signature length || Incorrect Special Owner signature"
             );
         });
 

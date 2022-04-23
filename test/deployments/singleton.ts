@@ -43,7 +43,7 @@ describe("Laser Wallet (singleton)", () => {
     });
 
     it("should not have owners", async () => {
-      await expect(singleton.getOwners()).to.be.revertedWith("0x32");
+      await expect(singleton.getOwners()).to.be.reverted;
     });
 
     it(`should be version ${VERSION}`, async () => {

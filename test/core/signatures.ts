@@ -168,7 +168,7 @@ describe("Signatures", () => {
                     safeTx.data,
                     safeTx.signature
                 )
-            ).to.be.revertedWith("ECDSA: invalid signature 'v' value");
+            ).to.be.revertedWith("LW: Incorrect signature length || Incorrect Special Owner signature");
         });
 
         it("should fail by signing with incorrect chainId", async () => {

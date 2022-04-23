@@ -451,17 +451,5 @@ describe("OwnerManager", () => {
       expect(specialOwners.length).to.equal(1);
       expect(specialOwners[0]).to.equal(specialOwner.address);
     });
-
-    it("should revert if there are no special owners", async () => {
-      const { address, wallet } = await walletSetup(
-        relayer,
-        [owner1.address],
-        [],
-        1
-      );
-      await expect(wallet.getSpecialOwners()).to.be.revertedWith(
-        "'OM: There are no special owners'"
-      );
-    });
   });
 });

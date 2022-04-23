@@ -10,14 +10,12 @@ import "./external/SafeMath.sol";
 import "./handlers/Handler.sol";
 import "./interfaces/IEIP4337.sol";
 import "./interfaces/IERC1271Wallet.sol";
-import "./libraries/ECDSA.sol";
 import "./modules/Guard.sol";
 
 /**
  * @title LaserWallet - Multi - Signature smart contract wallet for the EVM.
  * @author Rodrigo Herrera I. Modified from Gnosis Safe: https://github.com/gnosis/safe-contracts/tree/main/contracts
  */
-// TODO: Eliminate the ecrecover2 (no longer needed in the eip).
 contract LaserWallet is
     EtherPaymentFallback,
     Singleton,
@@ -30,7 +28,6 @@ contract LaserWallet is
     Handler
 {
     using SafeMath for uint256;
-    using ECDSA for bytes32;
     using UserOperationLib for UserOperation;
 
     string public constant VERSION = "1.0.0";
@@ -266,15 +263,20 @@ contract LaserWallet is
             if (v > 30) {
                 // If v > 30 then default va (27,28) has been adjusted for eth_sign flow
                 // To support eth_sign and similar we adjust v and hash the messageHash with the Ethereum message prefix before applying ecrecover
-                currentOwner = keccak256(
-                    abi.encodePacked(
-                        "\x19Ethereum Signed Message:\n32",
-                        _dataHash
-                    )
-                ).recover(v - 4, r, s);
+                currentOwner = ecrecover(
+                    keccak256(
+                        abi.encodePacked(
+                            "\x19Ethereum Signed Message:\n32",
+                            _dataHash
+                        )
+                    ),
+                    v - 4,
+                    r,
+                    s
+                );
             } else {
                 // We cannot use ecrecover due to the prohibition of the GAS opcode in the EIP4337.
-                currentOwner = _dataHash.recover(v, r, s);
+                currentOwner = ecrecover(_dataHash, v, r, s);
             }
             require(
                 currentOwner > lastOwner &&

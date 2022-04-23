@@ -225,7 +225,6 @@ contract OwnerManager is SelfAuthorized {
      * @return Array of special owners.
      */
     function getSpecialOwners() public view returns (address[] memory) {
-        require(specialOwnerCount > 0, "OM: There are no special owners");
         address[] memory array = new address[](specialOwnerCount);
         uint256 index = 0;
         address currentOwner = owners[SENTINEL_OWNERS];
