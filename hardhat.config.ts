@@ -4,20 +4,21 @@ import "@nomiclabs/hardhat-etherscan";
 import "@nomiclabs/hardhat-ethers";
 import "@nomiclabs/hardhat-solhint";
 import "hardhat-gas-reporter";
+import dotenv from "dotenv";
 
 import { HardhatUserConfig } from "hardhat/types";
 
 require("hardhat-storage-layout");
 
-require("dotenv").config();
-
+dotenv.config();
 const INFURA_KEY = process.env.INFURA_KEY;
 const ALCHEMY_URL = process.env.ALCHEMY_URL;
 const DEPLOYER_PRIVATE_KEY = process.env.DEPLOYER_PRIVATE_KEY;
 
-
 if (DEPLOYER_PRIVATE_KEY?.length != 64) {
-  console.error(`Incorrect Private Key!, length should be 64 but it is: ${DEPLOYER_PRIVATE_KEY?.length}`);
+  console.error(
+    `Incorrect Private Key!, length should be 64 but it is: ${DEPLOYER_PRIVATE_KEY?.length}`
+  );
 }
 
 const mainnetUrl = `https://mainnet.infura.io/v3/${INFURA_KEY}`;
@@ -34,10 +35,10 @@ const config: HardhatUserConfig = {
       },
       outputSelection: {
         "*": {
-          "*": ["storageLayout"],
-        },
-      },
-    },
+          "*": ["storageLayout"]
+        }
+      }
+    }
   },
   networks: {
     mainnet: {
@@ -48,21 +49,19 @@ const config: HardhatUserConfig = {
       url: goerliUrl,
       accounts: [`0x${DEPLOYER_PRIVATE_KEY}`]
     },
-    rinkeby: {
-      url: rinkebyUrl,
+    optimism: {
+      url: "https://mainnet.optimism.io",
       accounts: [`0x${DEPLOYER_PRIVATE_KEY}`]
     },
-    }, 
-    etherscan: {
-      apiKey: ALCHEMY_URL,
-      // hardhat: {
-      //   forking: {
-      //     url: ALCHEMY_URL
-      //   }
-      // }
-    },
-    mocha: {
-      timeout: 80000
+    hardhat: {
+      forking: {
+        enabled: process.env.FORKING === "true",
+        url: `${ALCHEMY_URL}`
+      }
+    }
+  },
+  gasReporter: {
+    enabled: process.env.REPORT_GAS === "true"
   }
 };
 

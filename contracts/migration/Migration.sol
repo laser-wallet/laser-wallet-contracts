@@ -16,7 +16,6 @@ contract Migration is LaserWalletStorage {
         0x035aff83d86937d35b32e04f0ddc6ff469290eef2f1b692d8a815c89404d4749;
     bytes4 private constant IS_LASER = bytes4(keccak256("I_AM_LASER"));
 
-
     address public immutable migrationSingleton;
     address public immutable safe120Singleton;
 

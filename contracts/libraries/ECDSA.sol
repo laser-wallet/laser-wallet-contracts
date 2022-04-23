@@ -10,13 +10,13 @@ pragma solidity 0.8.9;
  * of the private keys of a given address.
  */
 library ECDSA {
-     enum RecoverError {
+    enum RecoverError {
         NoError,
         InvalidSignature,
         InvalidSignatureS,
         InvalidSignatureV
     }
-    
+
     function _throwError(RecoverError error) private pure {
         if (error == RecoverError.NoError) {
             return; // no error: do nothing
@@ -89,11 +89,17 @@ library ECDSA {
             mstore(add(pointer, 0x40), r)
             mstore(add(pointer, 0x60), s)
 
-            
             // Use address zero as return buffer, just like Solidity's generated code for normal "ecrecover".
             let returnBuffer := 0
             mstore(returnBuffer, 0)
-            status := staticcall(not(0), 0x01, pointer, 0x80, returnBuffer, 0x20)
+            status := staticcall(
+                not(0),
+                0x01,
+                pointer,
+                0x80,
+                returnBuffer,
+                0x20
+            )
             signer := mload(returnBuffer)
 
             status := staticcall(not(0), 0x01, pointer, 0x80, pointer, 0x20)
@@ -101,7 +107,6 @@ library ECDSA {
                 revert(0, returndatasize())
             }
             signer := mload(pointer)
-
         }
     }
 

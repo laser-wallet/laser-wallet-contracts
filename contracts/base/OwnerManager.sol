@@ -3,9 +3,6 @@ pragma solidity 0.8.9;
 
 import "../common/SelfAuthorized.sol";
 
-
-
-
 /**
  * @title OwnerManager - Manages a set of owners and a threshold to perform actions.
  * @author Modified from Gnosis Safe.
@@ -78,7 +75,10 @@ contract OwnerManager is SelfAuthorized {
                     owners[specialOwner] != address(0),
                     "Invalid special owner: not an owner"
                 );
-                require(specialOwners[specialOwner] == false, "Duplicate special owner");
+                require(
+                    specialOwners[specialOwner] == false,
+                    "Duplicate special owner"
+                );
                 specialOwners[specialOwner] = true;
             }
         }
@@ -100,7 +100,7 @@ contract OwnerManager is SelfAuthorized {
         require(
             owner != address(0) &&
                 owner != SENTINEL_OWNERS &&
-                owner != address(this), 
+                owner != address(this),
             "Invalid owner"
         );
         // No duplicate owners allowed.
@@ -137,7 +137,7 @@ contract OwnerManager is SelfAuthorized {
         require(owners[prevOwner] == owner, "Invalid prevOwner");
         owners[prevOwner] = owners[owner];
         owners[owner] = address(0);
-        if(specialOwners[owner]) {
+        if (specialOwners[owner]) {
             removeSpecialOwner(owner);
         }
         ownerCount--;
@@ -154,7 +154,10 @@ contract OwnerManager is SelfAuthorized {
      */
     function changeThreshold(uint256 _threshold) public authorized {
         // Validate that threshold is smaller than number of owners.
-        require(_threshold <= ownerCount, "Threshold cannot exceed owner count");
+        require(
+            _threshold <= ownerCount,
+            "Threshold cannot exceed owner count"
+        );
         // There has to be at least one Safe owner.
         require(_threshold >= 1, "Threshold cannot be 0");
         threshold = _threshold;
@@ -168,14 +171,17 @@ contract OwnerManager is SelfAuthorized {
      * @param _specialOwner address to be upgraded as a special owner.
      */
     function addSpecialOwner(address _specialOwner) public authorized {
-        require(specialOwners[_specialOwner] == false, "Duplicate special owner");
+        require(
+            specialOwners[_specialOwner] == false,
+            "Duplicate special owner"
+        );
         require(_specialOwner != SENTINEL_OWNERS, "Invalid special owner");
         if (owners[_specialOwner] == address(0)) {
             addOwnerWithThreshold(_specialOwner, threshold);
         }
         // We don't need to do additional checks, they were already done because _specialOwner is now an owner.
         specialOwners[_specialOwner] = true;
-        specialOwnerCount ++;
+        specialOwnerCount++;
         emit AddedSpecialOwner(_specialOwner);
     }
 
@@ -186,13 +192,10 @@ contract OwnerManager is SelfAuthorized {
      * This transaction will only remove the owner as a special owner, but it will remain an owner.
      * @param _specialOwner Special owner address to be removed.
      */
-    function removeSpecialOwner(address _specialOwner)
-        public
-        authorized
-    {
+    function removeSpecialOwner(address _specialOwner) public authorized {
         require(specialOwners[_specialOwner], "Not a special owner");
         specialOwners[_specialOwner] = false;
-        specialOwnerCount --;
+        specialOwnerCount--;
         emit RemovedSpecialOwner(_specialOwner);
     }
 
@@ -229,7 +232,7 @@ contract OwnerManager is SelfAuthorized {
         uint256 index = 0;
         address currentOwner = owners[SENTINEL_OWNERS];
         while (currentOwner != SENTINEL_OWNERS) {
-            if(specialOwners[currentOwner]) {
+            if (specialOwners[currentOwner]) {
                 array[index] = currentOwner;
                 index++;
             }
@@ -255,5 +258,4 @@ contract OwnerManager is SelfAuthorized {
         }
         return array;
     }
-
 }
