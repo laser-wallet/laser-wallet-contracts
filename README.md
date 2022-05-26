@@ -8,12 +8,12 @@
 
 ### 2. EIP-4337: Account abstraction, allows for the smart contract wallet to behave like a regular EOA, while providing all the benefits of a smart contract. 
 
-### 3. Extra security features: It allows the user to use multi-sig or spending limit.
+### 3. Extra security features: It allows the user to use multi-sig or spending limit.
 
 
 ## Building in the Open 
 
-### Laser is commited to build in the open. Apart from the code being open sourced, all the everyday commits will be on public repos.
+### Laser is commited to build in the open. Apart from the code being open sourced, all the everyday commits will be on public repos.
 
 ## License
 
