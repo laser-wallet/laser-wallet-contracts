@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 pragma solidity 0.8.9;
 
-import "../common/SelfAuthorized.sol";
+import "./SelfAuthorized.sol";
 import "../interfaces/IERC165.sol";
 
 /**
@@ -13,6 +13,9 @@ contract Singleton is SelfAuthorized {
     // It should also always be ensured that the address is stored alone (uses a full word)
     address public singleton;
 
+    error Singleton__IncorrectSingletonAddress();
+    error Singleton__DoesNotSupportInterface();
+
     event SingletonChanged(address _singleton);
 
     /**
@@ -20,18 +23,19 @@ contract Singleton is SelfAuthorized {
      * @param _singleton New implementation address.
      */
     function upgradeSingleton(address _singleton) public authorized {
-        require(
-            _singleton != address(this) &&
-                IERC165(_singleton).supportsInterface(0xae029e0b), //bytes4(keccak256("I_AM_LASER"))
-            "SINGLETON: Incorrect singleton"
-        );
+        if (_singleton == address(this)) {
+            revert Singleton__IncorrectSingletonAddress();
+        }
+        if (!IERC165(_singleton).supportsInterface(0xae029e0b)) {
+            //bytes4(keccak256("I_AM_LASER")))
+            revert Singleton__DoesNotSupportInterface();
+        }
 
         assembly {
             // So we are more explicit.
             // Singleton should always bet at storage slot 0.
             sstore(0, _singleton)
         }
-
         emit SingletonChanged(_singleton);
     }
 }

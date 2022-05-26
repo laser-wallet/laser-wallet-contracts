@@ -6,11 +6,11 @@ pragma solidity 0.8.9;
  * @author Modified from Gnosis Safe.
  */
 contract SelfAuthorized {
+    error SelfAuthorized__OnlyCallableFromWallet();
     modifier authorized() {
-        require(
-            msg.sender == address(this),
-            "SA: Only callable from the wallet"
-        );
+        if (msg.sender != address(this)) {
+            revert SelfAuthorized__OnlyCallableFromWallet();
+        }
         _;
     }
 }

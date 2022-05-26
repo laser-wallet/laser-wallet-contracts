@@ -8,7 +8,6 @@ import "../interfaces/IERC165.sol";
 
 /**
  * @title TokenHandler - Supports token callbacks.
- * @author Rodrigo Herrera I.
  */
 contract Handler is
     IERC1155TokenReceiver,

@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 pragma solidity 0.8.9;
 
+import "hardhat/console.sol";
+
 /**
  * @title LaserProxy - Proxy contract that delegates all calls to a master copy.
  */
@@ -21,12 +23,10 @@ contract LaserProxy {
      * @dev Fallback function forwards all transactions and returns all received return data.
      */
     fallback() external payable {
-        // We cannot use the gas() opcode, it is restricted in EIP4337.
-        uint256 _gas = type(uint256).max;
         address master = singleton;
         assembly {
             calldatacopy(0, 0, calldatasize())
-            let success := delegatecall(_gas, master, 0, calldatasize(), 0, 0)
+            let success := delegatecall(gas(), master, 0, calldatasize(), 0, 0)
             returndatacopy(0, 0, returndatasize())
             if eq(success, 0) {
                 revert(0, returndatasize())

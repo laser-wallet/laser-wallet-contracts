@@ -1,7 +1,6 @@
 import { BigNumber, ethers, Signer, Wallet,Contract } from "ethers";
-import { Domain, types, userOpTypes } from "../types/EIP712";
+import { Domain, types } from "../types/EIP712";
 import { TxMessage, LaserOp, userOp, SafeTx } from "../types";
-import { addressZero } from "./constants";
 
 export async function signTypedData(
     signer: Wallet,
@@ -51,7 +50,7 @@ export async function entryPointTypedSig(
         preVerificationGas: 100000,
         maxFeePerGas: 1100000000,
         maxPriorityFeePerGas: 1100000000,
-        paymaster: addressZero,
+        paymaster: "0x",
         paymasterData: "0x"
     };
 

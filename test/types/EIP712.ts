@@ -1,13 +1,5 @@
-export const types = {
-    SafeTx: [
-        { type: "address", name: "to" },
-        { type: "uint256", name: "value" },
-        { type: "bytes", name: "data" },
-        { type: "uint256", name: "nonce" }
-    ]
-};
 
-export const userOpTypes = {
+export const types = {
     LaserOp: [
         { type: "address", name: "sender" },
         { type: "uint256", name: "nonce" },
@@ -21,6 +13,7 @@ export const userOpTypes = {
         { type: "bytes", name: "paymasterData" }
     ]
 };
+
 export type Domain = {
     chainId: number | string;
     verifyingContract: string;

@@ -1,5 +1,5 @@
-import { addressZero } from "../utils";
 import { LaserOp, UserOp } from "./types";
+import {ethers} from "ethers";
 
 const mock = 1000000000;
 
@@ -12,7 +12,7 @@ export const laserOp: LaserOp = {
     preVerificationGas: mock,
     maxFeePerGas: mock,
     maxPriorityFeePerGas: mock,
-    paymaster: addressZero,
+    paymaster: "",
     paymasterData: "0x"
 };
 
@@ -26,7 +26,7 @@ export const userOp: UserOp = {
     preVerificationGas: mock,
     maxFeePerGas: mock,
     maxPriorityFeePerGas: mock,
-    paymaster: addressZero,
+    paymaster: ethers.constants.AddressZero,
     paymasterData: "0x",
-    signature: ""
+    signature: "0x"
 };

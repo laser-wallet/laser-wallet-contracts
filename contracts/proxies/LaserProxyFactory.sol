@@ -6,22 +6,20 @@ import "./LaserProxy.sol";
 
 /**
  * @title Proxy Factory - Allows to create new proxy contact and execute a message call to the new proxy within one transaction.
- * @author Modified from Gnosis.
  */
 contract LaserProxyFactory {
     address public immutable singleton;
 
+    error LaserProxyFactory__InvalidSingleton();
     event ProxyCreation(LaserProxy proxy, address singleton);
 
     /**
      * @param _singleton Master copy of the proxy.
      */
     constructor(address _singleton) {
-        require(
-            // Laser Wallet contract: bytes4(keccak256("I_AM_LASER"))
-            IERC165(_singleton).supportsInterface(0xae029e0b),
-            "FACTORY: Incorrect singleton"
-        );
+        // Laser Wallet contract: bytes4(keccak256("I_AM_LASER"))
+        if (!IERC165(_singleton).supportsInterface(0xae029e0b))
+            revert LaserProxyFactory__InvalidSingleton();
         singleton = _singleton;
     }
 
