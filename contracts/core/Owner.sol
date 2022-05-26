@@ -3,6 +3,10 @@ pragma solidity 0.8.9;
 
 import "./SelfAuthorized.sol";
 
+/**
+ * @title Owner
+ * @notice Handles the owner address.
+ */
 contract Owner is SelfAuthorized {
     address public owner;
 
@@ -26,6 +30,7 @@ contract Owner is SelfAuthorized {
     }
 
     function initOwner(address newOwner) internal {
+        // If wallet is not address0, the wallet was already initialized...
         if (owner != address(0)) revert Owner__WalletInitialized();
         if (
             newOwner == owner ||
