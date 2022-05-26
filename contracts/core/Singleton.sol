@@ -23,13 +23,12 @@ contract Singleton is SelfAuthorized {
      * @param _singleton New implementation address.
      */
     function upgradeSingleton(address _singleton) public authorized {
-        if (_singleton == address(this)) {
+        if (_singleton == address(this))
             revert Singleton__IncorrectSingletonAddress();
-        }
-        if (!IERC165(_singleton).supportsInterface(0xae029e0b)) {
+
+        if (!IERC165(_singleton).supportsInterface(0xae029e0b))
             //bytes4(keccak256("I_AM_LASER")))
             revert Singleton__DoesNotSupportInterface();
-        }
 
         assembly {
             // So we are more explicit.
