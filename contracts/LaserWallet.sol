@@ -12,7 +12,7 @@ import "./utils/Utils.sol";
 import "hardhat/console.sol";
 
 /**
- * @title LaserWallet - EVM based smart contract wallet. Implementes "sovereign social recovery" mechanism.
+ * @title LaserWallet - EVM based smart contract wallet. Implementes "sovereign social recovery" mechanism and account abstraction.
  * @author Rodrigo Herrera I.
  */
 contract LaserWallet is
@@ -110,6 +110,8 @@ contract LaserWallet is
      */
     function payPrefund(uint256 _requiredPrefund) internal {
         if (_requiredPrefund > 0) {
+            // If we need to pay back to EntryPoint ...
+            // The only possible caller of this function is EntryPoint.
             (bool success, ) = payable(msg.sender).call{
                 value: _requiredPrefund,
                 gas: type(uint256).max
@@ -131,10 +133,10 @@ contract LaserWallet is
         uint256 _requiredPrefund
     ) external override onlyFromEntryPoint {
         // Increase the nonce to avoid drained funds from multiple pay prefunds.
-        if (++nonce != userOp.nonce) {
-            revert LW__InvalidNonce();
-        }
-        // We need to check that the requested prefund is in bounds.
+        if (++nonce != userOp.nonce) revert LW__InvalidNonce();
+
+        // We need to check that the requested prefund is in bounds... Really ???
+        //TODO check this thing, not sure ...
         require(
             _requiredPrefund <= userOp.requiredPreFund(),
             "LW-AA: incorrect required prefund"
