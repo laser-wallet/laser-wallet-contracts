@@ -11,6 +11,10 @@
 ### 3. Extra security features: It allows the user to use multi-sig or spending limit.
 
 
+## Building in the Open 
+
+### Laser is commited to build in the open. Apart from the code being open sourced, all the everyday commits will be on public repos.
+
 ## License
 
 #### All the contracts are under the LGPL-3.0 License.
