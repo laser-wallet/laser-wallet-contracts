@@ -1,40 +1,15 @@
 # Laser Wallet Contracts
 
-### Laser Wallet is a flexible multi-signature smart contract wallet that runs on Ethereum. The code was originally modified from Gnosis Safe.
+## Laser Wallet is a non-custodial smart contract based mobile wallet for Ethereum mainnet and rollups. 
 
-### Laser Wallet also implements the EIP-4337 which allows the smart contract wallet to pay for transaction fees itself.
+### It implements the following features:
 
-## USAGE:
+### 1. Sovereign Social Recovery: A new recovery mechanism that abstracts away the seed phrase while remaining non-custodial. 
 
-### 1. Installation
+### 2. EIP-4337: Account abstraction, allows for the smart contract wallet to behave like a regular EOA, while providing all the benefits of a smart contract. 
 
-```
-npm install
-```
+### 3. Extra security features: It allows the user to use multi-sig or spending limit.
 
-### 2. Create a dotenv file and add the corresponding keys
-
-```
-touch .env
-```
-
-### 3. Compile the contracts
-
-```
-npx hardhat compile
-```
-
-### 3. Run all tests
-
-```
-npx hardhat test
-```
-
-### \* For single file test cases run:
-
-```
-npx hardhat test test/<path of the file to test>
-```
 
 ## License
 
@@ -42,4 +17,4 @@ npx hardhat test test/<path of the file to test>
 
 ## Open-source software
 
-#### We are strong believers of open-source software. 100% of Laser wallet's code is open sourced.
+#### We are strong believers of open-source software. 100% of Laser's code is open sourced.
