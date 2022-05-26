@@ -4,8 +4,6 @@ pragma solidity 0.8.9;
 import "../core/SelfAuthorized.sol";
 import "../core/Owner.sol";
 
-import "hardhat/console.sol";
-
 contract Guardians is SelfAuthorized, Owner {
     struct Confirmations {
         uint256 approvals;
@@ -92,21 +90,26 @@ contract Guardians is SelfAuthorized, Owner {
             revert Guardian__ZeroGuardians();
         }
         address currentGuardian = pointer;
-        for (uint256 i = 0; i < _guardians.length; i++) {
-            address guardian = _guardians[i];
-            if (
-                guardian == owner ||
-                guardian == address(0) ||
-                guardian == pointer ||
-                guardian == address(this) ||
-                guardian == currentGuardian ||
-                guardians[guardian] != address(0)
-            ) {
-                revert Guardian__InvalidGuardianAddress();
+        uint256 guardiansLength = _guardians.length;
+        // Won't overflow...
+        unchecked {
+            for (uint256 i = 0; i < guardiansLength; ++i) {
+                address guardian = _guardians[i];
+                if (
+                    guardian == owner ||
+                    guardian == address(0) ||
+                    guardian == pointer ||
+                    guardian == address(this) ||
+                    guardian == currentGuardian ||
+                    guardians[guardian] != address(0)
+                ) {
+                    revert Guardian__InvalidGuardianAddress();
+                }
+                guardians[currentGuardian] = guardian;
+                currentGuardian = guardian;
             }
-            guardians[currentGuardian] = guardian;
-            currentGuardian = guardian;
         }
+
         guardians[currentGuardian] = pointer;
         guardianCount = _guardians.length;
     }
@@ -170,19 +173,6 @@ contract Guardians is SelfAuthorized, Owner {
             index++;
         }
         return guardiansArray;
-    }
-
-    function necessaryApprovals() public view returns (uint256) {
-        // ceil(g / 2).
-        // except the case of 2 / 2.
-        if (guardianCount % 2 == 0) {
-            if (guardianCount == 2) {
-                return 2;
-            } else {
-                return guardianCount / 2;
-            }
-        }
-        return guardianCount / 2 + 1;
     }
 
     function isGuardianCall(bytes4 funcSig) public pure returns (bool) {
