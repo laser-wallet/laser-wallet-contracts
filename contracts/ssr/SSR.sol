@@ -48,7 +48,7 @@ contract SSR is SelfAuthorized, Owner {
      * @notice When the wallet is locked, we assume that the owner lost access
      * to his/her device.
      */
-    function lock() external isNotLocked {
+    function lock() external authorized isNotLocked {
         isLocked = true;
         emit WalletLocked();
     }
