@@ -37,7 +37,7 @@ interface ILaserWallet {
     /**
      * @dev Executes an AA transaction. The msg.sender needs to be the EntryPoint address.
      * The signatures are verified in validateUserOp().
-     * @param to Destination address of Safe transaction.
+     * @ param to Destination address of Safe transaction.
      * @param value Ether value of Safe transaction.
      * @param callData Data payload of Safe transaction.
      * @notice only the EntryPoint or owner can call this function.

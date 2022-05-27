@@ -5,18 +5,14 @@ import "../core/SelfAuthorized.sol";
 import "../core/Owner.sol";
 
 /**
- * TODO
- * 1. Lock the wallet (only guardian)
- * 2. Un
- */
-/**
  * @title SSR - Sovereign Social Recovery
  * @notice New wallet recovery mechanism.
  * @author Rodrigo Herrera I.
  */
 contract SSR is SelfAuthorized, Owner {
+    ///@dev recovery owner should always be at storage slot 3.
     address public recoveryOwner;
-
+    ///@dev pointer address for the nested mapping.
     address internal constant pointer = address(0x1);
 
     uint256 public guardianCount;
@@ -38,33 +34,57 @@ contract SSR is SelfAuthorized, Owner {
     event WalletUnlocked();
     event NewGuardian(address newGuardian);
     event GuardianRemoved(address removedGuardian);
-    event SuccesfullRecovery(address newOwner);
+    event SuccesfullRecovery(address owner, address recoveryOwner);
+    event NewRecoveryOwner(address recoveryOwner);
 
     modifier isNotLocked() {
-        if (isLocked) {
-            revert Guardian__WalletIsLocked();
-        }
-        _;
-    }
-
-    modifier onlySelfOrGuardians() {
-        require(
-            guardians[msg.sender] != address(0) || msg.sender == address(this),
-            "Guardian__InvalidCaller"
-        );
+        if (isLocked) revert Guardian__WalletIsLocked();
 
         _;
     }
 
-    function recover(address newOwner) public authorized {
+    /**
+     * @dev Locks the wallet. Can only be called by a guardian.
+     * @notice When the wallet is locked, we assume that the owner lost access
+     * to his/her device.
+     */
+    function lock() external isNotLocked {
+        isLocked = true;
+        emit WalletLocked();
+    }
+
+    /**
+     * @dev Unlocks the wallet. Can only be called by a guardian + the owner.
+     */
+    function unlock() external authorized {
         if (!isLocked) revert Guardian__WalletIsNotLocked();
-        if (
-            newOwner == owner ||
-            newOwner.code.length != 0 ||
-            newOwner == address(0)
-        ) revert Owner__InvalidOwnerAddress();
+        isLocked = false;
+    }
+
+    /**
+     * @dev Can only recover with the signature of 1 guardian and the recovery owner.
+     * @param newOwner The new owner address. This is generated instantaneously.
+     * @param newRecoveryOwner The new recovery owner address. This is generated instantaneously.
+     * @notice The newOwner and newRecoveryOwner key pair should be generated from the mobile device.
+     * The main reason of this is to restart the generation process in case an attacker has the current recoveryOwner.
+     */
+    function recover(address newOwner, address newRecoveryOwner)
+        external
+        authorized
+    {
+        if (!isLocked) revert Guardian__WalletIsNotLocked();
         owner = newOwner;
-        emit SuccesfullRecovery(newOwner);
+        recoveryOwner = newRecoveryOwner;
+        emit SuccesfullRecovery(owner, recoveryOwner);
+    }
+
+    /**
+     * @dev Changes the recoveryOwner address. Only the owner can call this function.
+     * @param newRecoveryOwner The new recovery owner address.
+     */
+    function changeRecoveryOwner(address newRecoveryOwner) external authorized {
+        recoveryOwner = newRecoveryOwner;
+        emit NewRecoveryOwner(recoveryOwner);
     }
 
     /**
@@ -72,10 +92,11 @@ contract SSR is SelfAuthorized, Owner {
      * @param _guardians Array of guardians.
      */
     function initGuardians(address[] calldata _guardians) internal {
-        if (_guardians.length < 1) revert Guardian__ZeroGuardians();
+        uint256 guardiansLength = _guardians.length;
+        if (guardiansLength < 1) revert Guardian__ZeroGuardians();
 
         address currentGuardian = pointer;
-        uint256 guardiansLength = _guardians.length;
+
         for (uint256 i = 0; i < guardiansLength; ) {
             address guardian = _guardians[i];
             if (
@@ -102,7 +123,7 @@ contract SSR is SelfAuthorized, Owner {
      * @dev Adds a guardian to the wallet.
      * @param newGuardian Address of the new guardian.
      */
-    function addGuardian(address newGuardian) public authorized {
+    function addGuardian(address newGuardian) external authorized {
         if (
             newGuardian == address(0) ||
             newGuardian == pointer ||
@@ -113,32 +134,28 @@ contract SSR is SelfAuthorized, Owner {
         guardians[newGuardian] = guardians[pointer];
         guardians[pointer] = newGuardian;
         unchecked {
-            // Wont' overflow...
-            guardianCount++;
-            //++guardianCount ?? check gas..
+            // Won't overflow...
+            ++guardianCount;
         }
-
         emit NewGuardian(newGuardian);
     }
 
     function removeGuardian(address prevGuardian, address guardianToRemove)
-        public
+        external
         authorized
     {
-        if (guardianToRemove == address(0) || guardianToRemove == pointer) {
+        if (guardianToRemove == address(0) || guardianToRemove == pointer)
             revert Guardian__InvalidGuardianAddress();
-        }
-        if (guardians[prevGuardian] != guardianToRemove) {
+
+        if (guardians[prevGuardian] != guardianToRemove)
             revert Guardian__IncorrectPreviousGuardian();
-        }
+
         guardians[prevGuardian] = guardians[guardianToRemove];
         guardians[guardianToRemove] = address(0);
         unchecked {
-            // Can't underflow...
-            // --guardianCount ?? check gas
-            guardianCount--;
+            //Won't underflow...
+            --guardianCount;
         }
-
         emit GuardianRemoved(guardianToRemove);
     }
 
@@ -170,9 +187,8 @@ contract SSR is SelfAuthorized, Owner {
 
     function isGuardianCall(bytes4 funcSig) public pure returns (bool) {
         return
-            // funcSig == this.lock.selector ||
-            // funcSig == this.unlock.selector ||
-            // funcSig == this.recover.selector;
-            true;
+            funcSig == this.lock.selector ||
+            funcSig == this.unlock.selector ||
+            funcSig == this.recover.selector;
     }
 }

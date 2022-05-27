@@ -2,6 +2,7 @@ import { expect } from "chai";
 import { ethers } from "hardhat";
 import { Contract, Signer } from "ethers";
 
+import { Address } from "../types";
 import { encodeFunctionData } from "../utils";
 
 const mock = ethers.Wallet.createRandom().address;
@@ -10,10 +11,10 @@ const {
 } = require("../../artifacts/contracts/LaserWallet.sol/LaserWallet.json");
 
 describe("Proxy Factory", () => {
-  let owner: string;
-  let guardians: string[];
-  let entryPoint: string;
-  let singleton: string;
+  let owner: Address;
+  let guardians: Address[];
+  let entryPoint: Address;
+  let singleton: Address;
   let _factory: any;
   let initializer: string;
 
@@ -103,9 +104,9 @@ describe("Proxy Factory", () => {
       // if it does, it reverts.
       const factory = await _factory.deploy(singleton);
       const salt = 1;
-      await factory.createProxyWithNonce(initializer, salt); //First deployment.
+      await factory.createProxyWithNonce(initializer, salt); // first deployment.
       await expect(factory.createProxyWithNonce(initializer, salt)).to.be
-        .reverted; //Second deployment.
+        .reverted; // second deployment.
     });
   });
 });

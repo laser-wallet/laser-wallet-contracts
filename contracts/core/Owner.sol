@@ -8,6 +8,7 @@ import "./SelfAuthorized.sol";
  * @notice Handles the owner address.
  */
 contract Owner is SelfAuthorized {
+    ///@dev owner should always bet at storage slot 2.
     address public owner;
 
     event OwnerChanged(address newOwner);
@@ -25,7 +26,12 @@ contract Owner is SelfAuthorized {
             newOwner.code.length != 0 ||
             newOwner == address(0)
         ) revert Owner__InvalidOwnerAddress();
-        owner = newOwner;
+
+        assembly {
+            // So we are more explicit.
+            // owner should always bet at storage slot 2.
+            sstore(2, newOwner)
+        }
         emit OwnerChanged(newOwner);
     }
 
@@ -37,6 +43,11 @@ contract Owner is SelfAuthorized {
             newOwner.code.length != 0 ||
             newOwner == address(0)
         ) revert Owner__InvalidOwnerAddress();
-        owner = newOwner;
+
+        assembly {
+            // So we are more explicit.
+            // owner should always bet at storage slot 2.
+            sstore(2, newOwner)
+        }
     }
 }

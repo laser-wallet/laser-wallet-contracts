@@ -9,7 +9,7 @@ import {
   sign,
   signTypedData
 } from "../utils";
-import { userOp, types } from "../types";
+import { userOp, types, Address } from "../types";
 
 const mock = ethers.Wallet.createRandom().address;
 const {
@@ -18,9 +18,9 @@ const {
 
 describe("Setup", () => {
   let owner: Signer;
-  let ownerAddress: string;
-  let guardians: string[];
-  let entryPoint: string;
+  let ownerAddress: Address;
+  let guardians: Address[];
+  let entryPoint: Address;
   let _guardian1: Signer;
   let _guardian2: Signer;
 
@@ -62,7 +62,6 @@ describe("Setup", () => {
         chainId: (await wallet.getChainId()).toString(),
         verifyingContract: address
       };
-      console.log(userOp);
       const txMessage = {
         sender: userOp.sender,
         nonce: userOp.nonce,
@@ -80,9 +79,6 @@ describe("Setup", () => {
       const sig2 = await randomSigner._signTypedData(domain, types, txMessage);
       const signer = await wallet.returnSigner(hash, sig1);
       const signer2 = await wallet.returnSigner(hash, sig2);
-      console.log("signer: ", signer);
-      console.log("signer2: ", signer2);
-      console.log(randomSigner.address);
     });
 
     it("should correctly split 'v', 'r', and 's' ", async () => {
@@ -107,7 +103,9 @@ describe("Setup", () => {
       );
       const hash = ethers.utils.keccak256("0x1234");
       const sig = (await sign(owner, hash)).replace(/1f$/, "03");
-      await expect(wallet.returnSigner(hash, sig)).to.be.reverted;
+      await expect(wallet.returnSigner(hash, sig)).to.be.revertedWith(
+        "Utils__InvalidSignature()"
+      );
     });
   });
 });

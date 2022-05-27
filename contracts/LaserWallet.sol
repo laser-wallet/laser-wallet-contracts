@@ -15,8 +15,8 @@ import "./ssr/SSR.sol";
  */
 contract LaserWallet is
     Singleton,
-    SSR,
     AccountAbstraction,
+    SSR,
     Handler,
     Utils,
     ILaserWallet
@@ -46,6 +46,7 @@ contract LaserWallet is
     error LW__InvalidCallData();
     error LW__WalletLocked();
     error LW__MultiCallFailed();
+    error LW__InvalidCall();
 
     event Setup(address owner, address[] guardians, address entryPoint);
     event ApproveHash(bytes32 indexed approvedHash, address indexed owner);

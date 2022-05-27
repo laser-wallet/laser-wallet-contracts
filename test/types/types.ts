@@ -1,6 +1,8 @@
 import { BigNumber } from "ethers";
 import { string } from "hardhat/internal/core/params/argumentTypes";
 
+export type Address = string;
+
 export interface TxMessage {
     to: string;
     value: number | BigNumber;
