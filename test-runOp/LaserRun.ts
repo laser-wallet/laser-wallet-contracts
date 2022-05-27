@@ -16,10 +16,10 @@ const {
 
 // Runs an account abstraction op.
 class LaserRun {
-    provider: Provider;
-    signer: Wallet;
-    aaUrl: string;
-    proxy: Contract;
+    readonly provider: Provider;
+    readonly signer: Wallet;
+    readonly aaUrl: string;
+    readonly proxy: Contract;
 
     /**
      *
