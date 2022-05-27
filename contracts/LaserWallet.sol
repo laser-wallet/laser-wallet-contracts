@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: LGPL-3.0-only
-pragma solidity 0.8.9;
+pragma solidity 0.8.14;
 
 import "./core/AccountAbstraction.sol";
 import "./core/Singleton.sol";
@@ -8,8 +8,6 @@ import "./interfaces/ILaserWallet.sol";
 import "./libraries/UserOperation.sol";
 import "./utils/Utils.sol";
 import "./ssr/SSR.sol";
-
-import "hardhat/console.sol";
 
 /**
  * @title LaserWallet - EVM based smart contract wallet. Implementes "sovereign social recovery" mechanism and account abstraction.
@@ -141,6 +139,7 @@ contract LaserWallet is
             _requiredPrefund <= userOp.requiredPreFund(),
             "LW-AA: incorrect required prefund"
         );
+
         bytes memory userOpData = encodeUserOperationData(
             userOp.sender,
             userOp.nonce,

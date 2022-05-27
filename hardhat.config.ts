@@ -23,7 +23,7 @@ const RINKEBY_URL = `https://rinkeby.infura.io/v3/${INFURA_KEY}`;
 
 const config: HardhatUserConfig = {
   solidity: {
-    version: "0.8.9",
+    version: "0.8.14",
     settings: {
       optimizer: {
         enabled: true,
