@@ -2,7 +2,6 @@
 pragma solidity 0.8.9;
 
 import "../core/SelfAuthorized.sol";
-import "../interfaces/IEIP4337.sol";
 import "../interfaces/IStakeManager.sol";
 
 /**

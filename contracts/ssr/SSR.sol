@@ -7,6 +7,7 @@ import "../core/Owner.sol";
 /**
  * TODO
  * 1. Lock the wallet (only guardian)
+ * 2. Un
  */
 /**
  * @title SSR - Sovereign Social Recovery
@@ -53,35 +54,6 @@ contract SSR is SelfAuthorized, Owner {
         );
 
         _;
-    }
-
-    /**
-     * @dev Locks the wallet. It can only be done by a guardian.
-     */
-    function lock() public isNotLocked onlySelfOrGuardians {
-        isLocked = true;
-        emit WalletLocked();
-    }
-
-    /**
-     * @dev Unlocks the wallet after the threshold is reached.
-     */
-    function unlock() public authorized {
-        if (!isLocked) {
-            revert Guardian__WalletIsNotLocked();
-        }
-        uint256 threshold = necessaryApprovals();
-        Confirmations storage conf = confirmations[Recovery.Unlock];
-        if (conf.signed[msg.sender]) {
-            revert Guardian__AlreadyApproved();
-        }
-        conf.approvals++;
-        conf.signed[msg.sender] = true;
-        if (threshold == conf.approvals) {
-            isLocked = false;
-            delete confirmations[Recovery.Unlock];
-            emit WalletUnlocked();
-        }
     }
 
     function recover(address newOwner) public authorized {
@@ -198,8 +170,9 @@ contract SSR is SelfAuthorized, Owner {
 
     function isGuardianCall(bytes4 funcSig) public pure returns (bool) {
         return
-            funcSig == this.lock.selector ||
-            funcSig == this.unlock.selector ||
-            funcSig == this.recover.selector;
+            // funcSig == this.lock.selector ||
+            // funcSig == this.unlock.selector ||
+            // funcSig == this.recover.selector;
+            true;
     }
 }

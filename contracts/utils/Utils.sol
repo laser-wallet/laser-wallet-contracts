@@ -59,5 +59,29 @@ contract Utils {
         }
     }
 
-    
+    function execute(
+        address to,
+        uint256 value,
+        bytes memory data,
+        uint256 txGas
+    ) internal {
+        bool success;
+        assembly {
+            // We execute a call to the target address ...
+            success := call(
+                txGas,
+                to,
+                value,
+                add(data, 0x20),
+                mload(data),
+                0,
+                0
+            )
+
+            // If it fails, we revert the call ...
+            if eq(success, 0) {
+                revert(0, returndatasize())
+            }
+        }
+    }
 }

@@ -4,8 +4,8 @@ pragma solidity 0.8.9;
 import "./core/AccountAbstraction.sol";
 import "./core/Singleton.sol";
 import "./handlers/Handler.sol";
-import "./interfaces/IEIP4337.sol";
-import "./interfaces/IERC1271Wallet.sol";
+import "./interfaces/ILaserWallet.sol";
+import "./libraries/UserOperation.sol";
 import "./utils/Utils.sol";
 import "./ssr/SSR.sol";
 
@@ -19,10 +19,9 @@ contract LaserWallet is
     Singleton,
     SSR,
     AccountAbstraction,
-    IERC1271Wallet,
-    IEIP4337,
     Handler,
-    Utils
+    Utils,
+    ILaserWallet
 {
     using UserOperationLib for UserOperation;
 
@@ -88,16 +87,17 @@ contract LaserWallet is
     }
 
     /**
-     * @dev Setup function sets initial storage of contract.
+     * @dev Setup function, sets initial storage of contract.
      * @param _owner The owner of the wallet.
      * @param _guardians Addresses that can activate the social recovery mechanism.
      * @param _entryPoint Entry Point contract address.
+     * @notice It can't be called after initialization.
      */
     function init(
         address _owner,
         address[] calldata _guardians,
         address _entryPoint
-    ) external {
+    ) external override {
         initOwner(_owner);
         initGuardians(_guardians);
         initEntryPoint(_entryPoint);
@@ -157,19 +157,12 @@ contract LaserWallet is
         address recovered = returnSigner(dataHash, userOp.signature);
 
         if (bytes4(userOp.callData) == this.exec.selector) {
-            if (recovered != owner) {
-                revert LW__InvalidSigner__NotOwner();
-            }
-            if (isLocked) {
-                revert LW__WalletLocked();
-            }
+            if (recovered != owner) revert LW__InvalidSigner__NotOwner();
+            if (isLocked) revert LW__WalletLocked();
         } else if (bytes4(userOp.callData) == this.guardianCall.selector) {
-            if (guardians[recovered] == address(0)) {
-                revert LW__NotGuardian();
-            }
-        } else {
-            revert LW__InvalidCallData();
-        }
+            if (guardians[recovered] == address(0)) revert LW__NotGuardian();
+        } else revert LW__InvalidCallData();
+
         payPrefund(_requiredPrefund);
     }
 
@@ -178,51 +171,44 @@ contract LaserWallet is
      * The signatures are verified in validateUserOp().
      * @param to Destination address of Safe transaction.
      * @param value Ether value of Safe transaction.
-     * @param callData Data payload of Safe transaction.
+     * @param data Data payload of Safe transaction.
      */
     function exec(
         address to,
         uint256 value,
-        bytes calldata callData
-    ) external onlyEntryPointOrOwner isNotLocked returns (bytes memory result) {
-        if (isGuardianCall(bytes4(callData))) {
-            revert LW__OnlyGuardians();
-        }
-        bool success;
-        (success, result) = to.call{value: value}(callData);
-        if (!success) {
-            revert LW__ExecutionError();
-        }
+        bytes memory data
+    ) external override onlyEntryPointOrOwner isNotLocked {
+        if (isGuardianCall(bytes4(data))) revert LW__OnlyGuardians();
+        // execute checks for success...
+        execute(to, value, data, gasleft());
     }
 
-    function guardianCall(bytes calldata callData)
-        external
-        onlyEntryPointOrGuardian
-    {
-        if (!isGuardianCall(bytes4(callData))) {
-            revert LW__NotGuardianCall();
-        }
-        (bool success, ) = address(this).call(callData);
-        if (!success) {
-            revert LW__ExecutionError();
-        }
+    function guardianCall(bytes memory data) external onlyEntryPointOrGuardian {
+        if (!isGuardianCall(bytes4(data))) revert LW__NotGuardianCall();
+        // execute checks for success...
+        execute(address(this), 0, data, gasleft());
     }
 
     /**
      * @dev Executes a series of transactions.
      * @param transactions populated array of transactions.
+     * @notice If any transaction fails, the whole multiCall reverts.
      */
     function multiCall(Transaction[] calldata transactions)
         external
         onlyEntryPointOrOwner
     {
-        for (uint256 i = 0; i < transactions.length; i++) {
-            (bool success, ) = transactions[i].to.call{
-                value: transactions[i].value
-            }(transactions[i].data);
-        }
-        if (!success) {
-            revert LW__MultiCallFailed();
+        uint256 transactionsLength = transactions.length;
+        for (uint256 i = 0; i < transactionsLength; ) {
+            address to = transactions[i].to;
+            uint256 value = transactions[i].value;
+            bytes memory data = transactions[i].data;
+            // execute checks for success...
+            execute(to, value, data, gasleft());
+            unchecked {
+                // Won't overflow...
+                ++i;
+            }
         }
     }
 
@@ -306,15 +292,10 @@ contract LaserWallet is
             );
     }
 
-    /**
-     * @notice Implementation of EIP 1271: https://eips.ethereum.org/EIPS/eip-1271.
-     * @param hash Hash of a message signed on behalf of address(this).
-     * @param signature Signature byte array associated with _msgHash.
-     * @return Magic value  or reverts with an error message.
-     */
     function isValidSignature(bytes32 hash, bytes memory signature)
-        public
+        external
         view
+        override
         returns (bytes4)
     {
         address recovered = returnSigner(hash, signature);
