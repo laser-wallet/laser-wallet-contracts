@@ -1,6 +1,6 @@
 .DS_Store
 .env
-.artifcats/
+artifacts
 cache/
 node_modules/
 package-lock.json
