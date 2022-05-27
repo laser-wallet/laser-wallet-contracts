@@ -2,7 +2,6 @@
 .env
 artifacts/
 cache/
-cache/
 node_modules/
 package-lock.json
 
