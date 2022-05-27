@@ -4,20 +4,25 @@ pragma solidity 0.8.9;
 import "../core/SelfAuthorized.sol";
 import "../core/Owner.sol";
 
-contract Guardians is SelfAuthorized, Owner {
-    struct Confirmations {
-        uint256 approvals;
-        mapping(address => bool) signed;
-    }
-
-    bool public isLocked;
+/**
+ * TODO
+ * 1. Lock the wallet (only guardian)
+ */
+/**
+ * @title SSR - Sovereign Social Recovery
+ * @notice New wallet recovery mechanism.
+ * @author Rodrigo Herrera I.
+ */
+contract SSR is SelfAuthorized, Owner {
+    address public recoveryOwner;
 
     address internal constant pointer = address(0x1);
 
     uint256 public guardianCount;
 
+    bool public isLocked;
+
     mapping(address => address) internal guardians;
-    mapping(Recovery => Confirmations) private confirmations;
 
     error Guardian__ZeroGuardians();
     error Guardian__InvalidGuardianAddress();
@@ -41,10 +46,19 @@ contract Guardians is SelfAuthorized, Owner {
         _;
     }
 
+    modifier onlySelfOrGuardians() {
+        require(
+            guardians[msg.sender] != address(0) || msg.sender == address(this),
+            "Guardian__InvalidCaller"
+        );
+
+        _;
+    }
+
     /**
      * @dev Locks the wallet. It can only be done by a guardian.
      */
-    function lock() public isNotLocked authorized {
+    function lock() public isNotLocked onlySelfOrGuardians {
         isLocked = true;
         emit WalletLocked();
     }
@@ -86,32 +100,30 @@ contract Guardians is SelfAuthorized, Owner {
      * @param _guardians Array of guardians.
      */
     function initGuardians(address[] calldata _guardians) internal {
-        if (_guardians.length < 1) {
-            revert Guardian__ZeroGuardians();
-        }
+        if (_guardians.length < 1) revert Guardian__ZeroGuardians();
+
         address currentGuardian = pointer;
         uint256 guardiansLength = _guardians.length;
-        // Won't overflow...
-        unchecked {
-            for (uint256 i = 0; i < guardiansLength; ++i) {
-                address guardian = _guardians[i];
-                if (
-                    guardian == owner ||
-                    guardian == address(0) ||
-                    guardian == pointer ||
-                    guardian == address(this) ||
-                    guardian == currentGuardian ||
-                    guardians[guardian] != address(0)
-                ) {
-                    revert Guardian__InvalidGuardianAddress();
-                }
-                guardians[currentGuardian] = guardian;
-                currentGuardian = guardian;
+        for (uint256 i = 0; i < guardiansLength; ) {
+            address guardian = _guardians[i];
+            if (
+                guardian == owner ||
+                guardian == address(0) ||
+                guardian == pointer ||
+                guardian == address(this) ||
+                guardian == currentGuardian ||
+                guardians[guardian] != address(0)
+            ) revert Guardian__InvalidGuardianAddress();
+            unchecked {
+                // Won't overflow...
+                ++i;
             }
+            guardians[currentGuardian] = guardian;
+            currentGuardian = guardian;
         }
 
         guardians[currentGuardian] = pointer;
-        guardianCount = _guardians.length;
+        guardianCount = guardiansLength;
     }
 
     /**
@@ -128,7 +140,12 @@ contract Guardians is SelfAuthorized, Owner {
         ) revert Guardian__InvalidGuardianAddress();
         guardians[newGuardian] = guardians[pointer];
         guardians[pointer] = newGuardian;
-        guardianCount++;
+        unchecked {
+            // Wont' overflow...
+            guardianCount++;
+            //++guardianCount ?? check gas..
+        }
+
         emit NewGuardian(newGuardian);
     }
 
@@ -144,7 +161,12 @@ contract Guardians is SelfAuthorized, Owner {
         }
         guardians[prevGuardian] = guardians[guardianToRemove];
         guardians[guardianToRemove] = address(0);
-        guardianCount--;
+        unchecked {
+            // Can't underflow...
+            // --guardianCount ?? check gas
+            guardianCount--;
+        }
+
         emit GuardianRemoved(guardianToRemove);
     }
 
@@ -160,9 +182,8 @@ contract Guardians is SelfAuthorized, Owner {
      * @return Array of guardians or reverts with custom error if there are no guardians.
      */
     function getGuardians() external view returns (address[] memory) {
-        if (guardianCount == 0) {
-            revert Guardian__NoGuardians();
-        }
+        if (guardianCount == 0) revert Guardian__NoGuardians();
+
         address[] memory guardiansArray = new address[](guardianCount);
 
         uint256 index = 0;

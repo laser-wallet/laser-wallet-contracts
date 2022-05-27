@@ -3,7 +3,7 @@ pragma solidity 0.8.9;
 
 import "./core/AccountAbstraction.sol";
 import "./core/Singleton.sol";
-import "./guardians/Guardians.sol";
+import "./ssr/SSR.sol";
 import "./handlers/Handler.sol";
 import "./interfaces/IEIP4337.sol";
 import "./interfaces/IERC1271Wallet.sol";
@@ -17,7 +17,7 @@ import "hardhat/console.sol";
  */
 contract LaserWallet is
     Singleton,
-    Guardians,
+    SSR,
     AccountAbstraction,
     IERC1271Wallet,
     IEIP4337,

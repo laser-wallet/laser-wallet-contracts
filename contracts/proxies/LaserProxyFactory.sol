@@ -75,7 +75,6 @@ contract LaserProxyFactory {
             type(LaserProxy).creationCode,
             uint256(uint160(singleton))
         );
-        // solhint-disable-next-line no-inline-assembly
         assembly {
             proxy := create2(
                 0x0,

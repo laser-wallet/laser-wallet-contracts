@@ -1,0 +1,50 @@
+{
+  "_format": "hh-sol-artifact-1",
+  "contractName": "LaserWalletStorage",
+  "sourceName": "contracts/libraries/LaserWalletStorage.sol",
+  "abi": [
+    {
+      "inputs": [],
+      "name": "entryPoint",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "nonce",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "singleton",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    }
+  ],
+  "bytecode": "0x608060405234801561001057600080fd5b5060f48061001f6000396000f3fe6080604052348015600f57600080fd5b5060043610603c5760003560e01c8063affed0e0146041578063b0d691fe14605c578063b62654fb14609f575b600080fd5b604960085481565b6040519081526020015b60405180910390f35b600154607b9073ffffffffffffffffffffffffffffffffffffffff1681565b60405173ffffffffffffffffffffffffffffffffffffffff90911681526020016053565b600054607b9073ffffffffffffffffffffffffffffffffffffffff168156fea264697066735822122077c35f2b8894369ce7be3dc9d98649b2dda81229883998af1f396e2e09e3cdeb64736f6c63430008090033",
+  "deployedBytecode": "0x6080604052348015600f57600080fd5b5060043610603c5760003560e01c8063affed0e0146041578063b0d691fe14605c578063b62654fb14609f575b600080fd5b604960085481565b6040519081526020015b60405180910390f35b600154607b9073ffffffffffffffffffffffffffffffffffffffff1681565b60405173ffffffffffffffffffffffffffffffffffffffff90911681526020016053565b600054607b9073ffffffffffffffffffffffffffffffffffffffff168156fea264697066735822122077c35f2b8894369ce7be3dc9d98649b2dda81229883998af1f396e2e09e3cdeb64736f6c63430008090033",
+  "linkReferences": {},
+  "deployedLinkReferences": {}
+}
