@@ -1,4 +1,3 @@
-import { task } from "hardhat/config";
 import "@nomiclabs/hardhat-waffle";
 import "@nomiclabs/hardhat-etherscan";
 import "@nomiclabs/hardhat-ethers";
@@ -29,7 +28,6 @@ const config: HardhatUserConfig = {
         enabled: true,
         runs: 800
       },
-      evmVersion: "london",
       outputSelection: {
         "*": {
           "*": ["storageLayout"],
@@ -64,10 +62,9 @@ const config: HardhatUserConfig = {
   gasReporter: {
     enabled: process.env.REPORT_GAS === "true"
   }
+
+ 
 };
 
 export default config;
-
-
-
 

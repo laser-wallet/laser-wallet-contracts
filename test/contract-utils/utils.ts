@@ -7,9 +7,12 @@ import {
   encodeFunctionData,
   initTests,
   sign,
-  signTypedData
+  signTypedData,
+  EIP712Sig,
 } from "../utils";
 import { userOp, types, Address } from "../types";
+import { ownerWallet } from "../constants/constants";
+import { Console } from "console";
 
 const mock = ethers.Wallet.createRandom().address;
 const {
@@ -52,7 +55,7 @@ describe("Setup", () => {
         guardians,
         entryPoint
       );
-      const randomSigner = ethers.Wallet.createRandom();
+
       // This is just to check the signature, it is mocking a transaction only
       // for the purposes of the Utils contract (not an actual transaction).
       userOp.sender = address;
@@ -74,11 +77,13 @@ describe("Setup", () => {
         paymaster: userOp.paymaster,
         paymasterData: userOp.paymasterData
       };
+
+      const sig = await EIP712Sig(ownerWallet, domain, userOp.sender, userOp.callData);
       const hash = await wallet.userOperationHash(userOp);
-      const sig1 = await sign(randomSigner, hash);
-      const sig2 = await randomSigner._signTypedData(domain, types, txMessage);
-      const signer = await wallet.returnSigner(hash, sig1);
-      const signer2 = await wallet.returnSigner(hash, sig2);
+      const signer2 = await wallet.returnSigner(hash, sig);
+
+      await wallet.guardianCall("0x");
+      
     });
 
     it("should correctly split 'v', 'r', and 's' ", async () => {

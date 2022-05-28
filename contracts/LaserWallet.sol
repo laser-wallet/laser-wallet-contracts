@@ -37,16 +37,17 @@ contract LaserWallet is
         bytes4(keccak256("isValidSignature(bytes32,bytes)"));
 
     error LW__InvalidNonce();
-    error LW__ExecutionError();
     error LW__InvalidSignature();
     error LW__InvalidSigner__NotOwner();
-    error LW__OnlyGuardians();
+    error LW__OnlyEntryPointOrGuardian();
     error LW__NotGuardianCall();
     error LW__NotGuardian();
     error LW__InvalidCallData();
     error LW__WalletLocked();
-    error LW__MultiCallFailed();
     error LW__InvalidCall();
+    error LW__OwnerNotAllowed();
+    error LW__GuardianNotAllowed();
+    error LW__OnlyEntryPointOrOwner();
 
     event Setup(address owner, address[] guardians, address entryPoint);
     event ApproveHash(bytes32 indexed approvedHash, address indexed owner);
@@ -61,18 +62,14 @@ contract LaserWallet is
     }
 
     modifier onlyEntryPointOrOwner() {
-        require(
-            msg.sender == entryPoint || msg.sender == owner,
-            "LW__exec__InvalidCaller"
-        );
+        if (msg.sender != entryPoint && msg.sender != owner)
+            revert LW__OnlyEntryPointOrOwner();
         _;
     }
 
     modifier onlyEntryPointOrGuardian() {
-        require(
-            msg.sender == entryPoint || guardians[msg.sender] != address(0),
-            "LW__guardianCall__InvalidCaller"
-        );
+        if (msg.sender != entryPoint && guardians[msg.sender] == address(0))
+            revert LW__OnlyEntryPointOrGuardian();
         _;
     }
 
@@ -141,6 +138,7 @@ contract LaserWallet is
             "LW-AA: incorrect required prefund"
         );
 
+        // In order to check the signatures correctly, we encode the transaction data...
         bytes memory userOpData = encodeUserOperationData(
             userOp.sender,
             userOp.nonce,
@@ -153,16 +151,34 @@ contract LaserWallet is
             userOp.paymaster,
             userOp.paymasterData
         );
+        // Now we hash it ...
         bytes32 dataHash = keccak256(userOpData);
+
+        // We recover the sender ...
         address recovered = returnSigner(dataHash, userOp.signature);
 
-        if (bytes4(userOp.callData) == this.exec.selector) {
+        // We get the function selector to check proper access ...
+        bytes4 funcSelector = bytes4(userOp.callData);
+        if (
+            // The owner can only call exec() or multiCall()
+            funcSelector == this.exec.selector ||
+            funcSelector == this.multiCall.selector
+        ) {
+            // We check that the sender is the owner ...
             if (recovered != owner) revert LW__InvalidSigner__NotOwner();
+
+            // If the wallet is locked, we revert...
             if (isLocked) revert LW__WalletLocked();
-        } else if (bytes4(userOp.callData) == this.guardianCall.selector) {
+
+            // Guardians can only call the guardianCall() func ...
+        } else if (funcSelector == this.guardianCall.selector) {
+            // We check that the sender is a guardian ...
             if (guardians[recovered] == address(0)) revert LW__NotGuardian();
+
+            // Else, the call was invalid ...
         } else revert LW__InvalidCallData();
 
+        // Finally... we can pay the costs to the EntryPoint ...
         payPrefund(_requiredPrefund);
     }
 
@@ -178,13 +194,18 @@ contract LaserWallet is
         uint256 value,
         bytes memory data
     ) external override onlyEntryPointOrOwner isNotLocked {
-        if (isGuardianCall(bytes4(data))) revert LW__OnlyGuardians();
+        // We check that the the owner has proper access ...
+        if (access(bytes4(data)) != Access.Owner) revert LW__OwnerNotAllowed();
+
         // execute checks for success...
         execute(to, value, data, gasleft());
     }
 
     function guardianCall(bytes memory data) external onlyEntryPointOrGuardian {
-        if (!isGuardianCall(bytes4(data))) revert LW__NotGuardianCall();
+        // We check that the guardian has proper access ...
+        if (access(bytes4(data)) != Access.Guardian)
+            revert LW__GuardianNotAllowed();
+
         // execute checks for success...
         execute(address(this), 0, data, gasleft());
     }
@@ -203,8 +224,15 @@ contract LaserWallet is
             address to = transactions[i].to;
             uint256 value = transactions[i].value;
             bytes memory data = transactions[i].data;
+
+            // We check that the the owner has proper access ...
+            if (access(bytes4(data)) != Access.Owner) {
+                revert LW__OwnerNotAllowed();
+            }
+
             // execute checks for success...
             execute(to, value, data, gasleft());
+
             unchecked {
                 // Won't overflow...
                 ++i;
@@ -212,6 +240,9 @@ contract LaserWallet is
         }
     }
 
+    /**
+     * @return The chain id of this.
+     */
     function getChainId() public view returns (uint256) {
         return block.chainid;
     }
@@ -229,32 +260,42 @@ contract LaserWallet is
 
     /**
      * @dev Returns the bytes that are hashed to be signed by owners.
+     * @param sender The wallet making the operation (should be address(this)).
+     * @param _nonce Anti-replay parameter; also used as the salt for first-time wallet creation.
+     * @param callData The data to pass to the sender during the main execution call.
+     * @param callGas The amount of gas to allocate the main execution call.
+     * @param verificationGas The amount of gas to allocate for the verification step.
+     * @param preVerificationGas The amount of gas to pay to compensate the bundler for the pre-verification execution and calldata.
+     * @param maxFeePerGas Maximum fee per gas (similar to EIP 1559  max_fee_per_gas).
+     * @param maxPriorityFeePerGas Maximum priority fee per gas (similar to EIP 1559 max_priority_fee_per_gas).
+     * @param paymaster Address sponsoring the transaction (or zero for regular self-sponsored transactions).
+     * @param paymasterData Extra data to send to the paymaster.
      */
     function encodeUserOperationData(
-        address _sender,
+        address sender,
         uint256 _nonce,
-        bytes calldata _callData,
-        uint256 _callGas,
-        uint256 _verificationGas,
-        uint256 _preVerificationGas,
-        uint256 _maxFeePerGas,
-        uint256 _maxPriorityFeePerGas,
-        address _paymaster,
-        bytes calldata _payMasterData
+        bytes calldata callData,
+        uint256 callGas,
+        uint256 verificationGas,
+        uint256 preVerificationGas,
+        uint256 maxFeePerGas,
+        uint256 maxPriorityFeePerGas,
+        address paymaster,
+        bytes calldata paymasterData
     ) internal view returns (bytes memory) {
         bytes32 _userOperationHash = keccak256(
             abi.encode(
                 LASER_OP_TYPEHASH,
-                _sender,
+                sender,
                 _nonce,
-                keccak256(_callData),
-                _callGas,
-                _verificationGas,
-                _preVerificationGas,
-                _maxFeePerGas,
-                _maxPriorityFeePerGas,
-                _paymaster,
-                keccak256(_payMasterData)
+                keccak256(callData),
+                callGas,
+                verificationGas,
+                preVerificationGas,
+                maxFeePerGas,
+                maxPriorityFeePerGas,
+                paymaster,
+                keccak256(paymasterData)
             )
         );
         return
@@ -268,9 +309,9 @@ contract LaserWallet is
 
     /**
      * @dev Returns the user operation hash to be signed by owners.
-     * @param _userOp The UserOperation struct.
+     * @param userOp The UserOperation struct.
      */
-    function userOperationHash(UserOperation calldata _userOp)
+    function userOperationHash(UserOperation calldata userOp)
         public
         view
         returns (bytes32)
@@ -278,20 +319,26 @@ contract LaserWallet is
         return
             keccak256(
                 encodeUserOperationData(
-                    _userOp.sender,
-                    _userOp.nonce,
-                    _userOp.callData,
-                    _userOp.callGas,
-                    _userOp.verificationGas,
-                    _userOp.preVerificationGas,
-                    _userOp.maxFeePerGas,
-                    _userOp.maxPriorityFeePerGas,
-                    _userOp.paymaster,
-                    _userOp.paymasterData
+                    userOp.sender,
+                    userOp.nonce,
+                    userOp.callData,
+                    userOp.callGas,
+                    userOp.verificationGas,
+                    userOp.preVerificationGas,
+                    userOp.maxFeePerGas,
+                    userOp.maxPriorityFeePerGas,
+                    userOp.paymaster,
+                    userOp.paymasterData
                 )
             );
     }
 
+    /**
+     * @dev Implementation of EIP 1271: https://eips.ethereum.org/EIPS/eip-1271.
+     * @param hash Hash of a message signed on behalf of address(this).
+     * @param signature Signature byte array associated with _msgHash.
+     * @return Magic value  or reverts with an error message.
+     */
     function isValidSignature(bytes32 hash, bytes memory signature)
         external
         view

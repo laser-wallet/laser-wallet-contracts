@@ -20,7 +20,7 @@ export async function signTypedData(
     return signature;
 }
 
-export async function entryPointTypedSig(
+export async function EIP712Sig(
     signer: Wallet,
     domain: Domain,
     to: string,
@@ -50,7 +50,7 @@ export async function entryPointTypedSig(
         preVerificationGas: 100000,
         maxFeePerGas: 1100000000,
         maxPriorityFeePerGas: 1100000000,
-        paymaster: "0x",
+        paymaster: ethers.constants.AddressZero,
         paymasterData: "0x"
     };
 

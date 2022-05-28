@@ -59,6 +59,13 @@ contract Utils {
         }
     }
 
+    /**
+     * @dev Calls a target address, sends value and / or data payload.
+     * @param to Destination address.
+     * @param value Amount to send in ETH.
+     * @param data Data payload.
+     * @param txGas Amount of gas to forward.
+     */
     function execute(
         address to,
         uint256 value,

@@ -1,7 +1,8 @@
 import { BigNumber } from "ethers";
-import { string } from "hardhat/internal/core/params/argumentTypes";
 
 export type Address = string;
+
+export type Numberish = BigNumber | number | string;
 
 export interface TxMessage {
     to: string;

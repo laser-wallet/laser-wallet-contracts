@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity 0.8.14;
 
-import "hardhat/console.sol";
-
 /**
  * manage deposit of sender or paymaster, to pay for gas.
  * paymaster must stake some of the deposit.

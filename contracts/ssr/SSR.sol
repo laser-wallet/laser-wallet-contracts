@@ -19,6 +19,13 @@ contract SSR is SelfAuthorized, Owner {
 
     bool public isLocked;
 
+    ///@dev Determines who has access to call a specific function.
+    enum Access {
+        Owner,
+        Guardian,
+        RecoveryOwnerAndGuardian
+    }
+
     mapping(address => address) internal guardians;
 
     error Guardian__ZeroGuardians();
@@ -122,6 +129,7 @@ contract SSR is SelfAuthorized, Owner {
     /**
      * @dev Adds a guardian to the wallet.
      * @param newGuardian Address of the new guardian.
+     * @notice Can only be called by the owner.
      */
     function addGuardian(address newGuardian) external authorized {
         if (
@@ -140,6 +148,12 @@ contract SSR is SelfAuthorized, Owner {
         emit NewGuardian(newGuardian);
     }
 
+    /**
+     * @dev Removes a guardian to the wallet.
+     * @param prevGuardian Address of the previous guardian in the linked list.
+     * @param guardianToRemove Address of the guardian to be removed.
+     * @notice Can only be called by the owner.
+     */
     function removeGuardian(address prevGuardian, address guardianToRemove)
         external
         authorized
@@ -185,10 +199,13 @@ contract SSR is SelfAuthorized, Owner {
         return guardiansArray;
     }
 
-    function isGuardianCall(bytes4 funcSig) public pure returns (bool) {
-        return
-            funcSig == this.lock.selector ||
-            funcSig == this.unlock.selector ||
-            funcSig == this.recover.selector;
+    function access(bytes4 funcSelector) public pure returns (Access) {
+        if (funcSelector == this.lock.selector) {
+            return Access.Guardian;
+        } else if (funcSelector == this.recover.selector) {
+            return Access.RecoveryOwnerAndGuardian;
+        } else {
+            return Access.Owner;
+        }
     }
 }
