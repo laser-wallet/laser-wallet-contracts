@@ -1,7 +1,6 @@
 import { expect } from "chai";
 import { ethers } from "hardhat";
 import { Contract, Signer } from "ethers";
-
 import { Address } from "../types";
 import { encodeFunctionData } from "../utils";
 

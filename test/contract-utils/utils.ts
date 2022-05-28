@@ -12,11 +12,10 @@ import {
 } from "../utils";
 import { userOp, types, Address } from "../types";
 import { ownerWallet } from "../constants/constants";
-import { Console } from "console";
 
 const mock = ethers.Wallet.createRandom().address;
 const {
-  abi
+  abi,
 } = require("../../artifacts/contracts/LaserWallet.sol/LaserWallet.json");
 
 describe("Setup", () => {
@@ -62,8 +61,8 @@ describe("Setup", () => {
       userOp.nonce = 0;
       userOp.callData = "0x";
       const domain = {
-        chainId: (await wallet.getChainId()).toString(),
-        verifyingContract: address
+        chainId: await wallet.getChainId(),
+        verifyingContract: address,
       };
       const txMessage = {
         sender: userOp.sender,
@@ -75,15 +74,13 @@ describe("Setup", () => {
         maxFeePerGas: userOp.maxFeePerGas,
         maxPriorityFeePerGas: userOp.maxPriorityFeePerGas,
         paymaster: userOp.paymaster,
-        paymasterData: userOp.paymasterData
+        paymasterData: userOp.paymasterData,
       };
 
-      const sig = await EIP712Sig(ownerWallet, domain, userOp.sender, userOp.callData);
+      const sig = await EIP712Sig(ownerWallet, domain, txMessage);
       const hash = await wallet.userOperationHash(userOp);
-      const signer2 = await wallet.returnSigner(hash, sig);
-
-      await wallet.guardianCall("0x");
-      
+      const signer = await wallet.returnSigner(hash, sig);
+      expect(signer).to.equal(ownerAddress);
     });
 
     it("should correctly split 'v', 'r', and 's' ", async () => {

@@ -17,14 +17,6 @@ contract AccountAbstraction is SelfAuthorized {
 
     error AA__InvalidEntryPoint();
     error AA__InsufficientWithdrawBalance();
-    error AA_NotEntryPoint();
-
-    modifier onlyFromEntryPoint() {
-        if (msg.sender != entryPoint) {
-            revert AA_NotEntryPoint();
-        }
-        _;
-    }
 
     /**
      * @dev Inits the entry point address.
@@ -35,7 +27,6 @@ contract AccountAbstraction is SelfAuthorized {
             revert AA__InvalidEntryPoint();
 
         assembly {
-            // entryPoint address should always be at storage slot 1.
             sstore(1, _entryPoint)
         }
     }
@@ -59,14 +50,14 @@ contract AccountAbstraction is SelfAuthorized {
      * If it is a malicious address. There needs to be extra caution in changing the entry point.
      */
     function changeEntryPoint(address _entryPoint) public authorized {
-        if (_entryPoint.code.length == 0 || _entryPoint == address(this)) {
+        if (
+            _entryPoint.code.length == 0 ||
+            _entryPoint == address(this) ||
+            entryPoint == _entryPoint
+        ) {
             revert AA__InvalidEntryPoint();
         }
-
-        assembly {
-            // entryPoint address should always be at storage slot 1.
-            sstore(1, _entryPoint)
-        }
+        entryPoint = _entryPoint;
         emit EntryPointChanged(entryPoint);
     }
 }

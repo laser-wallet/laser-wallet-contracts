@@ -18,3 +18,4 @@ export type Domain = {
     chainId: number | string;
     verifyingContract: string;
 };
+

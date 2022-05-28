@@ -23,37 +23,8 @@ export async function signTypedData(
 export async function EIP712Sig(
     signer: Wallet,
     domain: Domain,
-    to: string,
-    callData: string
+    txMessage: LaserOp
 ): Promise<string> {
-    const types = {
-        LaserOp: [
-            { type: "address", name: "sender" },
-            { type: "uint256", name: "nonce" },
-            { type: "bytes", name: "callData" },
-            { type: "uint256", name: "callGas" },
-            { type: "uint256", name: "verificationGas" },
-            { type: "uint256", name: "preVerificationGas" },
-            { type: "uint256", name: "maxFeePerGas" },
-            { type: "uint256", name: "maxPriorityFeePerGas" },
-            { type: "address", name: "paymaster" },
-            { type: "bytes", name: "paymasterData" }
-        ]
-    };
-
-    const txMessage = {
-        sender: to,
-        nonce: 0,
-        callData: callData,
-        callGas: 200000,
-        verificationGas: 100000,
-        preVerificationGas: 100000,
-        maxFeePerGas: 1100000000,
-        maxPriorityFeePerGas: 1100000000,
-        paymaster: ethers.constants.AddressZero,
-        paymasterData: "0x"
-    };
-
     const signature = await signer._signTypedData(domain, types, txMessage);
     return signature;
 }

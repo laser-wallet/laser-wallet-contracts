@@ -1,510 +1,418 @@
 import { expect } from "chai";
 import { ethers } from "hardhat";
-import { Contract, providers, Signer, Wallet } from "ethers";
-
+import { Contract, Signer, Wallet } from "ethers";
 import {
-    encodeFunctionData,
-    addressZero,
-    SENTINEL,
-    paddedSignature,
-    specialOwner,
-    owner1,
-    owner2,
-    owner3,
-    walletSetup,
-    safeTx,
-    oneEth,
-    guardian,
-    encodeCallData,
-    OWNERS,
-    SPECIAL_OWNERS,
-    THRESHOLD
+  walletSetup,
+  factorySetup,
+  encodeFunctionData,
+  initTests,
+  sign,
+  signTypedData,
+  EIP712Sig,
 } from "../utils";
-import {
-    SafeTx,
-    Domain,
-    LaserOp,
-    UserOp,
-    laserOp,
-    userOp,
-    userOpTypes
-} from "../types";
-import { signTypedData, sign, entryPointTypedSig } from "../utils/sign";
+import { userOp, types, Address } from "../types";
+import { ownerWallet, tenEth, twoEth } from "../constants/constants";
 
+const mock = ethers.Wallet.createRandom().address;
 const {
-    abi
+  abi,
 } = require("../../artifacts/contracts/LaserWallet.sol/LaserWallet.json");
 
-async function fund(address: string, signer: Signer) {
-    await signer.sendTransaction({ to: address, value: oneEth });
+// Sends 10 eth...
+async function fund(to: Address, from: Signer): Promise<void> {
+  const amount = tenEth;
+  await from.sendTransaction({ to: to, value: amount });
 }
 
 describe("Account Abstraction", () => {
-    let relayer: Signer;
-    let EntryPoint: Contract;
-    let addr: string;
-    let domain: Domain;
-    let mockData: string;
+  let owner: Signer;
+  let ownerAddress: Address;
+  let guardians: Address[];
+  let entryPoint: Address;
+  let EntryPoint: Contract;
+  let _guardian1: Signer;
+  let _guardian2: Signer;
+  let relayer: Signer;
 
-    beforeEach(async () => {
-        [relayer] = await ethers.getSigners();
-        const ENTRY_POINT = await ethers.getContractFactory("TestEntryPoint");
-        EntryPoint = await ENTRY_POINT.deploy(SENTINEL, 0, 0);
-        addr = EntryPoint.address;
-        const { address, wallet } = await walletSetup(relayer);
-        domain = {
-            chainId: await wallet.getChainId(),
-            verifyingContract: ""
-        };
-        // This values are for simple testing, they can be overwritten.
-        userOp.callGas = 200000;
-        userOp.verificationGas = 100000;
-        userOp.preVerificationGas = 100000;
-        userOp.maxFeePerGas = 1100000000;
-        userOp.maxPriorityFeePerGas = 1100000000;
-        userOp.nonce = 0;
-        userOp.signature = "0x";
-        mockData = encodeFunctionData(abi, "changeThreshold", [2]);
+  beforeEach(async () => {
+    [owner, _guardian1, _guardian2, relayer] = await ethers.getSigners();
+    ownerAddress = await owner.getAddress();
+    guardians = [await _guardian1.getAddress(), await _guardian2.getAddress()];
+    const EP = await ethers.getContractFactory("TestEntryPoint");
+    EntryPoint = await EP.deploy(mock, 0, 0);
+    entryPoint = EntryPoint.address;
+  });
+
+  describe("validateUserOp() 'handleOp'", () => {
+    it("should only accept calls from the entry point", async () => {
+      const { address, wallet } = await walletSetup(
+        ownerAddress,
+        guardians,
+        entryPoint
+      );
+      const fkBytes =
+        "0xb00e65f7e6801b0a78eb54b58b48a2b831b8e25c08de88918ac71d5214e9c4ee";
+      userOp.sender = wallet.address;
+      userOp.nonce = 0;
+      userOp.callData = "0x";
+      userOp.signature = "0x";
+      await expect(
+        wallet.validateUserOp(userOp, fkBytes, 0)
+      ).to.be.revertedWith("LW_NotEntryPoint()");
     });
 
-    describe("Correct setup", async () => {
-        it("Init", async () => {
-            const { address, wallet } = await walletSetup(relayer);
-            await guardian(address);
-        });
+    it("should revert by calling a function directly from EntryPoint", async () => {
+      const { address, wallet } = await walletSetup(
+        ownerAddress,
+        guardians,
+        entryPoint
+      );
+      const data = encodeFunctionData(abi, "changeOwner", [mock]);
+      userOp.sender = address;
+      userOp.nonce = 0;
+      userOp.callData = data;
+      userOp.signature = "0x";
+      const hash = await wallet.userOperationHash(userOp);
+      userOp.signature = await sign(owner, hash);
+      await expect(EntryPoint.handleOps([userOp], mock)).to.be.reverted;
+    });
+  });
+
+  describe("Correct data", () => {
+    it("should have correct domain separator", async () => {
+      const { address, wallet } = await walletSetup(
+        ownerAddress,
+        guardians,
+        entryPoint
+      );
+      const domainSeparator = ethers.utils._TypedDataEncoder.hashDomain({
+        verifyingContract: address,
+        chainId: await wallet.getChainId(),
+      });
+      expect(domainSeparator).to.equal(await wallet.domainSeparator());
     });
 
-    describe("validateUserOp() 'handleOp'", () => {
-        it("should only accept calls from the entry point", async () => {
-            const { address, wallet } = await walletSetup(relayer);
-            const fkBytes =
-                "0xb00e65f7e6801b0a78eb54b58b48a2b831b8e25c08de88918ac71d5214e9c4ee";
-            userOp.sender = wallet.address;
-            userOp.nonce = 0;
-            userOp.callData = "0x";
-            userOp.signature = "0x";
-            await expect(
-                wallet.validateUserOp(userOp, fkBytes, 0)
-            ).to.be.revertedWith("EP: Not Entry Point");
-        });
+    it("should calculate correctly the transaction hash", async () => {
+      const { address, wallet } = await walletSetup(
+        ownerAddress,
+        guardians,
+        entryPoint
+      );
+      userOp.sender = address;
+      userOp.nonce = 0;
+      userOp.callData = "0x";
+      const transactionHash = ethers.utils._TypedDataEncoder.hash(
+        {
+          verifyingContract: address,
+          chainId: await wallet.getChainId(),
+        },
+        types,
+        userOp
+      );
+      const _transactionHash = await wallet.userOperationHash(userOp);
+      expect(transactionHash).to.equal(_transactionHash);
+    });
+  });
 
-        it("should revert by calling the function directly from EntryPoint", async () => {
-            const { address, wallet } = await walletSetup(relayer);
-            const data = encodeFunctionData(abi, "changeThreshold", [2]);
-            userOp.sender = address;
-            userOp.nonce = 0;
-            userOp.callData = data;
-            userOp.signature = paddedSignature(specialOwner.address);
-            await expect(EntryPoint.handleOp(userOp, address)).to.be.reverted;
-        });
+  describe("Transactions", () => {
+    it("should execute an EIP712 transaction", async () => {
+      const { address, wallet } = await walletSetup(
+        ownerAddress,
+        guardians,
+        entryPoint
+      );
+      await fund(address, relayer);
+
+      const domain = {
+        chainId: await wallet.getChainId(),
+        verifyingContract: address,
+      };
+      const txData = encodeFunctionData(abi, "changeOwner", [mock]);
+      userOp.sender = address;
+      userOp.nonce = 0;
+      userOp.callData = encodeFunctionData(abi, "exec", [address, 0, txData]);
+
+      const txMessage = {
+        sender: userOp.sender,
+        nonce: userOp.nonce,
+        callData: userOp.callData,
+        callGas: userOp.callGas,
+        verificationGas: userOp.verificationGas,
+        preVerificationGas: userOp.preVerificationGas,
+        maxFeePerGas: userOp.maxFeePerGas,
+        maxPriorityFeePerGas: userOp.maxPriorityFeePerGas,
+        paymaster: userOp.paymaster,
+        paymasterData: userOp.paymasterData,
+      };
+      userOp.signature = await EIP712Sig(ownerWallet, domain, txMessage);
+      await EntryPoint.handleOps([userOp], address);
+      expect(await wallet.owner()).to.equal(mock);
     });
 
-    describe("Correct data", () => {
-        it("should have correct domain separator", async () => {
-            const { address, wallet } = await walletSetup(relayer);
-            const domainSeparator = ethers.utils._TypedDataEncoder.hashDomain({
-                verifyingContract: address,
-                chainId: await wallet.getChainId()
-            });
-            expect(domainSeparator).to.equal(await wallet._domainSeparator());
-        });
+    it("should execute a transaction by signing the transaction hash", async () => {
+      const { address, wallet } = await walletSetup(
+        ownerAddress,
+        guardians,
+        entryPoint
+      );
 
-        it("should calculate correctly the transaction hash", async () => {
-            const { address, wallet } = await walletSetup(relayer);
-            userOp.sender = address;
-            userOp.nonce = 0;
-            userOp.callData = "0x";
-            const transactionHash = ethers.utils._TypedDataEncoder.hash(
-                {
-                    verifyingContract: address,
-                    chainId: await wallet.getChainId()
-                },
-                userOpTypes,
-                userOp
-            );
-            const _transactionHash = await wallet.userOperationHash(userOp);
-            expect(transactionHash).to.equal(_transactionHash);
-        });
+      await fund(address, relayer);
+
+      const txData = encodeFunctionData(abi, "changeOwner", [mock]);
+      userOp.sender = address;
+      userOp.nonce = 0;
+      userOp.callData = encodeFunctionData(abi, "exec", [address, 0, txData]);
+
+      const hash = await wallet.userOperationHash(userOp);
+      userOp.signature = await sign(owner, hash);
+      await EntryPoint.handleOps([userOp], address);
+      expect(await wallet.owner()).to.equal(mock);
     });
 
-    describe("Transactions", () => {
-        it("should execute an EIP712 transaction", async () => {
-            const { address, wallet } = await walletSetup(
-                relayer,
-                OWNERS,
-                SPECIAL_OWNERS,
-                THRESHOLD,
-                addr
-            );
-            await fund(address, relayer);
-            const value = 0;
-            domain.verifyingContract = address;
-            userOp.sender = address;
-            userOp.callData = encodeCallData(userOp.sender, 0, mockData);
-            userOp.signature = await entryPointTypedSig(
-                specialOwner,
-                domain,
-                address,
-                userOp.callData
-            );
-            await EntryPoint.handleOp(userOp, address);
-            expect(await wallet.getThreshold()).to.equal(2);
-        });
+    it("should fail by signing an incorrect hash", async () => {
+      const { address, wallet } = await walletSetup(
+        ownerAddress,
+        guardians,
+        entryPoint
+      );
 
-        it("should execute a transaction by signing the transaction hash", async () => {
-            const { address, wallet } = await walletSetup(
-                relayer,
-                OWNERS,
-                SPECIAL_OWNERS,
-                THRESHOLD,
-                addr
-            );
-            await fund(address, relayer);
-            userOp.sender = address;
-            userOp.callData = encodeCallData(userOp.sender, 0, mockData);
-            const hash = await wallet.userOperationHash(userOp);
-            userOp.signature = await sign(specialOwner, hash);
-            await EntryPoint.handleOp(userOp, address);
-            expect(await wallet.getThreshold()).to.equal(2);
-        });
+      await fund(address, relayer);
 
-        it("should fail by signing an incorrect hash", async () => {
-            const { address, wallet } = await walletSetup(
-                relayer,
-                OWNERS,
-                SPECIAL_OWNERS,
-                THRESHOLD,
-                addr
-            );
-            await fund(address, relayer);
-            userOp.sender = owner1.address; // incoherent value.
-            userOp.callData = encodeCallData(userOp.sender, 0, mockData);
-            const hash = await wallet.userOperationHash(userOp);
-            userOp.signature = await sign(specialOwner, hash);
-            // refactor
-            userOp.sender = address;
-            await expect(
-                EntryPoint.handleOp(userOp, address)
-            ).to.be.revertedWith(
-                "LW: Incorrect signature length || Incorrect Special Owner signature"
-            );
-        });
+      const txData = encodeFunctionData(abi, "changeOwner", [mock]);
+      userOp.sender = address;
+      userOp.nonce = 0;
+      userOp.callData = encodeFunctionData(abi, "exec", [address, 0, txData]);
 
-        it("should fail if 'v' is incorrect", async () => {
-            const { address, wallet } = await walletSetup(
-                relayer,
-                OWNERS,
-                SPECIAL_OWNERS,
-                THRESHOLD,
-                addr
-            );
-            await fund(address, relayer);
-            userOp.sender = address;
-            userOp.callData = encodeCallData(userOp.sender, 0, mockData);
-            const hash = await wallet.userOperationHash(userOp);
-            userOp.signature = paddedSignature(specialOwner.address);
-            await expect(
-                EntryPoint.handleOp(userOp, address)
-            ).to.be.revertedWith(
-                "LW: Incorrect signature length || Incorrect Special Owner signature"
-            );
-        });
-
-        it("should fail by signing with incorrect chainId", async () => {
-            const { address, wallet } = await walletSetup(
-                relayer,
-                OWNERS,
-                SPECIAL_OWNERS,
-                THRESHOLD,
-                addr
-            );
-            await fund(address, relayer);
-            domain.chainId = 12;
-            domain.verifyingContract = address;
-            userOp.sender = address;
-            userOp.callData = encodeCallData(userOp.sender, 0, mockData);
-            userOp.signature = await entryPointTypedSig(
-                specialOwner,
-                domain,
-                address,
-                userOp.callData
-            );
-            await expect(
-                EntryPoint.handleOp(userOp, address)
-            ).to.be.revertedWith(
-                "LW: Incorrect signature length || Incorrect Special Owner signature"
-            );
-        });
-
-        it("should fail by providing incorrect calldata", async () => {
-            const { address, wallet } = await walletSetup(
-                relayer,
-                OWNERS,
-                SPECIAL_OWNERS,
-                THRESHOLD,
-                addr
-            );
-            await fund(address, relayer);
-            userOp.sender = address;
-            userOp.callData = "0x11111111";
-            const hash = await wallet.userOperationHash(userOp);
-            userOp.signature = await sign(specialOwner, hash);
-            await expect(
-                EntryPoint.handleOp(userOp, address)
-            ).to.be.revertedWith("LW-AA: incorrect callData");
-        });
-
-        it("should fail by signing with incorrect domain address", async () => {
-            const { address, wallet } = await walletSetup(
-                relayer,
-                OWNERS,
-                SPECIAL_OWNERS,
-                THRESHOLD,
-                addr
-            );
-            await fund(address, relayer);
-            domain.chainId = await wallet.getChainId();
-            domain.verifyingContract = (ethers.Wallet.createRandom()).address;
-            userOp.sender = address; // incoherent value.
-            userOp.callData = encodeCallData(userOp.sender, 0, mockData);
-            userOp.signature = await entryPointTypedSig(
-                specialOwner,
-                domain,
-                address,
-                userOp.callData
-            );
-            await expect(
-                EntryPoint.handleOp(userOp, address)
-            ).to.be.revertedWith(
-                "LW: Incorrect signature length || Incorrect Special Owner signature"
-            );
-        });
+      const fkHash =
+        "0xb00e65f7e6801b0a78eb54b58b48a2b831b8e25c08de88918ac71d5214e9c4ee";
+      userOp.signature = await sign(owner, fkHash);
+      await expect(EntryPoint.handleOps([userOp], address)).to.be.reverted;
     });
 
-    describe("Guard", () => {
-        it("should revert if transaction exceeds spending limit", async () => {
-            const { address, wallet } = await walletSetup(
-                relayer,
-                OWNERS,
-                SPECIAL_OWNERS,
-                THRESHOLD,
-                addr,
-                oneEth
-            );
-            await fund(address, relayer);
-            userOp.sender = address;
-            userOp.callData = encodeCallData(address, oneEth.add(1), "0x");
-            const hash = await wallet.userOperationHash(userOp);
-            userOp.signature = await sign(specialOwner, hash);
-            await expect(
-                EntryPoint.handleOp(userOp, address)
-            ).to.be.revertedWith("GUARD: Transaction exceeds limit");
-        });
+    it("should fail by providing incorrect calldata", async () => {
+      const { address, wallet } = await walletSetup(
+        ownerAddress,
+        guardians,
+        entryPoint
+      );
 
-        it("should deactivate the module", async () => {
-            const { address, wallet } = await walletSetup(
-                relayer,
-                OWNERS,
-                SPECIAL_OWNERS,
-                THRESHOLD,
-                addr,
-                oneEth
-            );
-            await fund(address, relayer);
-            userOp.sender = address;
-            const data = encodeFunctionData(abi, "removeEthSpendingLimit", []);
-            userOp.callData = encodeCallData(address, 0, data);
-            const hash = await wallet.userOperationHash(userOp);
-            userOp.signature = await sign(specialOwner, hash);
-            await EntryPoint.handleOp(userOp, address);
-            expect(await wallet.ethSpendingLimit()).to.equal(0);
-        });
+      await fund(address, relayer);
 
-        it("should update the Eth spending limit", async () => {
-            const { address, wallet } = await walletSetup(
-                relayer,
-                OWNERS,
-                SPECIAL_OWNERS,
-                THRESHOLD,
-                addr,
-                oneEth
-            );
-            const twoEth = ethers.utils.parseEther("2");
-            expect(await wallet.ethSpendingLimit()).to.equal(oneEth);
-            await fund(address, relayer);
-            userOp.sender = address;
-            const data = encodeFunctionData(abi, "updateEthSpendingLimit", [
-                twoEth
-            ]);
-            userOp.callData = encodeCallData(address, 0, data);
-            const hash = await wallet.userOperationHash(userOp);
-            userOp.signature = await sign(specialOwner, hash);
-            await EntryPoint.handleOp(userOp, address);
-            expect(await wallet.ethSpendingLimit()).to.equal(twoEth);
-        });
+      userOp.sender = address;
+      userOp.nonce = 0;
+      userOp.callData = "0x12345678";
+      const hash = await wallet.userOperationHash(userOp);
+      userOp.signature = await sign(owner, hash);
+      await expect(EntryPoint.handleOps([userOp], address)).to.be.reverted;
     });
 
-    describe("Migration", () => {
-        it("should fail by providing an incorrect singleton address", async () => {
-            const { address, wallet } = await walletSetup(
-                relayer,
-                OWNERS,
-                SPECIAL_OWNERS,
-                THRESHOLD,
-                addr
-            );
-            const singleton = await wallet.singleton();
-            await fund(address, relayer);
-            const fakeSingleton = ethers.Wallet.createRandom();
-            const data = encodeFunctionData(abi, "upgradeSingleton", [
-                fakeSingleton.address
-            ]);
-            userOp.sender = address;
-            userOp.callData = encodeCallData(userOp.sender, 0, data);
-            const hash = await wallet.userOperationHash(userOp);
-            userOp.signature = await sign(specialOwner, hash);
-            await EntryPoint.handleOp(userOp, address);
-            expect(await wallet.singleton()).to.equal(singleton);
-        });
+    it("should execute a multicall", async () => {
+      const { address, wallet } = await walletSetup(
+        ownerAddress,
+        guardians,
+        entryPoint
+      );
 
-        it("should fail by providing a contract without interface support", async () => {
-            const { address, wallet } = await walletSetup(
-                relayer,
-                OWNERS,
-                SPECIAL_OWNERS,
-                THRESHOLD,
-                addr
-            );
-            const NEW_SINGLETON = await ethers.getContractFactory(
-                "IncorrectMigrate"
-            );
-            const newSingleton = await NEW_SINGLETON.deploy();
-            const singleton = await wallet.singleton();
-            await fund(address, relayer);
-            const data = encodeFunctionData(abi, "upgradeSingleton", [
-                newSingleton.address
-            ]);
-            userOp.sender = address;
-            userOp.callData = encodeCallData(userOp.sender, 0, data);
-            const hash = await wallet.userOperationHash(userOp);
-            userOp.signature = await sign(specialOwner, hash);
-            await EntryPoint.handleOp(userOp, address);
-            expect(await wallet.singleton()).to.equal(singleton);
-        });
+      await fund(address, relayer);
+      const initialBal = await ethers.provider.getBalance(address);
+      expect(initialBal).to.equal(tenEth);
 
-        it("should migrate to a new singleton", async () => {
-            const { address, wallet } = await walletSetup(
-                relayer,
-                OWNERS,
-                SPECIAL_OWNERS,
-                THRESHOLD,
-                addr
-            );
-            const NEW_SINGLETON = await ethers.getContractFactory(
-                "TestMigrate"
-            );
-            const newSingleton = await NEW_SINGLETON.deploy();
-            const singleton = await wallet.singleton();
-            await fund(address, relayer);
-            const data = encodeFunctionData(abi, "upgradeSingleton", [
-                newSingleton.address
-            ]);
-            userOp.sender = address;
-            userOp.callData = encodeCallData(userOp.sender, 0, data);
-            const hash = await wallet.userOperationHash(userOp);
-            userOp.signature = await sign(specialOwner, hash);
-            await EntryPoint.handleOp(userOp, address);
-            expect(await wallet.singleton()).to.equal(newSingleton.address);
-            const newAbi = [
-                "function imNew() external view returns (string memory)"
-            ];
-            const newWallet = new ethers.Contract(address, newAbi, relayer);
-            expect(await newWallet.imNew()).to.equal("New");
-            await guardian(address);
-        });
+      const tx1 = {
+        to: address,
+        value: 0,
+        data: encodeFunctionData(abi, "changeOwner", [mock]),
+      };
+      const tx2 = {
+        to: mock,
+        value: twoEth,
+        data: "0x",
+      };
+      const transactions = [tx1, tx2];
+      userOp.sender = address;
+      userOp.nonce = 0;
+      userOp.callData = encodeFunctionData(abi, "multiCall", [transactions]);
+      const hash = await wallet.userOperationHash(userOp);
+      userOp.signature = await sign(owner, hash);
+      await EntryPoint.handleOps([userOp], address);
+
+      const postBal = await ethers.provider.getBalance(address);
+      expect(postBal).to.not.equal(tenEth);
+      expect(await wallet.owner()).to.equal(mock);
     });
 
-    describe("Change Entry Point", () => {
-        it("should revert by calling the function directly", async () => {
-            const { address, wallet } = await walletSetup(relayer);
-            const randy = ethers.Wallet.createRandom();
-            await expect(
-                wallet.changeEntryPoint(randy.address)
-            ).to.be.revertedWith("'SA: Only callable from the wallet'");
-        });
+    it("should revert by providing an invalid nonce", async () => {
+      const { address, wallet } = await walletSetup(
+        ownerAddress,
+        guardians,
+        entryPoint
+      );
 
-        it("should fail by providing an incorrect entry point address", async () => {
-            const { address, wallet } = await walletSetup(relayer);
-            const fakeSingleton = ethers.Wallet.createRandom();
-            safeTx.to = address;
-            safeTx.data = encodeFunctionData(abi, "changeEntryPoint", [
-                fakeSingleton.address
-            ]);
-            const hash = await wallet.getTransactionHash(
-                safeTx.to,
-                0,
-                safeTx.data,
-                0
-            );
-            safeTx.signature = await sign(specialOwner, hash);
-            await expect(
-                wallet.execTransaction(
-                    safeTx.to,
-                    safeTx.value,
-                    safeTx.data,
-                    safeTx.signature
-                )
-            ).to.be.reverted;
-        });
+      await fund(address, relayer);
 
-        it("should update the entry point from execTransaction", async () => {
-            const { address, wallet } = await walletSetup(relayer);
-            const newEntryPointFactory = await ethers.getContractFactory(
-                "TestMigrate"
-            );
-            const newEntryPoint = await newEntryPointFactory.deploy();
-            safeTx.to = address;
-            safeTx.data = encodeFunctionData(abi, "changeEntryPoint", [
-                newEntryPoint.address
-            ]);
-            const hash = await wallet.getTransactionHash(
-                safeTx.to,
-                0,
-                safeTx.data,
-                0
-            );
-            safeTx.signature = await sign(specialOwner, hash);
-            await wallet.execTransaction(
-                safeTx.to,
-                safeTx.value,
-                safeTx.data,
-                safeTx.signature
-            );
-            expect(await wallet.entryPoint()).to.equal(newEntryPoint.address);
-        });
+      const txData = encodeFunctionData(abi, "changeOwner", [mock]);
+      userOp.sender = address;
+      userOp.nonce = 1;
+      userOp.callData = encodeFunctionData(abi, "exec", [address, 0, txData]);
 
-        it("should update the entry point from the handle op", async () => {
-            const { address, wallet } = await walletSetup(
-                relayer,
-                OWNERS,
-                SPECIAL_OWNERS,
-                THRESHOLD,
-                addr
-            );
-            const newEntryPointFactory = await ethers.getContractFactory(
-                "TestMigrate"
-            );
-            const newEntryPoint = await newEntryPointFactory.deploy();
-            await fund(address, relayer);
-            const data = encodeFunctionData(abi, "changeEntryPoint", [
-                newEntryPoint.address
-            ]);
-            userOp.sender = address;
-            userOp.callData = encodeCallData(userOp.sender, 0, data);
-            const hash = await wallet.userOperationHash(userOp);
-            userOp.signature = await sign(specialOwner, hash);
-            await EntryPoint.handleOp(userOp, address);
-            expect(await wallet.entryPoint()).to.equal(newEntryPoint.address);
-        });
+      const hash = await wallet.userOperationHash(userOp);
+      userOp.signature = await sign(owner, hash);
+      await expect(EntryPoint.handleOps([userOp], address)).to.be.reverted;
     });
+
+    it("should revert if the owner calls 'guardianCall' ", async () => {
+      const { address, wallet } = await walletSetup(
+        ownerAddress,
+        guardians,
+        entryPoint
+      );
+
+      await fund(address, relayer);
+
+      const txData = encodeFunctionData(abi, "changeOwner", [mock]);
+      userOp.sender = address;
+      userOp.nonce = 0;
+      userOp.callData = encodeFunctionData(abi, "guardianCall", ["0x"]);
+
+      const hash = await wallet.userOperationHash(userOp);
+      userOp.signature = await sign(owner, hash);
+      await expect(EntryPoint.handleOps([userOp], address)).to.be.reverted;
+    });
+
+    it("should remove a guardian", async () => {
+      const { address, wallet } = await walletSetup(
+        ownerAddress,
+        guardians,
+        entryPoint
+      );
+      await fund(address, relayer);
+      let _guardians = await wallet.getGuardians();
+      const guardianToRemove = _guardians[1];
+      expect(await wallet.isGuardian(guardianToRemove)).to.equal(true);
+      const txData = encodeFunctionData(abi, "removeGuardian", [
+        _guardians[0],
+        guardianToRemove,
+      ]);
+      userOp.sender = address;
+      userOp.nonce = 0;
+      userOp.callData = encodeFunctionData(abi, "exec", [address, 0, txData]);
+
+      const hash = await wallet.userOperationHash(userOp);
+      userOp.signature = await sign(owner, hash);
+      await EntryPoint.handleOps([userOp], address);
+
+      _guardians = await wallet.getGuardians();
+      expect(await wallet.isGuardian(guardianToRemove)).to.equal(false);
+    });
+  });
+
+  describe("Change Entry Point", () => {
+    it("should revert by calling the function directly", async () => {
+      const { address, wallet } = await walletSetup(
+        ownerAddress,
+        guardians,
+        entryPoint
+      );
+      const randy = ethers.Wallet.createRandom();
+      await expect(wallet.changeEntryPoint(randy.address)).to.be.revertedWith(
+        "SelfAuthorized__OnlyCallableFromWallet()"
+      );
+    });
+
+    it("should fail by changing the entry point to 'this' ", async () => {
+      const { address, wallet } = await walletSetup(
+        ownerAddress,
+        guardians,
+        entryPoint
+      );
+
+      await fund(address, relayer);
+
+      const txData = encodeFunctionData(abi, "changeEntryPoint", [address]);
+      userOp.sender = address;
+      userOp.nonce = 0;
+      userOp.callData = encodeFunctionData(abi, "exec", [address, 0, txData]);
+      await expect(wallet.exec(address, 0, txData)).to.be.reverted;
+    });
+
+    it("should fail by changing the entry point to a non-contract ", async () => {
+      const { address, wallet } = await walletSetup(
+        ownerAddress,
+        guardians,
+        entryPoint
+      );
+
+      await fund(address, relayer);
+
+      const txData = encodeFunctionData(abi, "changeEntryPoint", [mock]);
+      userOp.sender = address;
+      userOp.nonce = 0;
+      userOp.callData = encodeFunctionData(abi, "exec", [address, 0, txData]);
+      await expect(wallet.exec(address, 0, txData)).to.be.reverted;
+    });
+
+    it("should fail by changing the entry point address to current", async () => {
+      const { address, wallet } = await walletSetup(
+        ownerAddress,
+        guardians,
+        entryPoint
+      );
+
+      await fund(address, relayer);
+
+      const txData = encodeFunctionData(abi, "changeEntryPoint", [
+        EntryPoint.address,
+      ]);
+      userOp.sender = address;
+      userOp.nonce = 0;
+      userOp.callData = encodeFunctionData(abi, "exec", [address, 0, txData]);
+      await expect(wallet.exec(address, 0, txData)).to.be.reverted;
+    });
+
+    it("should update the entry point from 'exec' ", async () => {
+      const { address, wallet } = await walletSetup(
+        ownerAddress,
+        guardians,
+        entryPoint
+      );
+
+      await fund(address, relayer);
+      const _newEntryPoint = await ethers.getContractFactory(
+        "AccountAbstraction"
+      );
+      const newEntryPoint = await _newEntryPoint.deploy();
+      const addr = newEntryPoint.address;
+      const txData = encodeFunctionData(abi, "changeEntryPoint", [addr]);
+      userOp.sender = address;
+      userOp.nonce = 0;
+      userOp.callData = encodeFunctionData(abi, "exec", [address, 0, txData]);
+      await expect(wallet.exec(address, 0, txData))
+        .to.emit(wallet, "EntryPointChanged")
+        .withArgs(addr);
+      expect(await wallet.entryPoint()).to.equal(addr);
+    });
+
+    it("should change entry point from 'handleOps' ", async () => {
+      const { address, wallet } = await walletSetup(
+        ownerAddress,
+        guardians,
+        entryPoint
+      );
+
+      await fund(address, relayer);
+      const _newEntryPoint = await ethers.getContractFactory(
+        "AccountAbstraction"
+      );
+      const newEntryPoint = await _newEntryPoint.deploy();
+      const addr = newEntryPoint.address;
+      const txData = encodeFunctionData(abi, "changeEntryPoint", [addr]);
+      userOp.sender = address;
+      userOp.nonce = 0;
+      userOp.callData = encodeFunctionData(abi, "exec", [address, 0, txData]);
+
+      const hash = await wallet.userOperationHash(userOp);
+      userOp.signature = await sign(owner, hash);
+      await EntryPoint.handleOps([userOp], address);
+      expect(await wallet.entryPoint()).to.equal(addr);
+    });
+  });
 });

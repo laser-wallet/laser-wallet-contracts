@@ -9,6 +9,8 @@ import "./libraries/UserOperation.sol";
 import "./utils/Utils.sol";
 import "./ssr/SSR.sol";
 
+import "hardhat/console.sol";
+
 /**
  * @title LaserWallet - EVM based smart contract wallet. Implementes "sovereign social recovery" mechanism and account abstraction.
  * @author Rodrigo Herrera I.
@@ -36,6 +38,7 @@ contract LaserWallet is
     bytes4 private constant EIP1271_MAGIC_VALUE =
         bytes4(keccak256("isValidSignature(bytes32,bytes)"));
 
+    error LW_NotEntryPoint();
     error LW__InvalidNonce();
     error LW__InvalidSignature();
     error LW__InvalidSigner__NotOwner();
@@ -70,6 +73,13 @@ contract LaserWallet is
     modifier onlyEntryPointOrGuardian() {
         if (msg.sender != entryPoint && guardians[msg.sender] == address(0))
             revert LW__OnlyEntryPointOrGuardian();
+        _;
+    }
+
+    modifier onlyFromEntryPoint() {
+        if (msg.sender != entryPoint) {
+            revert LW_NotEntryPoint();
+        }
         _;
     }
 
@@ -129,15 +139,7 @@ contract LaserWallet is
         uint256 _requiredPrefund
     ) external override onlyFromEntryPoint {
         // Increase the nonce to avoid drained funds from multiple pay prefunds.
-        if (++nonce != userOp.nonce) revert LW__InvalidNonce();
-
-        // We need to check that the requested prefund is in bounds... Really ???
-        //TODO check this thing, not sure ...
-        require(
-            _requiredPrefund <= userOp.requiredPreFund(),
-            "LW-AA: incorrect required prefund"
-        );
-
+        if (nonce++ != userOp.nonce) revert LW__InvalidNonce();
         // In order to check the signatures correctly, we encode the transaction data...
         bytes memory userOpData = encodeUserOperationData(
             userOp.sender,
@@ -153,10 +155,8 @@ contract LaserWallet is
         );
         // Now we hash it ...
         bytes32 dataHash = keccak256(userOpData);
-
         // We recover the sender ...
         address recovered = returnSigner(dataHash, userOp.signature);
-
         // We get the function selector to check proper access ...
         bytes4 funcSelector = bytes4(userOp.callData);
         if (
@@ -166,18 +166,14 @@ contract LaserWallet is
         ) {
             // We check that the sender is the owner ...
             if (recovered != owner) revert LW__InvalidSigner__NotOwner();
-
             // If the wallet is locked, we revert...
             if (isLocked) revert LW__WalletLocked();
-
             // Guardians can only call the guardianCall() func ...
         } else if (funcSelector == this.guardianCall.selector) {
             // We check that the sender is a guardian ...
             if (guardians[recovered] == address(0)) revert LW__NotGuardian();
-
-            // Else, the call was invalid ...
+            // Else, the call is invalid ...
         } else revert LW__InvalidCallData();
-
         // Finally... we can pay the costs to the EntryPoint ...
         payPrefund(_requiredPrefund);
     }
@@ -185,9 +181,9 @@ contract LaserWallet is
     /**
      * @dev Executes an AA transaction. The msg.sender needs to be the EntryPoint address.
      * The signatures are verified in validateUserOp().
-     * @param to Destination address of Safe transaction.
-     * @param value Ether value of Safe transaction.
-     * @param data Data payload of Safe transaction.
+     * @param to Destination address of the transaction.
+     * @param value Ether value of the transaction.
+     * @param data Data payload of the transaction.
      */
     function exec(
         address to,
@@ -201,6 +197,10 @@ contract LaserWallet is
         execute(to, value, data, gasleft());
     }
 
+    /**
+     * @dev Starts the SSR mechanism. Can only be called by a guardian.
+     * @param data Data payload of Safe transaction.
+     */
     function guardianCall(bytes memory data) external onlyEntryPointOrGuardian {
         // We check that the guardian has proper access ...
         if (access(bytes4(data)) != Access.Guardian)
