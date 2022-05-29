@@ -4,7 +4,8 @@
   "description": "Core repository of Laser's smart contracts",
   "scripts": {
     "prettier:write":"npx prettier --write test/",
-    "test": "npx hardhat test"
+    "test": "npx hardhat test",
+    "compile": "npx hardhat compile"
   },
   "author": "Rodrigo Herrera I.",
   "license": "LGPL-3.0",
