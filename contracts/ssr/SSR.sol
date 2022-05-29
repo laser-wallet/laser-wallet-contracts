@@ -37,6 +37,7 @@ contract SSR is SelfAuthorized, Owner {
     error Guardian__WalletIsNotLocked();
     error Guardian__IncorrectPreviousGuardian();
     error Guardian__AlreadyApproved();
+    error Guardian__GuardiansUnderflow();
 
     event WalletLocked();
     event WalletUnlocked();
@@ -169,11 +170,16 @@ contract SSR is SelfAuthorized, Owner {
         external
         authorized
     {
-        if (guardianToRemove == address(0) || guardianToRemove == pointer)
+        if (guardianToRemove == address(0) || guardianToRemove == pointer) {
             revert Guardian__InvalidGuardianAddress();
+        }
 
-        if (guardians[prevGuardian] != guardianToRemove)
+        if (guardians[prevGuardian] != guardianToRemove) {
             revert Guardian__IncorrectPreviousGuardian();
+        }
+
+        // There needs to be at least 1 guardian ..
+        if (guardianCount - 1 < 1) revert Guardian__GuardiansUnderflow();
 
         guardians[prevGuardian] = guardians[guardianToRemove];
         guardians[guardianToRemove] = address(0);
