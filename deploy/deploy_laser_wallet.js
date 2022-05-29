@@ -1,30 +1,22 @@
-const hre = require("hardhat");
+const hre = require('hardhat')
 
 async function main() {
-    
-    const [deployer] = await ethers.getSigners();
-    
-    console.log("Deploying contract with the account:", deployer.address);
+    const [deployer] = await ethers.getSigners()
 
-    const LASER_WALLET = await ethers.getContractFactory("LaserWallet");
+    console.log('Deploying contract with the account:', deployer.address)
 
-    const LaserWallet = await LASER_WALLET.deploy();
+    const LASER_WALLET = await ethers.getContractFactory('LaserWallet')
 
-    console.log("LaserWallet address -->", LaserWallet.address);
+    const LaserWallet = await LASER_WALLET.deploy()
 
-    await hre.storageLayout.export();
+    console.log('LaserWallet address -->', LaserWallet.address)
 
+    await hre.storageLayout.export()
 }
 
 main()
     .then(() => process.exit(0))
     .catch((error) => {
-        console.error(error);
-        process.exit(1);
-    });
-
-
-
-
-
-
+        console.error(error)
+        process.exit(1)
+    })
