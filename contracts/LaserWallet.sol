@@ -1,40 +1,33 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 pragma solidity 0.8.14;
 
-import "./core/AccountAbstraction.sol";
-import "./core/Singleton.sol";
-import "./handlers/Handler.sol";
-import "./interfaces/ILaserWallet.sol";
-import "./libraries/UserOperation.sol";
-import "./utils/Utils.sol";
-import "./ssr/SSR.sol";
+import './core/AccountAbstraction.sol';
+import './core/Singleton.sol';
+import './handlers/Handler.sol';
+import './interfaces/ILaserWallet.sol';
+import './libraries/UserOperation.sol';
+import './utils/Utils.sol';
+import './ssr/SSR.sol';
 
 /**
  * @title LaserWallet - EVM based smart contract wallet. Implementes "sovereign social recovery" mechanism and account abstraction.
  * @author Rodrigo Herrera I.
  */
-contract LaserWallet is
-    Singleton,
-    AccountAbstraction,
-    SSR,
-    Handler,
-    Utils,
-    ILaserWallet
-{
+contract LaserWallet is Singleton, AccountAbstraction, SSR, Handler, Utils, ILaserWallet {
     using UserOperationLib for UserOperation;
 
-    string public constant VERSION = "1.0.0";
+    string public constant VERSION = '1.0.0';
 
     uint256 public nonce;
 
     bytes32 private constant DOMAIN_SEPARATOR_TYPEHASH =
-        keccak256("EIP712Domain(uint256 chainId,address verifyingContract)");
+        keccak256('EIP712Domain(uint256 chainId,address verifyingContract)');
     bytes32 private constant LASER_OP_TYPEHASH =
         keccak256(
-            "LaserOp(address sender,uint256 nonce,bytes callData,uint256 callGas,uint256 verificationGas,uint256 preVerificationGas,uint256 maxFeePerGas,uint256 maxPriorityFeePerGas,address paymaster,bytes paymasterData)"
+            'LaserOp(address sender,uint256 nonce,bytes callData,uint256 callGas,uint256 verificationGas,uint256 preVerificationGas,uint256 maxFeePerGas,uint256 maxPriorityFeePerGas,address paymaster,bytes paymasterData)'
         );
     bytes4 private constant EIP1271_MAGIC_VALUE =
-        bytes4(keccak256("isValidSignature(bytes32,bytes)"));
+        bytes4(keccak256('isValidSignature(bytes32,bytes)'));
 
     error LW_NotEntryPoint();
     error LW__InvalidNonce();
@@ -49,6 +42,7 @@ contract LaserWallet is
     error LW__OwnerNotAllowed();
     error LW__GuardianNotAllowed();
     error LW__OnlyEntryPointOrOwner();
+    error LW__Emergency__InvalidCaller();
 
     event Setup(address owner, address[] guardians, address entryPoint);
     event ApproveHash(bytes32 indexed approvedHash, address indexed owner);
@@ -62,23 +56,8 @@ contract LaserWallet is
         bytes data;
     }
 
-    modifier onlyEntryPointOrOwner() {
-        if (msg.sender != entryPoint && msg.sender != owner) {
-            revert LW__OnlyEntryPointOrOwner();
-        }
-        _;
-    }
-
-    modifier onlyEntryPointOrGuardian() {
-        if (msg.sender != entryPoint && guardians[msg.sender] == address(0)) {
-            revert LW__OnlyEntryPointOrGuardian();
-        }
-        _;
-    }
-
-    modifier onlyFromEntryPoint() {
+    modifier onlyEntryPoint() {
         if (msg.sender != entryPoint) revert LW_NotEntryPoint();
-
         _;
     }
 
@@ -117,10 +96,9 @@ contract LaserWallet is
         if (_requiredPrefund > 0) {
             // If we need to pay back to EntryPoint ...
             // The only possible caller of this function is EntryPoint.
-            (bool success, ) = payable(msg.sender).call{
-                value: _requiredPrefund,
-                gas: gasleft()
-            }("");
+            (bool success, ) = payable(msg.sender).call{value: _requiredPrefund, gas: gasleft()}(
+                ''
+            );
             // It is EntryPoint's job to check for success.
             (success);
         }
@@ -136,7 +114,7 @@ contract LaserWallet is
         UserOperation calldata userOp,
         bytes32,
         uint256 _requiredPrefund
-    ) external override onlyFromEntryPoint {
+    ) external override onlyEntryPoint {
         // Increase the nonce to avoid drained funds from multiple pay prefunds.
         if (nonce++ != userOp.nonce) revert LW__InvalidNonce();
         // In order to check the signatures correctly, we encode the transaction data...
@@ -160,8 +138,7 @@ contract LaserWallet is
         bytes4 funcSelector = bytes4(userOp.callData);
         if (
             // The owner can only call exec() or multiCall()
-            funcSelector == this.exec.selector ||
-            funcSelector == this.multiCall.selector
+            funcSelector == this.exec.selector || funcSelector == this.multiCall.selector
         ) {
             // We check that the sender is the owner ...
             if (recovered != owner) revert LW__InvalidSigner__NotOwner();
@@ -189,7 +166,7 @@ contract LaserWallet is
         address to,
         uint256 value,
         bytes memory data
-    ) external override onlyEntryPointOrOwner isNotLocked {
+    ) external override onlyEntryPoint {
         // We check that the the owner has proper access ...
         if (access(bytes4(data)) != Access.Owner) revert LW__OwnerNotAllowed();
 
@@ -201,7 +178,7 @@ contract LaserWallet is
      * @dev Starts the SSR mechanism. Can only be called by a guardian.
      * @param data Data payload of Safe transaction.
      */
-    function guardianCall(bytes memory data) external onlyEntryPointOrGuardian {
+    function guardianCall(bytes memory data) external onlyEntryPoint {
         // We check that the guardian has proper access ...
         if (access(bytes4(data)) != Access.Guardian) {
             revert LW__GuardianNotAllowed();
@@ -216,10 +193,7 @@ contract LaserWallet is
      * @param transactions populated array of transactions.
      * @notice If any transaction fails, the whole multiCall reverts.
      */
-    function multiCall(Transaction[] calldata transactions)
-        external
-        onlyEntryPointOrOwner
-    {
+    function multiCall(Transaction[] calldata transactions) external onlyEntryPoint {
         uint256 transactionsLength = transactions.length;
         for (uint256 i = 0; i < transactionsLength; ) {
             address to = transactions[i].to;
@@ -242,6 +216,35 @@ contract LaserWallet is
     }
 
     /**
+     * @dev Executes a transaction.
+     * @param to Destination address of the transaction.
+     * @param value Ether value of the transaction.
+     * @param data Data payload of the transaction.
+     * @notice This function is implemented in the case of a bug in the EntryPoint contract.
+     * So there is a direct interaction with this.
+     */
+    function emergencyCall(
+        address to,
+        uint256 value,
+        bytes memory data
+    ) external {
+        Access _access = access(bytes4(data));
+        ++nonce;
+        // If the sender is the owner ...
+        if (msg.sender == owner) {
+            // We check that the the owner has proper access ...
+            if (_access != Access.Owner) revert LW__OwnerNotAllowed();
+            // execute checks for success...
+            else execute(to, value, data, gasleft());
+            // If the sender is a guardian ...
+        } else if (guardians[msg.sender] != address(0)) {
+            if (_access != Access.Guardian) revert LW__GuardianNotAllowed();
+            else execute(to, value, data, gasleft());
+            // If the sender is neither the owner nor the guardian, we revert ...
+        } else revert LW__Emergency__InvalidCaller();
+    }
+
+    /**
      * @return chainId The chain id of this.
      */
     function getChainId() public view returns (uint256 chainId) {
@@ -251,14 +254,7 @@ contract LaserWallet is
     }
 
     function domainSeparator() public view returns (bytes32) {
-        return
-            keccak256(
-                abi.encode(
-                    DOMAIN_SEPARATOR_TYPEHASH,
-                    getChainId(),
-                    address(this)
-                )
-            );
+        return keccak256(abi.encode(DOMAIN_SEPARATOR_TYPEHASH, getChainId(), address(this)));
     }
 
     /**
@@ -301,24 +297,14 @@ contract LaserWallet is
                 keccak256(paymasterData)
             )
         );
-        return
-            abi.encodePacked(
-                bytes1(0x19),
-                bytes1(0x01),
-                domainSeparator(),
-                _userOperationHash
-            );
+        return abi.encodePacked(bytes1(0x19), bytes1(0x01), domainSeparator(), _userOperationHash);
     }
 
     /**
      * @dev Returns the user operation hash to be signed by owners.
      * @param userOp The UserOperation struct.
      */
-    function userOperationHash(UserOperation calldata userOp)
-        public
-        view
-        returns (bytes32)
-    {
+    function userOperationHash(UserOperation calldata userOp) public view returns (bytes32) {
         return
             keccak256(
                 encodeUserOperationData(
