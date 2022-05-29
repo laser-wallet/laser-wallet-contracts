@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "description": "",
   "scripts": {
-    "prettier:write":"npx prettier --write test/"
+    "prettier:write":"npx prettier --write test/",
+    "test": "npx hardhat test"
   },
   "author": "Rodrigo Herrera I.",
   "license": "ISC",
