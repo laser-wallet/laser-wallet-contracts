@@ -5,7 +5,10 @@
   "scripts": {
     "prettier:write":"npx prettier --write test/",
     "test": "npx hardhat test",
-    "compile": "npx hardhat compile"
+    "compile": "npx hardhat compile",
+    "mainnet:laser_wallet": "npx hardhat run deploy/deploy_laser_wallet.js --network mainnet",
+    "mainnet:laser_factory": "npx hardhat run deploy/deploy_laser_factory.js --network mainnet",
+    "goerli:laser_wallet": "npx hardhat run deploy/deploy_laser_wallet.js --network goerli"
   },
   "author": "Rodrigo Herrera I.",
   "license": "LGPL-3.0",
