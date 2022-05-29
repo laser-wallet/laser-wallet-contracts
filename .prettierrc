@@ -5,7 +5,7 @@
   "tabWidth": 4,
   "overrides": [
     {
-      "files": "*.ts",
+      "files": "*.ts", 
       "options": {
         "semi": true,
         "printWidth": 100
