@@ -1,24 +1,25 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 pragma solidity 0.8.14;
 
-/// @title LaserStorage - Storage layout of the Safe contracts to be used in libraries.
+/**
+ * @title LaserWalletStorage
+ * @dev Contract that maps the storage of the singleton.
+ */
 contract LaserWalletStorage {
-    // From /common/Singleton.sol
+    // core/Singleton.sol
     address public singleton;
 
-    // From /common/EntryPoint.sol
+    // core/AccountAbstraction.sol
     address public entryPoint;
 
-    //From /base/OwnerManager.sol
-    mapping(address => address) internal owners;
-    mapping(address => bool) internal specialOwners;
-    uint256 internal ownerCount;
-    uint256 internal specialOwnerCount;
-    uint256 internal threshold;
+    // core/Owner.sol
+    address public owner;
 
-    // From /modules/Guard.sol
-    uint256 ethSpendingLimit;
+    // ssr/SSR.sol
+    address public recoveryOwner;
+    uint256 public guardianCount;
+    bool public isLocked;
 
-    // From /LaserWallet.sol
+    // LaserWallet.sol
     uint256 public nonce;
 }
