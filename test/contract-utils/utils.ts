@@ -5,7 +5,6 @@ import {
   walletSetup,
   factorySetup,
   encodeFunctionData,
-  initTests,
   sign,
   signTypedData,
   EIP712Sig,

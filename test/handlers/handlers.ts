@@ -1,7 +1,6 @@
 import { expect } from "chai";
 import { ethers } from "hardhat";
 import { Contract, providers, Signer, Wallet } from "ethers";
-
 import { walletSetup } from "../utils";
 
 const mock = Wallet.createRandom().address;

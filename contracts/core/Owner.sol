@@ -26,28 +26,16 @@ contract Owner is SelfAuthorized {
             newOwner.code.length != 0 ||
             newOwner == address(0)
         ) revert Owner__InvalidOwnerAddress();
-
-        assembly {
-            // So we are more explicit.
-            // owner should always bet at storage slot 2.
-            sstore(2, newOwner)
-        }
+        owner = newOwner;
         emit OwnerChanged(newOwner);
     }
 
     function initOwner(address newOwner) internal {
-        // If wallet is not address0, the wallet was already initialized...
+        // If owner is not address0, the wallet was already initialized...
         if (owner != address(0)) revert Owner__WalletInitialized();
-        if (
-            newOwner == owner ||
-            newOwner.code.length != 0 ||
-            newOwner == address(0)
-        ) revert Owner__InvalidOwnerAddress();
-
-        assembly {
-            // So we are more explicit.
-            // owner should always bet at storage slot 2.
-            sstore(2, newOwner)
+        if (newOwner.code.length != 0 || newOwner == address(0)) {
+            revert Owner__InvalidOwnerAddress();
         }
+        owner = newOwner;
     }
 }

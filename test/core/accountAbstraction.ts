@@ -5,7 +5,6 @@ import {
   walletSetup,
   factorySetup,
   encodeFunctionData,
-  initTests,
   sign,
   signTypedData,
   EIP712Sig,
@@ -38,8 +37,8 @@ describe("Account Abstraction", () => {
     [owner, _guardian1, _guardian2, relayer] = await ethers.getSigners();
     ownerAddress = await owner.getAddress();
     guardians = [await _guardian1.getAddress(), await _guardian2.getAddress()];
-    const EP = await ethers.getContractFactory("TestEntryPoint");
-    EntryPoint = await EP.deploy(mock, 0, 0);
+    const _EntryPoint = await ethers.getContractFactory("TestEntryPoint");
+    EntryPoint = await _EntryPoint.deploy(mock, 0, 0);
     entryPoint = EntryPoint.address;
   });
 
@@ -115,7 +114,7 @@ describe("Account Abstraction", () => {
   });
 
   describe("Transactions", () => {
-    it("should execute an EIP712 transaction", async () => {
+    it("should execute an EIP712 transaction", async () => { 
       const { address, wallet } = await walletSetup(
         ownerAddress,
         guardians,
@@ -162,7 +161,6 @@ describe("Account Abstraction", () => {
       userOp.sender = address;
       userOp.nonce = 0;
       userOp.callData = encodeFunctionData(abi, "exec", [address, 0, txData]);
-
       const hash = await wallet.userOperationHash(userOp);
       userOp.signature = await sign(owner, hash);
       await EntryPoint.handleOps([userOp], address);

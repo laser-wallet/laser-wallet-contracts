@@ -7,3 +7,5 @@ export const ownerWallet = new ethers.Wallet(ownerPrivateKey);
 export const twoEth = ethers.utils.parseEther("2");
 
 export const tenEth = ethers.utils.parseEther("10");
+
+export const addrZero = ethers.constants.AddressZero;

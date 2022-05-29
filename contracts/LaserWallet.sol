@@ -9,8 +9,6 @@ import "./libraries/UserOperation.sol";
 import "./utils/Utils.sol";
 import "./ssr/SSR.sol";
 
-import "hardhat/console.sol";
-
 /**
  * @title LaserWallet - EVM based smart contract wallet. Implementes "sovereign social recovery" mechanism and account abstraction.
  * @author Rodrigo Herrera I.
@@ -65,21 +63,22 @@ contract LaserWallet is
     }
 
     modifier onlyEntryPointOrOwner() {
-        if (msg.sender != entryPoint && msg.sender != owner)
+        if (msg.sender != entryPoint && msg.sender != owner) {
             revert LW__OnlyEntryPointOrOwner();
+        }
         _;
     }
 
     modifier onlyEntryPointOrGuardian() {
-        if (msg.sender != entryPoint && guardians[msg.sender] == address(0))
+        if (msg.sender != entryPoint && guardians[msg.sender] == address(0)) {
             revert LW__OnlyEntryPointOrGuardian();
+        }
         _;
     }
 
     modifier onlyFromEntryPoint() {
-        if (msg.sender != entryPoint) {
-            revert LW_NotEntryPoint();
-        }
+        if (msg.sender != entryPoint) revert LW_NotEntryPoint();
+
         _;
     }
 
@@ -120,7 +119,7 @@ contract LaserWallet is
             // The only possible caller of this function is EntryPoint.
             (bool success, ) = payable(msg.sender).call{
                 value: _requiredPrefund,
-                gas: type(uint256).max
+                gas: gasleft()
             }("");
             // It is EntryPoint's job to check for success.
             (success);
@@ -174,6 +173,7 @@ contract LaserWallet is
             if (guardians[recovered] == address(0)) revert LW__NotGuardian();
             // Else, the call is invalid ...
         } else revert LW__InvalidCallData();
+
         // Finally... we can pay the costs to the EntryPoint ...
         payPrefund(_requiredPrefund);
     }
@@ -203,8 +203,9 @@ contract LaserWallet is
      */
     function guardianCall(bytes memory data) external onlyEntryPointOrGuardian {
         // We check that the guardian has proper access ...
-        if (access(bytes4(data)) != Access.Guardian)
+        if (access(bytes4(data)) != Access.Guardian) {
             revert LW__GuardianNotAllowed();
+        }
 
         // execute checks for success...
         execute(address(this), 0, data, gasleft());
@@ -241,10 +242,12 @@ contract LaserWallet is
     }
 
     /**
-     * @return The chain id of this.
+     * @return chainId The chain id of this.
      */
-    function getChainId() public view returns (uint256) {
-        return block.chainid;
+    function getChainId() public view returns (uint256 chainId) {
+        assembly {
+            chainId := chainid()
+        }
     }
 
     function domainSeparator() public view returns (bytes32) {
@@ -252,7 +255,7 @@ contract LaserWallet is
             keccak256(
                 abi.encode(
                     DOMAIN_SEPARATOR_TYPEHASH,
-                    block.chainid,
+                    getChainId(),
                     address(this)
                 )
             );

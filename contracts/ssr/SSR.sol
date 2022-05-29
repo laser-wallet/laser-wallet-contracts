@@ -3,6 +3,7 @@ pragma solidity 0.8.14;
 
 import "../core/SelfAuthorized.sol";
 import "../core/Owner.sol";
+import "../interfaces/IERC165.sol";
 
 /**
  * @title SSR - Sovereign Social Recovery
@@ -139,8 +140,18 @@ contract SSR is SelfAuthorized, Owner {
             newGuardian == owner ||
             guardians[newGuardian] != address(0)
         ) revert Guardian__InvalidGuardianAddress();
+
+        // Guardians can only be either EOA or Laser.
+        // Untill EIP1271 is more widely adopted ...
+        if (newGuardian.code.length > 0) {
+            if (!IERC165(newGuardian).supportsInterface(0xae029e0b)) {
+                revert Guardian__InvalidGuardianAddress();
+            }
+        }
+
         guardians[newGuardian] = guardians[pointer];
         guardians[pointer] = newGuardian;
+
         unchecked {
             // Won't overflow...
             ++guardianCount;
@@ -188,9 +199,9 @@ contract SSR is SelfAuthorized, Owner {
         if (guardianCount == 0) revert Guardian__NoGuardians();
 
         address[] memory guardiansArray = new address[](guardianCount);
+        address currentGuardian = guardians[pointer];
 
         uint256 index = 0;
-        address currentGuardian = guardians[pointer];
         while (currentGuardian != pointer) {
             guardiansArray[index] = currentGuardian;
             currentGuardian = guardians[currentGuardian];
