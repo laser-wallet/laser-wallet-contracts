@@ -8,8 +8,7 @@ pragma solidity 0.8.14;
 contract SelfAuthorized {
     error SelfAuthorized__OnlyCallableFromWallet();
     modifier authorized() {
-        if (msg.sender != address(this))
-            revert SelfAuthorized__OnlyCallableFromWallet();
+        if (msg.sender != address(this)) revert SelfAuthorized__OnlyCallableFromWallet();
 
         _;
     }

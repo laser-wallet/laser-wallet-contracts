@@ -9,12 +9,7 @@ import "../interfaces/IERC165.sol";
 /**
  * @title TokenHandler - Supports token callbacks.
  */
-contract Handler is
-    IERC1155TokenReceiver,
-    IERC777TokensRecipient,
-    IERC721TokenReceiver,
-    IERC165
-{
+contract Handler is IERC1155TokenReceiver, IERC777TokensRecipient, IERC721TokenReceiver, IERC165 {
     function onERC721Received(
         address,
         address,
@@ -53,11 +48,7 @@ contract Handler is
         bytes calldata
     ) external pure {}
 
-    function supportsInterface(bytes4 _interfaceId)
-        external
-        pure
-        returns (bool)
-    {
+    function supportsInterface(bytes4 _interfaceId) external pure returns (bool) {
         return
             _interfaceId == 0x01ffc9a7 || // ERC165 interface ID for ERC165
             _interfaceId == 0xd9b67a26 || // ERC165 interface ID for ERC1155

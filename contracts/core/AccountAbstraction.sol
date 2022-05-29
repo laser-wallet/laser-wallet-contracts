@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 pragma solidity 0.8.14;
 
-import '../core/SelfAuthorized.sol';
-import '../interfaces/IStakeManager.sol';
+import "../core/SelfAuthorized.sol";
+import "../interfaces/IStakeManager.sol";
 
 /**
  * @title AccountAbstraction - Handles the entry point address. Can only be changed through a safe transaction.
@@ -13,7 +13,7 @@ contract AccountAbstraction is SelfAuthorized {
     address public entryPoint;
 
     bytes32 private constant DOMAIN_SEPARATOR_TYPEHASH =
-        keccak256('EIP712Domain(uint256 chainId,address verifyingContract)');
+        keccak256("EIP712Domain(uint256 chainId,address verifyingContract)");
 
     error AA__InvalidEntryPoint();
     error AA__InsufficientWithdrawBalance();

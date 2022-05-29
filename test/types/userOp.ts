@@ -1,5 +1,5 @@
-import { LaserOp, UserOp } from './types';
-import { ethers } from 'ethers';
+import { LaserOp, UserOp } from "./types";
+import { ethers } from "ethers";
 
 const mock = 1000000000;
 
@@ -17,16 +17,16 @@ const mock = 1000000000;
 // };
 
 export const userOp: UserOp = {
-    sender: '',
-    nonce: '',
-    initCode: '0x',
-    callData: '',
+    sender: "",
+    nonce: "",
+    initCode: "0x",
+    callData: "",
     callGas: 2000000,
     verificationGas: 1000000,
     preVerificationGas: 1000000,
     maxFeePerGas: 10000000000,
     maxPriorityFeePerGas: 10000000000,
     paymaster: ethers.constants.AddressZero,
-    paymasterData: '0x',
-    signature: '0x',
+    paymasterData: "0x",
+    signature: "0x",
 };

@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 pragma solidity 0.8.14;
 
-import './core/AccountAbstraction.sol';
-import './core/Singleton.sol';
-import './handlers/Handler.sol';
-import './interfaces/ILaserWallet.sol';
-import './libraries/UserOperation.sol';
-import './utils/Utils.sol';
-import './ssr/SSR.sol';
+import "./core/AccountAbstraction.sol";
+import "./core/Singleton.sol";
+import "./handlers/Handler.sol";
+import "./interfaces/ILaserWallet.sol";
+import "./libraries/UserOperation.sol";
+import "./utils/Utils.sol";
+import "./ssr/SSR.sol";
 
 /**
  * @title LaserWallet - EVM based smart contract wallet. Implementes "sovereign social recovery" mechanism and account abstraction.
@@ -16,18 +16,18 @@ import './ssr/SSR.sol';
 contract LaserWallet is Singleton, AccountAbstraction, SSR, Handler, Utils, ILaserWallet {
     using UserOperationLib for UserOperation;
 
-    string public constant VERSION = '1.0.0';
+    string public constant VERSION = "1.0.0";
 
     uint256 public nonce;
 
     bytes32 private constant DOMAIN_SEPARATOR_TYPEHASH =
-        keccak256('EIP712Domain(uint256 chainId,address verifyingContract)');
+        keccak256("EIP712Domain(uint256 chainId,address verifyingContract)");
     bytes32 private constant LASER_OP_TYPEHASH =
         keccak256(
-            'LaserOp(address sender,uint256 nonce,bytes callData,uint256 callGas,uint256 verificationGas,uint256 preVerificationGas,uint256 maxFeePerGas,uint256 maxPriorityFeePerGas,address paymaster,bytes paymasterData)'
+            "LaserOp(address sender,uint256 nonce,bytes callData,uint256 callGas,uint256 verificationGas,uint256 preVerificationGas,uint256 maxFeePerGas,uint256 maxPriorityFeePerGas,address paymaster,bytes paymasterData)"
         );
     bytes4 private constant EIP1271_MAGIC_VALUE =
-        bytes4(keccak256('isValidSignature(bytes32,bytes)'));
+        bytes4(keccak256("isValidSignature(bytes32,bytes)"));
 
     error LW_NotEntryPoint();
     error LW__InvalidNonce();
@@ -97,7 +97,7 @@ contract LaserWallet is Singleton, AccountAbstraction, SSR, Handler, Utils, ILas
             // If we need to pay back to EntryPoint ...
             // The only possible caller of this function is EntryPoint.
             (bool success, ) = payable(msg.sender).call{value: _requiredPrefund, gas: gasleft()}(
-                ''
+                ""
             );
             // It is EntryPoint's job to check for success.
             (success);

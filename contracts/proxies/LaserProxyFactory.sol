@@ -32,10 +32,7 @@ contract LaserProxyFactory {
         if (_data.length > 0)
             // solhint-disable-next-line no-inline-assembly
             assembly {
-                if eq(
-                    call(gas(), proxy, 0, add(_data, 0x20), mload(_data), 0, 0),
-                    0
-                ) {
+                if eq(call(gas(), proxy, 0, add(_data, 0x20), mload(_data), 0, 0), 0) {
                     revert(0, 0)
                 }
             }
@@ -67,21 +64,14 @@ contract LaserProxyFactory {
         returns (LaserProxy proxy)
     {
         // If the initializer changes the proxy address should change too. Hashing the initializer data is cheaper than just concatinating it
-        bytes32 salt = keccak256(
-            abi.encodePacked(keccak256(_initializer), _saltNonce)
-        );
+        bytes32 salt = keccak256(abi.encodePacked(keccak256(_initializer), _saltNonce));
 
         bytes memory deploymentData = abi.encodePacked(
             type(LaserProxy).creationCode,
             uint256(uint160(singleton))
         );
         assembly {
-            proxy := create2(
-                0x0,
-                add(0x20, deploymentData),
-                mload(deploymentData),
-                salt
-            )
+            proxy := create2(0x0, add(0x20, deploymentData), mload(deploymentData), salt)
         }
         require(address(proxy) != address(0), "Create2 call failed");
     }
@@ -100,15 +90,7 @@ contract LaserProxyFactory {
         if (_initializer.length > 0)
             assembly {
                 if eq(
-                    call(
-                        gas(),
-                        proxy,
-                        0,
-                        add(_initializer, 0x20),
-                        mload(_initializer),
-                        0,
-                        0
-                    ),
+                    call(gas(), proxy, 0, add(_initializer, 0x20), mload(_initializer), 0, 0),
                     0
                 ) {
                     revert(0, 0)
@@ -126,14 +108,9 @@ contract LaserProxyFactory {
         returns (address)
     {
         bytes memory creationCode = proxyCreationCode();
-        bytes memory data = abi.encodePacked(
-            creationCode,
-            uint256(uint160(singleton))
-        );
+        bytes memory data = abi.encodePacked(creationCode, uint256(uint160(singleton)));
 
-        bytes32 salt = keccak256(
-            abi.encodePacked(keccak256(_initializer), _saltNonce)
-        );
+        bytes32 salt = keccak256(abi.encodePacked(keccak256(_initializer), _saltNonce));
 
         bytes32 hash = keccak256(
             abi.encodePacked(bytes1(0xff), address(this), salt, keccak256(data))

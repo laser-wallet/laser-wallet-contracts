@@ -1,6 +1,6 @@
-import { expect } from 'chai';
-import { ethers } from 'hardhat';
-import { Contract, Signer, Wallet } from 'ethers';
+import { expect } from "chai";
+import { ethers } from "hardhat";
+import { Contract, Signer, Wallet } from "ethers";
 import {
     walletSetup,
     factorySetup,
@@ -8,14 +8,14 @@ import {
     sign,
     signTypedData,
     EIP712Sig,
-} from '../utils';
-import { userOp, types, Address } from '../types';
-import { ownerWallet } from '../constants/constants';
+} from "../utils";
+import { userOp, types, Address } from "../types";
+import { ownerWallet } from "../constants/constants";
 
 const mock = ethers.Wallet.createRandom().address;
-const { abi } = require('../../artifacts/contracts/LaserWallet.sol/LaserWallet.json');
+const { abi } = require("../../artifacts/contracts/LaserWallet.sol/LaserWallet.json");
 
-describe('Setup', () => {
+describe("Setup", () => {
     let owner: Signer;
     let ownerAddress: Address;
     let guardians: Address[];
@@ -27,28 +27,28 @@ describe('Setup', () => {
         [owner, _guardian1, _guardian2] = await ethers.getSigners();
         ownerAddress = await owner.getAddress();
         guardians = [await _guardian1.getAddress(), await _guardian2.getAddress()];
-        const EP = await ethers.getContractFactory('TestEntryPoint');
+        const EP = await ethers.getContractFactory("TestEntryPoint");
         const _entryPoint = await EP.deploy(mock, 0, 0);
         entryPoint = _entryPoint.address;
     });
 
-    describe('Utils', () => {
-        it('should return correct signer if v is adjusted to 31', async () => {
+    describe("Utils", () => {
+        it("should return correct signer if v is adjusted to 31", async () => {
             const { address, wallet } = await walletSetup(ownerAddress, guardians, entryPoint);
-            const hash = ethers.utils.keccak256('0x1234');
+            const hash = ethers.utils.keccak256("0x1234");
             const sig = await sign(owner, hash);
             const signer = await wallet.returnSigner(hash, sig);
             expect(signer).to.equal(ownerAddress);
         });
 
-        it('should return correct signer by signing typed data', async () => {
+        it("should return correct signer by signing typed data", async () => {
             const { address, wallet } = await walletSetup(ownerAddress, guardians, entryPoint);
 
             // This is just to check the signature, it is mocking a transaction only
             // for the purposes of the Utils contract (not an actual transaction).
             userOp.sender = address;
             userOp.nonce = 0;
-            userOp.callData = '0x';
+            userOp.callData = "0x";
             const domain = {
                 chainId: await wallet.getChainId(),
                 verifyingContract: address,
@@ -74,7 +74,7 @@ describe('Setup', () => {
 
         it("should correctly split 'v', 'r', and 's' ", async () => {
             const { address, wallet } = await walletSetup(ownerAddress, guardians, entryPoint);
-            const hash = ethers.utils.keccak256('0x1234');
+            const hash = ethers.utils.keccak256("0x1234");
             const sig = await sign(owner, hash);
             const [r, s, v] = await wallet.splitSig(sig);
             expect(r).to.equal(sig.slice(0, 66));
@@ -82,12 +82,12 @@ describe('Setup', () => {
             expect(v).to.equal(parseInt(sig.slice(130), 16));
         });
 
-        it('should revert if the recovered signer is address(0)', async () => {
+        it("should revert if the recovered signer is address(0)", async () => {
             const { address, wallet } = await walletSetup(ownerAddress, guardians, entryPoint);
-            const hash = ethers.utils.keccak256('0x1234');
-            const sig = (await sign(owner, hash)).replace(/1f$/, '03');
+            const hash = ethers.utils.keccak256("0x1234");
+            const sig = (await sign(owner, hash)).replace(/1f$/, "03");
             await expect(wallet.returnSigner(hash, sig)).to.be.revertedWith(
-                'Utils__InvalidSignature()'
+                "Utils__InvalidSignature()"
             );
         });
     });

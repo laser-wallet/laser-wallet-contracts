@@ -1,13 +1,13 @@
-import { expect } from 'chai';
-import { ethers } from 'hardhat';
-import { Contract, Signer } from 'ethers';
-import { Address } from '../types';
-import { encodeFunctionData } from '../utils';
+import { expect } from "chai";
+import { ethers } from "hardhat";
+import { Contract, Signer } from "ethers";
+import { Address } from "../types";
+import { encodeFunctionData } from "../utils";
 
 const mock = ethers.Wallet.createRandom().address;
-const { abi } = require('../../artifacts/contracts/LaserWallet.sol/LaserWallet.json');
+const { abi } = require("../../artifacts/contracts/LaserWallet.sol/LaserWallet.json");
 
-describe('Proxy Factory', () => {
+describe("Proxy Factory", () => {
     let owner: Address;
     let guardians: Address[];
     let entryPoint: Address;
@@ -16,39 +16,39 @@ describe('Proxy Factory', () => {
     let initializer: string;
 
     beforeEach(async () => {
-        const singletonFactory = await ethers.getContractFactory('LaserWallet');
+        const singletonFactory = await ethers.getContractFactory("LaserWallet");
         const _singleton = await singletonFactory.deploy();
         singleton = _singleton.address;
-        _factory = await ethers.getContractFactory('LaserProxyFactory');
+        _factory = await ethers.getContractFactory("LaserProxyFactory");
         const [_owner, _guardian1, _guardian2] = await ethers.getSigners();
         owner = await _owner.getAddress();
         guardians = [await _guardian1.getAddress(), await _guardian2.getAddress()];
-        const EP = await ethers.getContractFactory('TestEntryPoint');
+        const EP = await ethers.getContractFactory("TestEntryPoint");
         const _entryPoint = await EP.deploy(mock, 0, 0);
         entryPoint = _entryPoint.address;
-        initializer = encodeFunctionData(abi, 'init', [owner, guardians, entryPoint]);
+        initializer = encodeFunctionData(abi, "init", [owner, guardians, entryPoint]);
     });
 
-    describe('Proxy Factory creation and interaction', () => {
-        it('should have the singleton stored after deployment', async () => {
+    describe("Proxy Factory creation and interaction", () => {
+        it("should have the singleton stored after deployment", async () => {
             const factory = await _factory.deploy(singleton);
             expect(await factory.singleton()).to.equal(singleton);
         });
 
-        it('should revert by providing an invalid singleton (EOA)', async () => {
+        it("should revert by providing an invalid singleton (EOA)", async () => {
             const randy = ethers.Wallet.createRandom();
             await expect(_factory.deploy(randy.address)).to.be.reverted;
         });
 
-        it('should revert by providing an invalid singleton (contract)', async () => {
-            const factoryTest = await ethers.getContractFactory('Caller');
+        it("should revert by providing an invalid singleton (contract)", async () => {
+            const factoryTest = await ethers.getContractFactory("Caller");
             const test = await factoryTest.deploy();
             await expect(_factory.deploy(test.address)).to.be.reverted;
         });
 
         it("should deploy a proxy with 'createProxy'", async () => {
             const factory = await _factory.deploy(singleton);
-            await expect(factory.createProxy(initializer)).to.emit(factory, 'ProxyCreation');
+            await expect(factory.createProxy(initializer)).to.emit(factory, "ProxyCreation");
         });
 
         it("should precompute the proxy address with 'create'", async () => {
@@ -72,11 +72,11 @@ describe('Proxy Factory', () => {
             const factory = await _factory.deploy(singleton);
             await expect(factory.createProxyWithNonce(initializer, 1)).to.emit(
                 factory,
-                'ProxyCreation'
+                "ProxyCreation"
             );
         });
 
-        it('should precompute the proxy address with create2', async () => {
+        it("should precompute the proxy address with create2", async () => {
             const factory = await _factory.deploy(singleton);
             // Precompute the address.
             const from = factory.address;
@@ -89,7 +89,7 @@ describe('Proxy Factory', () => {
             expect(precompute).to.equal(proxy);
         });
 
-        it('should revert by deploying the proxy with the same salt', async () => {
+        it("should revert by deploying the proxy with the same salt", async () => {
             // When deploying a contract, the EVM checks if the address has code,
             // if it does, it reverts.
             const factory = await _factory.deploy(singleton);

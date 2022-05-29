@@ -77,10 +77,7 @@ contract SSR is SelfAuthorized, Owner {
      * @notice The newOwner and newRecoveryOwner key pair should be generated from the mobile device.
      * The main reason of this is to restart the generation process in case an attacker has the current recoveryOwner.
      */
-    function recover(address newOwner, address newRecoveryOwner)
-        external
-        authorized
-    {
+    function recover(address newOwner, address newRecoveryOwner) external authorized {
         if (!isLocked) revert Guardian__WalletIsNotLocked();
         owner = newOwner;
         recoveryOwner = newRecoveryOwner;
@@ -172,10 +169,7 @@ contract SSR is SelfAuthorized, Owner {
      * @param guardianToRemove Address of the guardian to be removed.
      * @notice Can only be called by the owner.
      */
-    function removeGuardian(address prevGuardian, address guardianToRemove)
-        external
-        authorized
-    {
+    function removeGuardian(address prevGuardian, address guardianToRemove) external authorized {
         if (guardianToRemove == address(0) || guardianToRemove == pointer) {
             revert Guardian__InvalidGuardianAddress();
         }

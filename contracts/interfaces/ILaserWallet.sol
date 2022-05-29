@@ -63,10 +63,7 @@ interface ILaserWallet {
      * @dev Returns the user operation hash to be signed by owners.
      * @param userOp The UserOperation struct.
      */
-    function userOperationHash(UserOperation calldata userOp)
-        external
-        view
-        returns (bytes32);
+    function userOperationHash(UserOperation calldata userOp) external view returns (bytes32);
 
     /**
      * @dev Implementation of EIP 1271: https://eips.ethereum.org/EIPS/eip-1271.
@@ -74,7 +71,5 @@ interface ILaserWallet {
      * @param signature Signature byte array associated with _msgHash.
      * @return Magic value  or reverts with an error message.
      */
-    function isValidSignature(bytes32 hash, bytes memory signature)
-        external
-        returns (bytes4);
+    function isValidSignature(bytes32 hash, bytes memory signature) external returns (bytes4);
 }

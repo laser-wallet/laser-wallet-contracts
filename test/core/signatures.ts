@@ -1,6 +1,6 @@
-import { expect } from 'chai';
-import { ethers } from 'hardhat';
-import { Contract, Signer, Wallet } from 'ethers';
+import { expect } from "chai";
+import { ethers } from "hardhat";
+import { Contract, Signer, Wallet } from "ethers";
 import {
     walletSetup,
     factorySetup,
@@ -8,14 +8,14 @@ import {
     sign,
     signTypedData,
     EIP712Sig,
-} from '../utils';
-import { userOp, types, Address } from '../types';
-import { ownerWallet, tenEth, twoEth } from '../constants/constants';
+} from "../utils";
+import { userOp, types, Address } from "../types";
+import { ownerWallet, tenEth, twoEth } from "../constants/constants";
 
 const mock = ethers.Wallet.createRandom().address;
-const { abi } = require('../../artifacts/contracts/LaserWallet.sol/LaserWallet.json');
+const { abi } = require("../../artifacts/contracts/LaserWallet.sol/LaserWallet.json");
 
-describe('Account Abstraction', () => {
+describe("Account Abstraction", () => {
     let owner: Signer;
     let ownerAddress: Address;
     let guardians: Address[];
@@ -29,7 +29,7 @@ describe('Account Abstraction', () => {
         [owner, _guardian1, _guardian2, relayer] = await ethers.getSigners();
         ownerAddress = await owner.getAddress();
         guardians = [await _guardian1.getAddress(), await _guardian2.getAddress()];
-        const _EntryPoint = await ethers.getContractFactory('TestEntryPoint');
+        const _EntryPoint = await ethers.getContractFactory("TestEntryPoint");
         EntryPoint = await _EntryPoint.deploy(mock, 0, 0);
         entryPoint = EntryPoint.address;
     });
