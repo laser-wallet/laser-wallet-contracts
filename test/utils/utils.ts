@@ -1,15 +1,11 @@
-import { ethers, Wallet, Contract, BigNumber } from "ethers";
+import { ethers, Wallet, Contract, BigNumber } from 'ethers';
 // import { Domain, types, TxMessage, SafeTx, UserOp } from "../types";
 
 // const {
 //     abi
 // } = require("../../artifacts/contracts/LaserWallet.sol/LaserWallet.json");
 
-export function encodeFunctionData(
-    abi: any,
-    functionName: string,
-    ..._params: any[]
-): string {
+export function encodeFunctionData(abi: any, functionName: string, ..._params: any[]): string {
     const params = _params[0];
     const iface = new ethers.utils.Interface(abi);
     const data = iface.encodeFunctionData(functionName, params);
