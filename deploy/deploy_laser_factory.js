@@ -1,5 +1,5 @@
 
-const {SINGLETON_ADDRESS} = require("./constants.js");
+const { SINGLETON_ADDRESS } = require("./constants.js");
 
 
 async function main() {
