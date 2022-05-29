@@ -116,6 +116,12 @@ contract SSR is SelfAuthorized, Owner {
                 guardian == currentGuardian ||
                 guardians[guardian] != address(0)
             ) revert Guardian__InvalidGuardianAddress();
+            if (guardian.code.length > 0) {
+                if (!IERC165(guardian).supportsInterface(0xae029e0b)) {
+                    revert Guardian__InvalidGuardianAddress();
+                }
+            }
+
             unchecked {
                 // Won't overflow...
                 ++i;
