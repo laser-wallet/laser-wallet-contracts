@@ -82,6 +82,8 @@ contract LaserWallet is Singleton, AccountAbstraction, SSR, Handler, Utils, ILas
         address[] calldata _guardians,
         address _entryPoint
     ) external override {
+        // initOwner() requires that the current owner is address 0.
+        // This is enough to protect this function from being called after initialization.
         initOwner(_owner);
         initGuardians(_guardians);
         initEntryPoint(_entryPoint);
@@ -142,7 +144,7 @@ contract LaserWallet is Singleton, AccountAbstraction, SSR, Handler, Utils, ILas
         ) {
             // We check that the sender is the owner ...
             if (recovered != owner) revert LW__InvalidSigner__NotOwner();
-            // If the wallet is locked, we revert...
+            // If the wallet is locked, we revert ...
             if (isLocked) revert LW__WalletLocked();
             // Guardians can only call the guardianCall() func ...
         } else if (funcSelector == this.guardianCall.selector) {
