@@ -5,7 +5,9 @@ import { Address } from "../types";
 import { encodeFunctionData } from "../utils";
 
 const mock = ethers.Wallet.createRandom().address;
-const { abi } = require("../../artifacts/contracts/LaserWallet.sol/LaserWallet.json");
+const {
+    abi,
+} = require("../../artifacts/contracts/LaserWallet.sol/LaserWallet.json");
 
 describe("Proxy Factory", () => {
     let owner: Address;
@@ -22,11 +24,18 @@ describe("Proxy Factory", () => {
         _factory = await ethers.getContractFactory("LaserProxyFactory");
         const [_owner, _guardian1, _guardian2] = await ethers.getSigners();
         owner = await _owner.getAddress();
-        guardians = [await _guardian1.getAddress(), await _guardian2.getAddress()];
+        guardians = [
+            await _guardian1.getAddress(),
+            await _guardian2.getAddress(),
+        ];
         const EP = await ethers.getContractFactory("TestEntryPoint");
         const _entryPoint = await EP.deploy(mock, 0, 0);
         entryPoint = _entryPoint.address;
-        initializer = encodeFunctionData(abi, "init", [owner, guardians, entryPoint]);
+        initializer = encodeFunctionData(abi, "init", [
+            owner,
+            guardians,
+            entryPoint,
+        ]);
     });
 
     describe("Proxy Factory creation and interaction", () => {
@@ -48,7 +57,10 @@ describe("Proxy Factory", () => {
 
         it("should deploy a proxy with 'createProxy'", async () => {
             const factory = await _factory.deploy(singleton);
-            await expect(factory.createProxy(initializer)).to.emit(factory, "ProxyCreation");
+            await expect(factory.createProxy(initializer)).to.emit(
+                factory,
+                "ProxyCreation"
+            );
         });
 
         it("should precompute the proxy address with 'create'", async () => {
@@ -95,7 +107,8 @@ describe("Proxy Factory", () => {
             const factory = await _factory.deploy(singleton);
             const salt = 1;
             await factory.createProxyWithNonce(initializer, salt); // first deployment.
-            await expect(factory.createProxyWithNonce(initializer, salt)).to.be.reverted; // second deployment.
+            await expect(factory.createProxyWithNonce(initializer, salt)).to.be
+                .reverted; // second deployment.
         });
     });
 });

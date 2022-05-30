@@ -12,9 +12,6 @@ contract AccountAbstraction is SelfAuthorized {
     // Entrypoint address should always be located at storage slot 1.
     address public entryPoint;
 
-    bytes32 private constant DOMAIN_SEPARATOR_TYPEHASH =
-        keccak256("EIP712Domain(uint256 chainId,address verifyingContract)");
-
     error AA__InvalidEntryPoint();
     error AA__InsufficientWithdrawBalance();
 

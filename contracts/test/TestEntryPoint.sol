@@ -112,7 +112,7 @@ contract TestEntryPoint is StakeManager {
         UserOpInfo[] memory opInfos = new UserOpInfo[](opslen);
 
         unchecked {
-            for (uint256 i = 0; i < opslen; i++) {
+            for (uint256 i = 0; i < opslen; ) {
                 uint256 preGas = gasleft();
                 UserOperation calldata op = ops[i];
 
@@ -136,11 +136,12 @@ contract TestEntryPoint is StakeManager {
                     contextOffset,
                     preGas - gasleft() + op.preVerificationGas
                 );
+                ++i;
             }
 
             uint256 collected = 0;
 
-            for (uint256 i = 0; i < ops.length; i++) {
+            for (uint256 i = 0; i < opslen; ) {
                 uint256 preGas = gasleft();
                 UserOperation calldata op = ops[i];
                 UserOpInfo memory opInfo = opInfos[i];
@@ -165,6 +166,7 @@ contract TestEntryPoint is StakeManager {
                         actualGas
                     );
                 }
+                ++i;
             }
 
             _compensate(beneficiary, collected);
@@ -346,7 +348,7 @@ contract TestEntryPoint is StakeManager {
             }
             if (paymentMode != PaymentMode.paymasterDeposit) {
                 DepositInfo storage senderInfo = deposits[sender];
-                uint deposit = senderInfo.deposit;
+                uint256 deposit = senderInfo.deposit;
                 if (requiredPrefund > deposit) {
                     revert FailedOp(
                         opIndex,
@@ -377,7 +379,7 @@ contract TestEntryPoint is StakeManager {
         unchecked {
             address paymaster = op.paymaster;
             DepositInfo storage paymasterInfo = deposits[paymaster];
-            uint deposit = paymasterInfo.deposit;
+            uint256 deposit = paymasterInfo.deposit;
             bool staked = paymasterInfo.staked;
             if (!staked) {
                 revert FailedOp(opIndex, paymaster, "not staked");
@@ -536,7 +538,7 @@ contract TestEntryPoint is StakeManager {
                     "prefund below actualGasCost"
                 );
             }
-            uint refund = opInfo.prefund - actualGasCost;
+            uint256 refund = opInfo.prefund - actualGasCost;
             internalIncrementDeposit(refundAddress, refund);
             bool success = mode == IPaymaster.PostOpMode.opSucceeded;
             emit UserOperationEvent(

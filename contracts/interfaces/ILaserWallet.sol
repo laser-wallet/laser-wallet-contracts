@@ -5,10 +5,56 @@ import {UserOperation} from "../libraries/UserOperation.sol";
 
 /**
  * @title ILaserWallet
- * @notice External functions of LaserWallet.sol.
  * @author Rodrigo Herrera I.
+ * @notice Has all the external functions, structs, events and errors for LaserWallet.sol.
  */
 interface ILaserWallet {
+    /**
+     * @dev Generic transaction struct primarily used for multicall.
+     */
+    struct Transaction {
+        address to;
+        uint256 value;
+        bytes data;
+    }
+
+    event Setup(address owner, address[] guardians, address entryPoint);
+    event Success(address to, uint256 value);
+    event Received(address indexed sender, uint256 amount);
+    event GuardianSuccess(bytes4 funcSelector);
+    event MultiCallSuccess();
+
+    ///@dev modifier error.
+    error LW__notEntryPoint();
+
+    ///@dev validateUserOp() custom errors.
+    error LW__validateUserOp__invalidNonce();
+    error LW__validateUserOp__notOwner();
+    error LW__validateUserOp__walletLocked();
+    error LW__validateUserOp__notGuardian();
+    error LW__validateUserOp__invalidFuncSelector();
+
+    ///@dev exec() custom errors.
+    error LW__exec__ownerNotAllowed();
+    error LW__exec__failure();
+
+    ///@dev guardianCall() custom errors.
+    error LW__guardianCall__failure();
+    error LW__guardianCall__guardianNotAllowed();
+
+    ///@dev multiCall() custom errrors.
+    error LW__multiCall__ownerNotAllowed();
+    error LW__multiCall__failure();
+
+    ///@dev emergencyCall() custom errors.
+    error LW__emergencyCall__ownerNotAllowed();
+    error LW__emergencyCall__guardianNotAllowed();
+    error LW__emergencyCall__invalidCaller();
+    error LW__emergencyCall__failure();
+
+    ///@dev isValidSignature() custom error.
+    error LW__isValidSignature__invalidSigner();
+
     /**
      * @dev Setup function, sets initial storage of contract.
      * @param owner The owner of the wallet.
@@ -49,6 +95,52 @@ interface ILaserWallet {
     ) external;
 
     /**
+     * @dev Starts the SSR mechanism. Can only be called by a guardian.
+     * @param data Data payload for this transaction. It is limited to guardian access.
+     */
+    function guardianCall(bytes memory data) external;
+
+    /**
+     * @dev Executes a series of transactions.
+     * @param transactions populated array of transactions.
+     * @notice If any transaction fails, the whole multiCall reverts.
+     */
+    function multiCall(Transaction[] calldata transactions) external;
+
+    /**
+     * @dev Executes a transaction.
+     * @param to Destination address of the transaction.
+     * @param value Ether value of the transaction.
+     * @param data Data payload of the transaction.
+     * @notice This function is implemented in the case of a bug in the EntryPoint contract.
+     * So there is a direct interaction with this.
+     */
+    function emergencyCall(
+        address to,
+        uint256 value,
+        bytes memory data
+    ) external;
+
+    /**
+     * @dev Returns the user operation hash to be signed by owners.
+     * @param userOp The UserOperation struct.
+     */
+    function userOperationHash(UserOperation calldata userOp)
+        external
+        view
+        returns (bytes32);
+
+    /**
+     * @dev Implementation of EIP 1271: https://eips.ethereum.org/EIPS/eip-1271.
+     * @param hash Hash of a message signed on behalf of address(this).
+     * @param signature Signature byte array associated with _msgHash.
+     * @return Magic value  or reverts with an error message.
+     */
+    function isValidSignature(bytes32 hash, bytes memory signature)
+        external
+        returns (bytes4);
+
+    /**
      * @dev Returns the chain id of this.
      */
     function getChainId() external view returns (uint256);
@@ -58,18 +150,4 @@ interface ILaserWallet {
      * @notice This is done to avoid replay attacks.
      */
     function domainSeparator() external view returns (bytes32);
-
-    /**
-     * @dev Returns the user operation hash to be signed by owners.
-     * @param userOp The UserOperation struct.
-     */
-    function userOperationHash(UserOperation calldata userOp) external view returns (bytes32);
-
-    /**
-     * @dev Implementation of EIP 1271: https://eips.ethereum.org/EIPS/eip-1271.
-     * @param hash Hash of a message signed on behalf of address(this).
-     * @param signature Signature byte array associated with _msgHash.
-     * @return Magic value  or reverts with an error message.
-     */
-    function isValidSignature(bytes32 hash, bytes memory signature) external returns (bytes4);
 }

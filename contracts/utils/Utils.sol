@@ -71,10 +71,9 @@ contract Utils {
         uint256 value,
         bytes memory data,
         uint256 txGas
-    ) internal {
-        bool success;
+    ) internal returns (bool success) {
         assembly {
-            // We execute a call to the target address ...
+            // We execute a call to the target address and return boolean...
             success := call(
                 txGas,
                 to,
@@ -84,11 +83,6 @@ contract Utils {
                 0,
                 0
             )
-
-            // If it fails, we revert the call ...
-            if eq(success, 0) {
-                revert(0, returndatasize())
-            }
         }
     }
 }

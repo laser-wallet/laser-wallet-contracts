@@ -3,7 +3,9 @@ import { ethers } from "hardhat";
 import { Contract, Signer, Wallet } from "ethers";
 
 const mock = Wallet.createRandom().address;
-const { abi } = require("../../artifacts/contracts/LaserWallet.sol/LaserWallet.json");
+const {
+    abi,
+} = require("../../artifacts/contracts/LaserWallet.sol/LaserWallet.json");
 
 const VERSION = "1.0.0";
 

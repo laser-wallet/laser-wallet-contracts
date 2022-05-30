@@ -29,32 +29,3 @@ struct UserOperation {
     bytes paymasterData;
     bytes signature;
 }
-
-library UserOperationLib {
-    function requiredGas(UserOperation calldata userOp) internal pure returns (uint256) {
-        unchecked {
-            //when using a Paymaster, the verificationGas is used also to cover the postOp call.
-            // our security model might call postOp eventually twice
-            uint256 mul = userOp.paymaster != address(0) ? 1 : 3;
-            return userOp.callGas + userOp.verificationGas * mul + userOp.preVerificationGas;
-        }
-    }
-
-    function requiredPreFund(UserOperation calldata userOp)
-        internal
-        pure
-        returns (uint256 prefund)
-    {
-        unchecked {
-            return requiredGas(userOp) * userOp.maxFeePerGas;
-        }
-    }
-
-    function min(uint256 a, uint256 b) internal pure returns (uint256) {
-        return a < b ? a : b;
-    }
-
-    function max(uint256 a, uint256 b) internal pure returns (uint256) {
-        return a >= b ? a : b;
-    }
-}

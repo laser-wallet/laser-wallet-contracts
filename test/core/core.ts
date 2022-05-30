@@ -13,7 +13,9 @@ import { userOp, types, Address } from "../types";
 import { ownerWallet, tenEth, twoEth } from "../constants/constants";
 
 const mock = ethers.Wallet.createRandom().address;
-const { abi } = require("../../artifacts/contracts/LaserWallet.sol/LaserWallet.json");
+const {
+    abi,
+} = require("../../artifacts/contracts/LaserWallet.sol/LaserWallet.json");
 
 describe("Core", () => {
     let owner: Signer;
@@ -28,7 +30,10 @@ describe("Core", () => {
     beforeEach(async () => {
         [owner, _guardian1, _guardian2, relayer] = await ethers.getSigners();
         ownerAddress = await owner.getAddress();
-        guardians = [await _guardian1.getAddress(), await _guardian2.getAddress()];
+        guardians = [
+            await _guardian1.getAddress(),
+            await _guardian2.getAddress(),
+        ];
         const EP = await ethers.getContractFactory("TestEntryPoint");
         EntryPoint = await EP.deploy(mock, 0, 0);
         entryPoint = EntryPoint.address;
@@ -36,10 +41,14 @@ describe("Core", () => {
 
     describe("init()", async () => {
         it("should not allow to call init after initialization", async () => {
-            const { address, wallet } = await walletSetup(ownerAddress, guardians, entryPoint);
-            await expect(wallet.init(mock, guardians, entryPoint)).to.be.revertedWith(
-                "Owner__WalletInitialized()"
+            const { address, wallet } = await walletSetup(
+                ownerAddress,
+                guardians,
+                entryPoint
             );
+            await expect(
+                wallet.init(mock, guardians, entryPoint)
+            ).to.be.revertedWith("Owner__WalletInitialized()");
         });
     });
 });

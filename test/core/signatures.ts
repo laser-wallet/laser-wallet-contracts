@@ -13,7 +13,9 @@ import { userOp, types, Address } from "../types";
 import { ownerWallet, tenEth, twoEth } from "../constants/constants";
 
 const mock = ethers.Wallet.createRandom().address;
-const { abi } = require("../../artifacts/contracts/LaserWallet.sol/LaserWallet.json");
+const {
+    abi,
+} = require("../../artifacts/contracts/LaserWallet.sol/LaserWallet.json");
 
 describe("Account Abstraction", () => {
     let owner: Signer;
@@ -28,7 +30,10 @@ describe("Account Abstraction", () => {
     beforeEach(async () => {
         [owner, _guardian1, _guardian2, relayer] = await ethers.getSigners();
         ownerAddress = await owner.getAddress();
-        guardians = [await _guardian1.getAddress(), await _guardian2.getAddress()];
+        guardians = [
+            await _guardian1.getAddress(),
+            await _guardian2.getAddress(),
+        ];
         const _EntryPoint = await ethers.getContractFactory("TestEntryPoint");
         EntryPoint = await _EntryPoint.deploy(mock, 0, 0);
         entryPoint = EntryPoint.address;

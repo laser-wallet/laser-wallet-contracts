@@ -4,58 +4,44 @@ pragma solidity 0.8.14;
 import "../core/SelfAuthorized.sol";
 import "../core/Owner.sol";
 import "../interfaces/IERC165.sol";
+import "../interfaces/ISSR.sol";
 
 /**
  * @title SSR - Sovereign Social Recovery
  * @notice New wallet recovery mechanism.
  * @author Rodrigo Herrera I.
  */
-contract SSR is SelfAuthorized, Owner {
+contract SSR is ISSR, SelfAuthorized, Owner {
     ///@dev recovery owner should always be at storage slot 3.
     address public recoveryOwner;
     ///@dev pointer address for the nested mapping.
     address internal constant pointer = address(0x1);
 
-    uint256 public guardianCount;
+    uint256 internal guardianCount;
+    ///@dev Activates in case a guardian misbehaves.
+    uint256 internal timeKeep;
 
     bool public isLocked;
 
-    ///@dev Determines who has access to call a specific function.
-    enum Access {
-        Owner,
-        Guardian,
-        RecoveryOwnerAndGuardian
-    }
-
     mapping(address => address) internal guardians;
 
-    error Guardian__ZeroGuardians();
-    error Guardian__InvalidGuardianAddress();
-    error Guardian__NotGuardian();
-    error Guardian__NoGuardians();
-    error Guardian__WalletIsLocked();
-    error Guardian__WalletIsNotLocked();
-    error Guardian__IncorrectPreviousGuardian();
-    error Guardian__AlreadyApproved();
-    error Guardian__GuardiansUnderflow();
-
-    event WalletLocked();
-    event WalletUnlocked();
-    event NewGuardian(address newGuardian);
-    event GuardianRemoved(address removedGuardian);
-    event SuccesfullRecovery(address owner, address recoveryOwner);
-    event NewRecoveryOwner(address recoveryOwner);
-
     modifier isNotLocked() {
-        if (isLocked) revert Guardian__WalletIsLocked();
+        if (isLocked) revert SSR__walletLocked();
+        _;
+    }
 
+    modifier _isLocked() {
+        if (!isLocked) revert SSR__walletNotLocked();
+        _;
+    }
+
+    modifier guardianAllowed(uint256 time) {
+        if (time < timeKeep) revert SSR__guardianFreeze();
         _;
     }
 
     /**
      * @dev Locks the wallet. Can only be called by a guardian.
-     * @notice When the wallet is locked, we assume that the owner lost access
-     * to his/her device.
      */
     function lock() external authorized isNotLocked {
         isLocked = true;
@@ -65,9 +51,19 @@ contract SSR is SelfAuthorized, Owner {
     /**
      * @dev Unlocks the wallet. Can only be called by a guardian + the owner.
      */
-    function unlock() external authorized {
-        if (!isLocked) revert Guardian__WalletIsNotLocked();
+    function unlock() external authorized _isLocked {
         isLocked = false;
+    }
+
+    /**
+     * @dev Unlocks the wallet. Can only be called by the recovery owner.
+     * This is to avoid the wallet being locked forever if a guardian misbehaves.
+     * The guardians will be frozen for 1 week, giving enough time to the owner to remove them.
+     * The signature of the recovery owner + the owner. 
+     */
+    function recoveryUnlock() external authorized _isLocked {
+        isLocked = false;
+        timeKeep = block.timestamp + 1 weeks;
     }
 
     /**
@@ -77,8 +73,22 @@ contract SSR is SelfAuthorized, Owner {
      * @notice The newOwner and newRecoveryOwner key pair should be generated from the mobile device.
      * The main reason of this is to restart the generation process in case an attacker has the current recoveryOwner.
      */
-    function recover(address newOwner, address newRecoveryOwner) external authorized {
-        if (!isLocked) revert Guardian__WalletIsNotLocked();
+    function recover(address newOwner, address newRecoveryOwner) external {
+        owner = newOwner;
+        recoveryOwner = newRecoveryOwner;
+    }
+
+    /**
+     * @dev Can only recover with the signature of 1 guardian and the recovery owner.
+     * @param newOwner The new owner address. This is generated instantaneously.
+     * @param newRecoveryOwner The new recovery owner address. This is generated instantaneously.
+     * @notice The newOwner and newRecoveryOwner key pair should be generated from the mobile device.
+     * The main reason of this is to restart the generation process in case an attacker has the current recoveryOwner.
+     */
+    function securityRecover(address newOwner, address newRecoveryOwner)
+        external
+        authorized
+    {
         owner = newOwner;
         recoveryOwner = newRecoveryOwner;
         emit SuccesfullRecovery(owner, recoveryOwner);
@@ -99,7 +109,7 @@ contract SSR is SelfAuthorized, Owner {
      */
     function initGuardians(address[] calldata _guardians) internal {
         uint256 guardiansLength = _guardians.length;
-        if (guardiansLength < 1) revert Guardian__ZeroGuardians();
+        if (guardiansLength < 1) revert SSR__initGuardians__zeroGuardians();
 
         address currentGuardian = pointer;
 
@@ -112,10 +122,10 @@ contract SSR is SelfAuthorized, Owner {
                 guardian == address(this) ||
                 guardian == currentGuardian ||
                 guardians[guardian] != address(0)
-            ) revert Guardian__InvalidGuardianAddress();
+            ) revert SSR__initGuardians__invalidAddress();
             if (guardian.code.length > 0) {
                 if (!IERC165(guardian).supportsInterface(0xae029e0b)) {
-                    revert Guardian__InvalidGuardianAddress();
+                    revert SSR__initGuardians__invalidAddress();
                 }
             }
 
@@ -143,13 +153,13 @@ contract SSR is SelfAuthorized, Owner {
             newGuardian == address(this) ||
             newGuardian == owner ||
             guardians[newGuardian] != address(0)
-        ) revert Guardian__InvalidGuardianAddress();
+        ) revert SSR__addGuardian__invalidAddress();
 
         // Guardians can only be either EOA or Laser.
         // Untill EIP1271 is more widely adopted ...
         if (newGuardian.code.length > 0) {
             if (!IERC165(newGuardian).supportsInterface(0xae029e0b)) {
-                revert Guardian__InvalidGuardianAddress();
+                revert SSR__addGuardian__contractNotLaser();
             }
         }
 
@@ -169,17 +179,20 @@ contract SSR is SelfAuthorized, Owner {
      * @param guardianToRemove Address of the guardian to be removed.
      * @notice Can only be called by the owner.
      */
-    function removeGuardian(address prevGuardian, address guardianToRemove) external authorized {
+    function removeGuardian(address prevGuardian, address guardianToRemove)
+        external
+        authorized
+    {
         if (guardianToRemove == address(0) || guardianToRemove == pointer) {
-            revert Guardian__InvalidGuardianAddress();
+            revert SSR__removeGuardian__invalidAddress();
         }
 
         if (guardians[prevGuardian] != guardianToRemove) {
-            revert Guardian__IncorrectPreviousGuardian();
+            revert SSR__removeGuardian__incorrectPreviousGuardian();
         }
 
         // There needs to be at least 1 guardian ..
-        if (guardianCount - 1 < 1) revert Guardian__GuardiansUnderflow();
+        if (guardianCount - 1 < 1) revert SSR__removeGuardian__underflow();
 
         guardians[prevGuardian] = guardians[guardianToRemove];
         guardians[guardianToRemove] = address(0);
@@ -199,11 +212,9 @@ contract SSR is SelfAuthorized, Owner {
     }
 
     /**
-     * @return Array of guardians or reverts with custom error if there are no guardians.
+     * @return Array of guardians of this.
      */
     function getGuardians() external view returns (address[] memory) {
-        if (guardianCount == 0) revert Guardian__NoGuardians();
-
         address[] memory guardiansArray = new address[](guardianCount);
         address currentGuardian = guardians[pointer];
 
@@ -217,12 +228,9 @@ contract SSR is SelfAuthorized, Owner {
     }
 
     function access(bytes4 funcSelector) public pure returns (Access) {
-        if (funcSelector == this.lock.selector) {
-            return Access.Guardian;
-        } else if (funcSelector == this.recover.selector) {
+        if (funcSelector == this.lock.selector) return Access.Guardian;
+        else if (funcSelector == this.recover.selector)
             return Access.RecoveryOwnerAndGuardian;
-        } else {
-            return Access.Owner;
-        }
+        else return Access.Owner;
     }
 }

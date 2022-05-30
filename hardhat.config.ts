@@ -1,12 +1,13 @@
-import '@nomiclabs/hardhat-waffle';
-import '@nomiclabs/hardhat-etherscan';
-import '@nomiclabs/hardhat-ethers';
-import '@nomiclabs/hardhat-solhint';
-import { HardhatUserConfig } from 'hardhat/types';
-import 'hardhat-gas-reporter';
-import 'hardhat-storage-layout';
-import 'hardhat-deploy';
-import dotenv from 'dotenv';
+import "@nomiclabs/hardhat-waffle";
+import "@typechain/hardhat";
+import "@nomiclabs/hardhat-etherscan";
+import "@nomiclabs/hardhat-ethers";
+import "@nomiclabs/hardhat-solhint";
+import { HardhatUserConfig } from "hardhat/types";
+import "hardhat-gas-reporter";
+import "hardhat-storage-layout";
+import "hardhat-deploy";
+import dotenv from "dotenv";
 
 dotenv.config();
 const INFURA_KEY = process.env.INFURA_KEY;
@@ -18,15 +19,15 @@ const GOERLI_URL = `https://goerli.infura.io/v3/${INFURA_KEY}`;
 
 const config: HardhatUserConfig = {
     solidity: {
-        version: '0.8.14',
+        version: "0.8.14",
         settings: {
             optimizer: {
                 enabled: true,
                 runs: 800,
             },
             outputSelection: {
-                '*': {
-                    '*': ['storageLayout'],
+                "*": {
+                    "*": ["storageLayout"],
                 },
             },
         },
@@ -41,22 +42,22 @@ const config: HardhatUserConfig = {
             accounts: [`0x${DEPLOYER_PRIVATE_KEY}`],
         },
         optimism: {
-            url: 'https://mainnet.optimism.io',
+            url: "https://mainnet.optimism.io",
             accounts: [`0x${DEPLOYER_PRIVATE_KEY}`],
         },
-        'optimism-kovan': {
-            url: 'https://kovan.optimism.io',
+        "optimism-kovan": {
+            url: "https://kovan.optimism.io",
             accounts: [`0x${DEPLOYER_PRIVATE_KEY}`],
         },
         hardhat: {
             forking: {
-                enabled: process.env.FORKING === 'true',
+                enabled: process.env.FORKING === "true",
                 url: `${ALCHEMY_URL}`,
             },
         },
     },
     gasReporter: {
-        enabled: process.env.REPORT_GAS === 'true',
+        enabled: process.env.REPORT_GAS === "true",
     },
 };
 
