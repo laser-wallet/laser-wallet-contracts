@@ -51,18 +51,20 @@ contract LaserWallet is
     /**
      * @dev Setup function, sets initial storage of contract.
      * @param _owner The owner of the wallet.
+     * @param _recoveryOwner Recovery owner in case the owner looses the main device. Implementation of Sovereign Social Recovery.
      * @param _guardians Addresses that can activate the social recovery mechanism.
      * @param _entryPoint Entry Point contract address.
      * @notice It can't be called after initialization.
      */
     function init(
         address _owner,
+        address _recoveryOwner,
         address[] calldata _guardians,
         address _entryPoint
     ) external {
         // initOwner() requires that the current owner is address 0.
         // This is enough to protect init() from being called after initialization.
-        initOwner(_owner);
+        initOwners(_owner, _recoveryOwner);
         initGuardians(_guardians);
         initEntryPoint(_entryPoint);
         emit Setup(owner, _guardians, entryPoint);

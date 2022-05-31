@@ -7,7 +7,8 @@ interface ISSR {
     enum Access {
         Owner,
         Guardian,
-        RecoveryOwnerAndGuardian, 
+        OwnerAndGuardian,
+        RecoveryOwnerAndGuardian,
         OwnerAndRecoveryOwner
     }
 
@@ -43,6 +44,9 @@ interface ISSR {
     error SSR__removeGuardian__invalidAddress();
     error SSR__removeGuardian__incorrectPreviousGuardian();
     error SSR__removeGuardian__underflow();
+
+    ///@dev access() custom error.
+    error SSR__access__guardiansBlocked();
 
     /**
      * @dev Locks the wallet. Can only be called by a guardian.
@@ -101,5 +105,5 @@ interface ISSR {
     /**
      * @return Array of guardians of this.
      */
-    function getGuardians() external view returns (address[] memory)
+    function getGuardians() external view returns (address[] memory);
 }

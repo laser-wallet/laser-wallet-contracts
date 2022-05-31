@@ -58,12 +58,14 @@ interface ILaserWallet {
     /**
      * @dev Setup function, sets initial storage of contract.
      * @param owner The owner of the wallet.
+     * @param recoveryOwner Recovery owner in case the owner looses the main device. Implementation of Sovereign Social Recovery.
      * @param guardians Addresses that can activate the social recovery mechanism.
      * @param entryPoint Entry Point contract address.
      * @notice It can't be called after initialization.
      */
     function init(
         address owner,
+        address recoveryOwner,
         address[] calldata guardians,
         address entryPoint
     ) external;

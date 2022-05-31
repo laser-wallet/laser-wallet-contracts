@@ -12,8 +12,6 @@ import "../interfaces/ISSR.sol";
  * @author Rodrigo Herrera I.
  */
 contract SSR is ISSR, SelfAuthorized, Owner {
-    ///@dev recovery owner should always be at storage slot 3.
-    address public recoveryOwner;
     ///@dev pointer address for the nested mapping.
     address internal constant pointer = address(0x1);
 
@@ -32,11 +30,6 @@ contract SSR is ISSR, SelfAuthorized, Owner {
         _;
     }
 
-    modifier _isLocked() {
-        if (!isLocked) revert SSR__walletNotLocked();
-        _;
-    }
-
     /**
      * @dev Locks the wallet. Can only be called by a guardian.
      */
@@ -48,7 +41,7 @@ contract SSR is ISSR, SelfAuthorized, Owner {
     /**
      * @dev Unlocks the wallet. Can only be called by a guardian + the owner.
      */
-    function unlock() external authorized _isLocked {
+    function unlock() external authorized {
         isLocked = false;
         emit WalletUnlocked();
     }
@@ -58,7 +51,7 @@ contract SSR is ISSR, SelfAuthorized, Owner {
      * This is to avoid the wallet being locked forever if a guardian misbehaves.
      * The guardians will be blocked until the owner decides otherwise.
      */
-    function recoveryUnlock() external authorized _isLocked {
+    function recoveryUnlock() external authorized {
         isLocked = false;
         guardiansBlocked = true;
         emit RecoveryUnlocked();
@@ -71,7 +64,11 @@ contract SSR is ISSR, SelfAuthorized, Owner {
      * @notice The newOwner and newRecoveryOwner key pair should be generated from the mobile device.
      * The main reason of this is to restart the generation process in case an attacker has the current recoveryOwner.
      */
-    function recover(address newOwner, address newRecoveryOwner) external {
+    function recover(address newOwner, address newRecoveryOwner)
+        external
+        authorized
+    {
+        checkParams(newOwner, newRecoveryOwner);
         owner = newOwner;
         recoveryOwner = newRecoveryOwner;
         emit WalletRecovered(newOwner, newRecoveryOwner);
@@ -210,10 +207,26 @@ contract SSR is ISSR, SelfAuthorized, Owner {
         guardianCount = guardiansLength;
     }
 
-    function access(bytes4 funcSelector) public pure returns (Access) {
-        if (funcSelector == this.lock.selector) return Access.Guardian;
-        else if (funcSelector == this.recover.selector)
+    /**
+     * @dev Returns who has access to call a specific function.
+     * @param funcSelector The function selector: bytes4(keccak256(...))
+     */
+    function access(bytes4 funcSelector) internal view returns (Access) {
+        if (funcSelector == this.lock.selector) {
+            // Only a guardian can lock the wallet ...
+            // If  guardians are blocked, we revert ...
+            if (guardiansBlocked) revert SSR__access__guardiansBlocked();
+            else return Access.Guardian;
+        } else if (funcSelector == this.unlock.selector) {
+            // Only a guardian + the owner can unlock the wallet ...
+            return Access.OwnerAndGuardian;
+        } else if (funcSelector == this.recoveryUnlock.selector) {
+            return Access.OwnerAndRecoveryOwner;
+        } else if (funcSelector == this.recover.selector) {
+            // Only the recovery owner + the guardian can recover the wallet (change the owner keys) ...
             return Access.RecoveryOwnerAndGuardian;
-        else return Access.Owner;
+        } else {
+            return Access.Owner;
+        }
     }
 }

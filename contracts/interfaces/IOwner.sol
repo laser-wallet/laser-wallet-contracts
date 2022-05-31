@@ -12,8 +12,9 @@ interface IOwner {
     error Owner__changeOwner__invalidOwnerAddress();
 
     ///@dev initOwner() custom errors.
-    error Owner__initOwner__invalidOwnerAddress();
     error Owner__initOwner__walletInitialized();
+    error Owner__initOwner__invalidOwnerAddress();
+    error Owner__initOwner__invalidRecoveryOwnerAddress();
 
     /**
      * @dev Changes the owner of the wallet.
