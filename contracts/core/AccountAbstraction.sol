@@ -17,9 +17,9 @@ contract AccountAbstraction is IAccountAbstraction, SelfAuthorized {
      * @param _entryPoint the entry point address.
      */
     function initEntryPoint(address _entryPoint) internal {
-        if (_entryPoint.code.length == 0 || _entryPoint == address(this)) {
+        if (_entryPoint.code.length == 0 || _entryPoint == address(this))
             revert AA__initEntryPoint__invalidEntryPoint();
-        }
+
         entryPoint = _entryPoint;
     }
 
@@ -44,9 +44,8 @@ contract AccountAbstraction is IAccountAbstraction, SelfAuthorized {
             newEntryPoint.code.length == 0 ||
             newEntryPoint == address(this) ||
             entryPoint == newEntryPoint
-        ) {
-            revert AA__changeEntryPoint__invalidEntryPoint();
-        }
+        ) revert AA__changeEntryPoint__invalidEntryPoint();
+
         entryPoint = newEntryPoint;
         emit EntryPointChanged(entryPoint);
     }

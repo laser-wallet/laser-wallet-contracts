@@ -209,7 +209,7 @@ contract SSR is ISSR, SelfAuthorized, Owner {
 
     /**
      * @dev Returns who has access to call a specific function.
-     * @param funcSelector The function selector: bytes4(keccak256(...))
+     * @param funcSelector The function selector: bytes4(keccak256(...)).
      */
     function access(bytes4 funcSelector) internal view returns (Access) {
         if (funcSelector == this.lock.selector) {
