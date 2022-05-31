@@ -10,9 +10,6 @@ const {
 } = require("../../artifacts/contracts/LaserWallet.sol/LaserWallet.json");
 
 describe("Proxy Factory", () => {
-    let owner: Address;
-    let guardians: Address[];
-    let entryPoint: Address;
     let singleton: Address;
     let _factory: any;
     let initializer: string;
@@ -22,17 +19,20 @@ describe("Proxy Factory", () => {
         const _singleton = await singletonFactory.deploy();
         singleton = _singleton.address;
         _factory = await ethers.getContractFactory("LaserProxyFactory");
-        const [_owner, _guardian1, _guardian2] = await ethers.getSigners();
-        owner = await _owner.getAddress();
-        guardians = [
+        const [_owner, _guardian1, _guardian2, _recoveryOwner] =
+            await ethers.getSigners();
+        const owner = await _owner.getAddress();
+        const recoveryOwner = await _recoveryOwner.getAddress();
+        const guardians = [
             await _guardian1.getAddress(),
             await _guardian2.getAddress(),
         ];
         const EP = await ethers.getContractFactory("TestEntryPoint");
         const _entryPoint = await EP.deploy(mock, 0, 0);
-        entryPoint = _entryPoint.address;
+        const entryPoint = _entryPoint.address;
         initializer = encodeFunctionData(abi, "init", [
             owner,
+            recoveryOwner,
             guardians,
             entryPoint,
         ]);

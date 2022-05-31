@@ -26,6 +26,8 @@ async function fund(to: Address, from: Signer): Promise<void> {
 describe("Account Abstraction", () => {
     let owner: Signer;
     let ownerAddress: Address;
+    let recoveryOwner: Signer;
+    let recoveryOwnerAddr: Address;
     let guardians: Address[];
     let entryPoint: Address;
     let EntryPoint: Contract;
@@ -34,8 +36,10 @@ describe("Account Abstraction", () => {
     let relayer: Signer;
 
     beforeEach(async () => {
-        [owner, _guardian1, _guardian2, relayer] = await ethers.getSigners();
+        [owner, _guardian1, recoveryOwner, _guardian2, relayer] =
+            await ethers.getSigners();
         ownerAddress = await owner.getAddress();
+        recoveryOwnerAddr = await recoveryOwner.getAddress();
         guardians = [
             await _guardian1.getAddress(),
             await _guardian2.getAddress(),
@@ -49,6 +53,7 @@ describe("Account Abstraction", () => {
         it("should only accept calls from the entry point", async () => {
             const { address, wallet } = await walletSetup(
                 ownerAddress,
+                recoveryOwnerAddr,
                 guardians,
                 entryPoint
             );
@@ -66,6 +71,7 @@ describe("Account Abstraction", () => {
         it("should revert by calling a function directly from EntryPoint", async () => {
             const { address, wallet } = await walletSetup(
                 ownerAddress,
+                recoveryOwnerAddr,
                 guardians,
                 entryPoint
             );
@@ -84,6 +90,7 @@ describe("Account Abstraction", () => {
         it("should have correct domain separator", async () => {
             const { address, wallet } = await walletSetup(
                 ownerAddress,
+                recoveryOwnerAddr,
                 guardians,
                 entryPoint
             );
@@ -97,6 +104,7 @@ describe("Account Abstraction", () => {
         it("should calculate correctly the transaction hash", async () => {
             const { address, wallet } = await walletSetup(
                 ownerAddress,
+                recoveryOwnerAddr,
                 guardians,
                 entryPoint
             );
@@ -120,6 +128,7 @@ describe("Account Abstraction", () => {
         it("should execute an EIP712 transaction", async () => {
             const { address, wallet } = await walletSetup(
                 ownerAddress,
+                recoveryOwnerAddr,
                 guardians,
                 entryPoint
             );
@@ -158,6 +167,7 @@ describe("Account Abstraction", () => {
         it("should execute a transaction by signing the transaction hash", async () => {
             const { address, wallet } = await walletSetup(
                 ownerAddress,
+                recoveryOwnerAddr,
                 guardians,
                 entryPoint
             );
@@ -181,6 +191,7 @@ describe("Account Abstraction", () => {
         it("should fail by signing an incorrect hash", async () => {
             const { address, wallet } = await walletSetup(
                 ownerAddress,
+                recoveryOwnerAddr,
                 guardians,
                 entryPoint
             );
@@ -206,6 +217,7 @@ describe("Account Abstraction", () => {
         it("should fail by providing incorrect calldata", async () => {
             const { address, wallet } = await walletSetup(
                 ownerAddress,
+                recoveryOwnerAddr,
                 guardians,
                 entryPoint
             );
@@ -224,6 +236,7 @@ describe("Account Abstraction", () => {
         it("should execute a multicall", async () => {
             const { address, wallet } = await walletSetup(
                 ownerAddress,
+                recoveryOwnerAddr,
                 guardians,
                 entryPoint
             );
@@ -260,6 +273,7 @@ describe("Account Abstraction", () => {
         it("should revert by providing an invalid nonce", async () => {
             const { address, wallet } = await walletSetup(
                 ownerAddress,
+                recoveryOwnerAddr,
                 guardians,
                 entryPoint
             );
@@ -284,6 +298,7 @@ describe("Account Abstraction", () => {
         it("should revert if the owner calls 'guardianCall' ", async () => {
             const { address, wallet } = await walletSetup(
                 ownerAddress,
+                recoveryOwnerAddr,
                 guardians,
                 entryPoint
             );
@@ -304,6 +319,7 @@ describe("Account Abstraction", () => {
         it("should remove a guardian", async () => {
             const { address, wallet } = await walletSetup(
                 ownerAddress,
+                recoveryOwnerAddr,
                 guardians,
                 entryPoint
             );
@@ -336,18 +352,20 @@ describe("Account Abstraction", () => {
         it("should revert by calling the function directly", async () => {
             const { address, wallet } = await walletSetup(
                 ownerAddress,
+                recoveryOwnerAddr,
                 guardians,
                 entryPoint
             );
             const randy = ethers.Wallet.createRandom();
             await expect(
                 wallet.changeEntryPoint(randy.address)
-            ).to.be.revertedWith("SelfAuthorized__OnlyCallableFromWallet()");
+            ).to.be.revertedWith("SelfAuthorized__notWallet()");
         });
 
         it("should fail by changing the entry point to 'this' ", async () => {
             const { address, wallet } = await walletSetup(
                 ownerAddress,
+                recoveryOwnerAddr,
                 guardians,
                 entryPoint
             );
@@ -370,6 +388,7 @@ describe("Account Abstraction", () => {
         it("should fail by changing the entry point to a non-contract ", async () => {
             const { address, wallet } = await walletSetup(
                 ownerAddress,
+                recoveryOwnerAddr,
                 guardians,
                 entryPoint
             );
@@ -390,6 +409,7 @@ describe("Account Abstraction", () => {
         it("should fail by changing the entry point address to current", async () => {
             const { address, wallet } = await walletSetup(
                 ownerAddress,
+                recoveryOwnerAddr,
                 guardians,
                 entryPoint
             );
@@ -409,14 +429,14 @@ describe("Account Abstraction", () => {
             await expect(wallet.exec(address, 0, txData)).to.be.reverted;
         });
 
-        it("should update the entry point from 'exec' ", async () => {
+        it("should update the entry point from 'emergencyCall' ", async () => {
             const { address, wallet } = await walletSetup(
                 ownerAddress,
+                recoveryOwnerAddr,
                 guardians,
                 entryPoint
             );
 
-            await fund(address, relayer);
             const _newEntryPoint = await ethers.getContractFactory(
                 "AccountAbstraction"
             );
@@ -430,7 +450,7 @@ describe("Account Abstraction", () => {
                 0,
                 txData,
             ]);
-            await expect(wallet.exec(address, 0, txData))
+            await expect(wallet.emergencyCall(address, 0, txData))
                 .to.emit(wallet, "EntryPointChanged")
                 .withArgs(addr);
             expect(await wallet.entryPoint()).to.equal(addr);
@@ -439,6 +459,7 @@ describe("Account Abstraction", () => {
         it("should change entry point from 'handleOps' ", async () => {
             const { address, wallet } = await walletSetup(
                 ownerAddress,
+                recoveryOwnerAddr,
                 guardians,
                 entryPoint
             );

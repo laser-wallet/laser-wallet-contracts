@@ -20,14 +20,18 @@ const {
 describe("Setup", () => {
     let owner: Signer;
     let ownerAddress: Address;
+    let recoveryOwner: Signer;
+    let recoveryOwnerAddr: Address;
     let guardians: Address[];
     let entryPoint: Address;
     let _guardian1: Signer;
     let _guardian2: Signer;
 
     beforeEach(async () => {
-        [owner, _guardian1, _guardian2] = await ethers.getSigners();
+        [owner, recoveryOwner, _guardian1, _guardian2] =
+            await ethers.getSigners();
         ownerAddress = await owner.getAddress();
+        recoveryOwnerAddr = await recoveryOwner.getAddress();
         guardians = [
             await _guardian1.getAddress(),
             await _guardian2.getAddress(),
@@ -41,6 +45,7 @@ describe("Setup", () => {
         it("should return correct signer if v is adjusted to 31", async () => {
             const { address, wallet } = await walletSetup(
                 ownerAddress,
+                recoveryOwnerAddr,
                 guardians,
                 entryPoint
             );
@@ -53,6 +58,7 @@ describe("Setup", () => {
         it("should return correct signer by signing typed data", async () => {
             const { address, wallet } = await walletSetup(
                 ownerAddress,
+                recoveryOwnerAddr,
                 guardians,
                 entryPoint
             );
@@ -88,6 +94,7 @@ describe("Setup", () => {
         it("should correctly split 'v', 'r', and 's' ", async () => {
             const { address, wallet } = await walletSetup(
                 ownerAddress,
+                recoveryOwnerAddr,
                 guardians,
                 entryPoint
             );
@@ -102,6 +109,7 @@ describe("Setup", () => {
         it("should revert if the recovered signer is address(0)", async () => {
             const { address, wallet } = await walletSetup(
                 ownerAddress,
+                recoveryOwnerAddr,
                 guardians,
                 entryPoint
             );

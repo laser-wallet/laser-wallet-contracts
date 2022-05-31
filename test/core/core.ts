@@ -26,10 +26,14 @@ describe("Core", () => {
     let _guardian1: Signer;
     let _guardian2: Signer;
     let relayer: Signer;
+    let recoveryOwner: Signer;
+    let recoveryOwnerAddr: Address;
 
     beforeEach(async () => {
-        [owner, _guardian1, _guardian2, relayer] = await ethers.getSigners();
+        [owner, recoveryOwner, _guardian1, _guardian2, relayer] =
+            await ethers.getSigners();
         ownerAddress = await owner.getAddress();
+        recoveryOwnerAddr = await recoveryOwner.getAddress();
         guardians = [
             await _guardian1.getAddress(),
             await _guardian2.getAddress(),
@@ -43,12 +47,13 @@ describe("Core", () => {
         it("should not allow to call init after initialization", async () => {
             const { address, wallet } = await walletSetup(
                 ownerAddress,
+                recoveryOwnerAddr,
                 guardians,
                 entryPoint
             );
             await expect(
-                wallet.init(mock, guardians, entryPoint)
-            ).to.be.revertedWith("Owner__WalletInitialized()");
+                wallet.init(mock, recoveryOwnerAddr, guardians, entryPoint)
+            ).to.be.revertedWith("Owner__initOwner__walletInitialized(");
         });
     });
 });

@@ -14,6 +14,8 @@ const {
 describe("Owner", () => {
     let owner: Signer;
     let ownerAddress: Address;
+    let recoveryOwner: Signer;
+    let recoveryOwnerAddr: Address;
     let guardians: Address[];
     let entryPoint: Address;
     let EntryPoint: Contract;
@@ -22,8 +24,10 @@ describe("Owner", () => {
     let relayer: Signer;
 
     beforeEach(async () => {
-        [owner, _guardian1, _guardian2, relayer] = await ethers.getSigners();
+        [owner, recoveryOwner, _guardian1, _guardian2, relayer] =
+            await ethers.getSigners();
         ownerAddress = await owner.getAddress();
+        recoveryOwnerAddr = await recoveryOwner.getAddress();
         guardians = [
             await _guardian1.getAddress(),
             await _guardian2.getAddress(),
@@ -37,6 +41,7 @@ describe("Owner", () => {
         it("should have the correct owner", async () => {
             const { address, wallet } = await walletSetup(
                 ownerAddress,
+                recoveryOwnerAddr,
                 guardians,
                 entryPoint
             );
@@ -50,6 +55,7 @@ describe("Owner", () => {
             const { address, factory } = await factorySetup(singletonAddress);
             const initializer = encodeFunctionData(abi, "init", [
                 addrZero,
+                recoveryOwnerAddr,
                 guardians,
                 entryPoint,
             ]);
@@ -63,6 +69,7 @@ describe("Owner", () => {
             const { address, factory } = await factorySetup(singletonAddress);
             const initializer = encodeFunctionData(abi, "init", [
                 entryPoint,
+                recoveryOwnerAddr,
                 guardians,
                 entryPoint,
             ]);
@@ -72,6 +79,7 @@ describe("Owner", () => {
         it("should revert by changing the owner to address0", async () => {
             const { address, wallet } = await walletSetup(
                 ownerAddress,
+                recoveryOwnerAddr,
                 guardians,
                 entryPoint
             );
@@ -82,6 +90,7 @@ describe("Owner", () => {
         it("should revert by changing the owner to an address with code", async () => {
             const { address, wallet } = await walletSetup(
                 ownerAddress,
+                recoveryOwnerAddr,
                 guardians,
                 entryPoint
             );
@@ -92,6 +101,7 @@ describe("Owner", () => {
         it("should revert by changing the owner to the current owner", async () => {
             const { address, wallet } = await walletSetup(
                 ownerAddress,
+                recoveryOwnerAddr,
                 guardians,
                 entryPoint
             );
@@ -103,12 +113,13 @@ describe("Owner", () => {
         it("should change the owner and emit event", async () => {
             const { address, wallet } = await walletSetup(
                 ownerAddress,
+                recoveryOwnerAddr,
                 guardians,
                 entryPoint
             );
             expect(await wallet.owner()).to.equal(ownerAddress);
             const txData = encodeFunctionData(abi, "changeOwner", [mock]);
-            await expect(wallet.exec(address, 0, txData))
+            await expect(wallet.emergencyCall(address, 0, txData))
                 .to.emit(wallet, "OwnerChanged")
                 .withArgs(mock);
             expect(await wallet.owner()).to.equal(mock);

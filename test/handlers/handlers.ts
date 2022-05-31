@@ -2,6 +2,7 @@ import { expect } from "chai";
 import { ethers } from "hardhat";
 import { Contract, providers, Signer, Wallet } from "ethers";
 import { walletSetup } from "../utils";
+import { Address } from "../types";
 
 const mock = Wallet.createRandom().address;
 const {
@@ -9,16 +10,17 @@ const {
 } = require("../../artifacts/contracts/LaserWallet.sol/LaserWallet.json");
 
 describe("Handlers", () => {
-    let ownerAddress: string;
-    let guardians: string[];
-    let entryPoint: string;
+    let ownerAddress: Address;
+    let recoveryOwnerAddr: Address;
+    let guardians: Address[];
+    let entryPoint: Address;
     let TokenCaller: Contract;
-    let addr: string;
-    let c: Contract;
 
     beforeEach(async () => {
-        const [owner, guardian1, guardian2] = await ethers.getSigners();
+        const [owner, recoveryOwner, guardian1, guardian2] =
+            await ethers.getSigners();
         ownerAddress = await owner.getAddress();
+        recoveryOwnerAddr = await recoveryOwner.getAddress();
         guardians = [
             await guardian1.getAddress(),
             await guardian2.getAddress(),
@@ -36,6 +38,7 @@ describe("Handlers", () => {
         it("should support ERC1155 interface", async () => {
             const { address, wallet } = await walletSetup(
                 ownerAddress,
+                recoveryOwnerAddr,
                 guardians,
                 entryPoint
             );
@@ -47,6 +50,7 @@ describe("Handlers", () => {
         it("should handle onERC1155Received", async () => {
             const { address, wallet } = await walletSetup(
                 ownerAddress,
+                recoveryOwnerAddr,
                 guardians,
                 entryPoint
             );
@@ -59,6 +63,7 @@ describe("Handlers", () => {
         it("should handle onERC1155BatchReceived", async () => {
             const { address, wallet } = await walletSetup(
                 ownerAddress,
+                recoveryOwnerAddr,
                 guardians,
                 entryPoint
             );
@@ -71,6 +76,7 @@ describe("Handlers", () => {
         it("should handle onERC721Received", async () => {
             const { address, wallet } = await walletSetup(
                 ownerAddress,
+                recoveryOwnerAddr,
                 guardians,
                 entryPoint
             );
@@ -83,6 +89,7 @@ describe("Handlers", () => {
         it("should support ERC721 interface", async () => {
             const { address, wallet } = await walletSetup(
                 ownerAddress,
+                recoveryOwnerAddr,
                 guardians,
                 entryPoint
             );
@@ -94,6 +101,7 @@ describe("Handlers", () => {
         it("should support ERC165", async () => {
             const { address, wallet } = await walletSetup(
                 ownerAddress,
+                recoveryOwnerAddr,
                 guardians,
                 entryPoint
             );
@@ -105,6 +113,7 @@ describe("Handlers", () => {
         it("should not support invalid interface", async () => {
             const { address, wallet } = await walletSetup(
                 ownerAddress,
+                recoveryOwnerAddr,
                 guardians,
                 entryPoint
             );
@@ -116,6 +125,7 @@ describe("Handlers", () => {
         it("should support ERC165 for ERC1155", async () => {
             const { address, wallet } = await walletSetup(
                 ownerAddress,
+                recoveryOwnerAddr,
                 guardians,
                 entryPoint
             );
@@ -128,6 +138,7 @@ describe("Handlers", () => {
         it("should support Laser's magic value", async () => {
             const { address, wallet } = await walletSetup(
                 ownerAddress,
+                recoveryOwnerAddr,
                 guardians,
                 entryPoint
             );

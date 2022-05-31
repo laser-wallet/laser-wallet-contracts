@@ -2,6 +2,7 @@ import { expect } from "chai";
 import { ethers } from "hardhat";
 import { Contract, Signer, Wallet } from "ethers";
 import { walletSetup } from "../utils";
+import { Address } from "../types";
 
 const oneEth = ethers.utils.parseEther("1");
 
@@ -12,15 +13,19 @@ const {
 
 describe("Receive", () => {
     let owner: Signer;
-    let ownerAddress: string;
-    let guardians: string[];
-    let entryPoint: string;
+    let ownerAddress: Address;
+    let recoveryOwner: Signer;
+    let recoveryOwnerAddr: Address;
+    let guardians: Address[];
+    let entryPoint: Address;
     let _guardian1: Signer;
     let _guardian2: Signer;
 
     beforeEach(async () => {
-        [owner, _guardian1, _guardian2] = await ethers.getSigners();
+        [owner, recoveryOwner, _guardian1, _guardian2] =
+            await ethers.getSigners();
         ownerAddress = await owner.getAddress();
+        recoveryOwnerAddr = await recoveryOwner.getAddress();
         guardians = [
             await _guardian1.getAddress(),
             await _guardian2.getAddress(),
@@ -34,6 +39,7 @@ describe("Receive", () => {
         it("should be able to receive eth via send transaction", async () => {
             const { address, wallet } = await walletSetup(
                 ownerAddress,
+                recoveryOwnerAddr,
                 guardians,
                 entryPoint
             );
@@ -52,6 +58,7 @@ describe("Receive", () => {
         it("should be able to receive eth via a contract call", async () => {
             const { address, wallet } = await walletSetup(
                 ownerAddress,
+                recoveryOwnerAddr,
                 guardians,
                 entryPoint
             );
