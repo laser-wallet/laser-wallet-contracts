@@ -3,6 +3,7 @@ import { Contract, Signer } from "ethers";
 import { ethers } from "hardhat";
 import { encodeFunctionData } from "./utils";
 import { LaserWallet } from "../../typechain-types/LaserWallet";
+import { Address } from "../types";
 
 const mock = ethers.Wallet.createRandom().address;
 const {
@@ -35,16 +36,18 @@ export async function factorySetup(
 }
 
 export async function walletSetup(
-    owner: string,
-    guardians: string[],
-    _entryPoint: string
+    owner: Address,
+    guardians: Address[],
+    _entryPoint: Address
 ): Promise<ReturnWalletSetup> {
     const LaserWallet = await ethers.getContractFactory("LaserWallet");
     const singleton = await LaserWallet.deploy();
     const singletonAddress = singleton.address;
     const { address, factory } = await factorySetup(singletonAddress);
+    const recoveryOwner = ethers.Wallet.createRandom().address;
     const initializer = encodeFunctionData(abi, "init", [
         owner,
+        recoveryOwner,
         guardians,
         _entryPoint,
     ]);
