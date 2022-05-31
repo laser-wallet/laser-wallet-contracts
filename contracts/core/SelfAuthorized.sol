@@ -3,12 +3,12 @@ pragma solidity 0.8.14;
 
 /**
  * @title SelfAuthorized - authorizes current contract to perform actions.
- * @author Modified from Gnosis Safe.
  */
 contract SelfAuthorized {
-    error SelfAuthorized__OnlyCallableFromWallet();
+    error SelfAuthorized__notWallet();
+
     modifier authorized() {
-        if (msg.sender != address(this)) revert SelfAuthorized__OnlyCallableFromWallet();
+        if (msg.sender != address(this)) revert SelfAuthorized__notWallet();
 
         _;
     }

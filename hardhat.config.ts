@@ -10,12 +10,13 @@ import "hardhat-deploy";
 import dotenv from "dotenv";
 
 dotenv.config();
+
 const INFURA_KEY = process.env.INFURA_KEY;
 const ALCHEMY_URL = process.env.ALCHEMY_URL;
 const DEPLOYER_PRIVATE_KEY = process.env.DEPLOYER_PRIVATE_KEY;
-
 const MAINNET_URL = `https://mainnet.infura.io/v3/${INFURA_KEY}`;
 const GOERLI_URL = `https://goerli.infura.io/v3/${INFURA_KEY}`;
+const RINKEBY_URL = `https://rinkeby.infura.io/v3/${INFURA_KEY}`;
 
 const config: HardhatUserConfig = {
     solidity: {
@@ -43,6 +44,10 @@ const config: HardhatUserConfig = {
         },
         optimism: {
             url: "https://mainnet.optimism.io",
+            accounts: [`0x${DEPLOYER_PRIVATE_KEY}`],
+        },
+        rinkeby: {
+            url: GOERLI_URL,
             accounts: [`0x${DEPLOYER_PRIVATE_KEY}`],
         },
         "optimism-kovan": {

@@ -4,6 +4,7 @@
   "description": "Core repository of Laser's smart contracts",
   "scripts": {
     "prettier:write": "npx prettier --write test/",
+    "prettier:write:config": "npx prettier --write hardhat.config.ts",
     "test": "npx hardhat test",
     "compile": "npx hardhat compile",
     "mainnet:laser_wallet": "npx hardhat run deploy/deploy_laser_wallet.js --network mainnet",

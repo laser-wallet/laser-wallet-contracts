@@ -18,10 +18,12 @@ contract SSR is ISSR, SelfAuthorized, Owner {
     address internal constant pointer = address(0x1);
 
     uint256 internal guardianCount;
-    ///@dev Activates in case a guardian misbehaves.
-    uint256 internal timeKeep;
 
     bool public isLocked;
+
+    ///@dev If guardians are blocked, they cannot do any transaction.
+    ///This is to completely prevent from guardians misbehaving.
+    bool public guardiansBlocked;
 
     mapping(address => address) internal guardians;
 
@@ -32,11 +34,6 @@ contract SSR is ISSR, SelfAuthorized, Owner {
 
     modifier _isLocked() {
         if (!isLocked) revert SSR__walletNotLocked();
-        _;
-    }
-
-    modifier guardianAllowed(uint256 time) {
-        if (time < timeKeep) revert SSR__guardianFreeze();
         _;
     }
 
@@ -53,17 +50,18 @@ contract SSR is ISSR, SelfAuthorized, Owner {
      */
     function unlock() external authorized _isLocked {
         isLocked = false;
+        emit WalletUnlocked();
     }
 
     /**
-     * @dev Unlocks the wallet. Can only be called by the recovery owner.
+     * @dev Unlocks the wallet. Can only be called by the recovery owner + the owner.
      * This is to avoid the wallet being locked forever if a guardian misbehaves.
-     * The guardians will be frozen for 1 week, giving enough time to the owner to remove them.
-     * The signature of the recovery owner + the owner. 
+     * The guardians will be blocked until the owner decides otherwise.
      */
     function recoveryUnlock() external authorized _isLocked {
         isLocked = false;
-        timeKeep = block.timestamp + 1 weeks;
+        guardiansBlocked = true;
+        emit RecoveryUnlocked();
     }
 
     /**
@@ -76,22 +74,7 @@ contract SSR is ISSR, SelfAuthorized, Owner {
     function recover(address newOwner, address newRecoveryOwner) external {
         owner = newOwner;
         recoveryOwner = newRecoveryOwner;
-    }
-
-    /**
-     * @dev Can only recover with the signature of 1 guardian and the recovery owner.
-     * @param newOwner The new owner address. This is generated instantaneously.
-     * @param newRecoveryOwner The new recovery owner address. This is generated instantaneously.
-     * @notice The newOwner and newRecoveryOwner key pair should be generated from the mobile device.
-     * The main reason of this is to restart the generation process in case an attacker has the current recoveryOwner.
-     */
-    function securityRecover(address newOwner, address newRecoveryOwner)
-        external
-        authorized
-    {
-        owner = newOwner;
-        recoveryOwner = newRecoveryOwner;
-        emit SuccesfullRecovery(owner, recoveryOwner);
+        emit WalletRecovered(newOwner, newRecoveryOwner);
     }
 
     /**
@@ -101,44 +84,6 @@ contract SSR is ISSR, SelfAuthorized, Owner {
     function changeRecoveryOwner(address newRecoveryOwner) external authorized {
         recoveryOwner = newRecoveryOwner;
         emit NewRecoveryOwner(recoveryOwner);
-    }
-
-    /**
-     * @dev Sets up the initial guardian configuration. Can only be called from the init function.
-     * @param _guardians Array of guardians.
-     */
-    function initGuardians(address[] calldata _guardians) internal {
-        uint256 guardiansLength = _guardians.length;
-        if (guardiansLength < 1) revert SSR__initGuardians__zeroGuardians();
-
-        address currentGuardian = pointer;
-
-        for (uint256 i = 0; i < guardiansLength; ) {
-            address guardian = _guardians[i];
-            if (
-                guardian == owner ||
-                guardian == address(0) ||
-                guardian == pointer ||
-                guardian == address(this) ||
-                guardian == currentGuardian ||
-                guardians[guardian] != address(0)
-            ) revert SSR__initGuardians__invalidAddress();
-            if (guardian.code.length > 0) {
-                if (!IERC165(guardian).supportsInterface(0xae029e0b)) {
-                    revert SSR__initGuardians__invalidAddress();
-                }
-            }
-
-            unchecked {
-                // Won't overflow...
-                ++i;
-            }
-            guardians[currentGuardian] = guardian;
-            currentGuardian = guardian;
-        }
-
-        guardians[currentGuardian] = pointer;
-        guardianCount = guardiansLength;
     }
 
     /**
@@ -225,6 +170,44 @@ contract SSR is ISSR, SelfAuthorized, Owner {
             index++;
         }
         return guardiansArray;
+    }
+
+    /**
+     * @dev Sets up the initial guardian configuration. Can only be called from the init function.
+     * @param _guardians Array of guardians.
+     */
+    function initGuardians(address[] calldata _guardians) internal {
+        uint256 guardiansLength = _guardians.length;
+        if (guardiansLength < 1) revert SSR__initGuardians__zeroGuardians();
+
+        address currentGuardian = pointer;
+
+        for (uint256 i = 0; i < guardiansLength; ) {
+            address guardian = _guardians[i];
+            if (
+                guardian == owner ||
+                guardian == address(0) ||
+                guardian == pointer ||
+                guardian == address(this) ||
+                guardian == currentGuardian ||
+                guardians[guardian] != address(0)
+            ) revert SSR__initGuardians__invalidAddress();
+            if (guardian.code.length > 0) {
+                if (!IERC165(guardian).supportsInterface(0xae029e0b)) {
+                    revert SSR__initGuardians__invalidAddress();
+                }
+            }
+
+            unchecked {
+                // Won't overflow...
+                ++i;
+            }
+            guardians[currentGuardian] = guardian;
+            currentGuardian = guardian;
+        }
+
+        guardians[currentGuardian] = pointer;
+        guardianCount = guardiansLength;
     }
 
     function access(bytes4 funcSelector) public pure returns (Access) {

@@ -286,16 +286,18 @@ contract LaserWallet is
 
     /**
      * @dev Pays the required amount to the EntryPoint contract.
-     * @param _requiredPrefund amount to pay to EntryPoint to perform execution.
+     * @param requiredPrefund amount to pay to EntryPoint to perform execution.
      */
-    function payPrefund(uint256 _requiredPrefund) internal {
-        if (_requiredPrefund > 0) {
+    function payPrefund(uint256 requiredPrefund) internal {
+        if (requiredPrefund > 0) {
             // If we need to pay back to EntryPoint ...
             // The only possible caller of this function is EntryPoint.
-            (bool success, ) = payable(msg.sender).call{
-                value: _requiredPrefund,
-                gas: gasleft()
-            }("");
+            bool success = execute(
+                payable(msg.sender),
+                requiredPrefund,
+                new bytes(0),
+                gasleft()
+            );
             // It is EntryPoint's job to check for success.
             (success);
         }

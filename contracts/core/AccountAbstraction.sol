@@ -3,17 +3,14 @@ pragma solidity 0.8.14;
 
 import "../core/SelfAuthorized.sol";
 import "../interfaces/IStakeManager.sol";
+import "../interfaces/IAccountAbstraction.sol";
 
 /**
  * @title AccountAbstraction - Handles the entry point address. Can only be changed through a safe transaction.
  */
-contract AccountAbstraction is SelfAuthorized {
-    event EntryPointChanged(address entryPoint);
+contract AccountAbstraction is IAccountAbstraction, SelfAuthorized {
     // Entrypoint address should always be located at storage slot 1.
     address public entryPoint;
-
-    error AA__InvalidEntryPoint();
-    error AA__InsufficientWithdrawBalance();
 
     /**
      * @dev Inits the entry point address.
@@ -21,7 +18,7 @@ contract AccountAbstraction is SelfAuthorized {
      */
     function initEntryPoint(address _entryPoint) internal {
         if (_entryPoint.code.length == 0 || _entryPoint == address(this)) {
-            revert AA__InvalidEntryPoint();
+            revert AA__initEntryPoint__invalidEntryPoint();
         }
         entryPoint = _entryPoint;
     }
@@ -32,7 +29,7 @@ contract AccountAbstraction is SelfAuthorized {
      */
     function withdrawDeposit(uint256 amount) external authorized {
         if (IStakeManager(entryPoint).balanceOf(address(this)) < amount)
-            revert AA__InsufficientWithdrawBalance();
+            revert AA__withdrawDeposit__insufficientBalance();
 
         // The stake manager will check for success.
         IStakeManager(entryPoint).withdrawTo(address(this), amount);
@@ -40,19 +37,17 @@ contract AccountAbstraction is SelfAuthorized {
 
     /**
      * @dev Changes the entry point address.
-     * @param _entryPoint  new entry point address.
-     * @notice The entry point address can execute a transaction without signature requirement
-     * If it is a malicious address. There needs to be extra caution in changing the entry point.
+     * @param newEntryPoint  new entry point address.
      */
-    function changeEntryPoint(address _entryPoint) external authorized {
+    function changeEntryPoint(address newEntryPoint) external authorized {
         if (
-            _entryPoint.code.length == 0 ||
-            _entryPoint == address(this) ||
-            entryPoint == _entryPoint
+            newEntryPoint.code.length == 0 ||
+            newEntryPoint == address(this) ||
+            entryPoint == newEntryPoint
         ) {
-            revert AA__InvalidEntryPoint();
+            revert AA__changeEntryPoint__invalidEntryPoint();
         }
-        entryPoint = _entryPoint;
+        entryPoint = newEntryPoint;
         emit EntryPointChanged(entryPoint);
     }
 }

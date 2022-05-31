@@ -7,14 +7,16 @@ interface ISSR {
     enum Access {
         Owner,
         Guardian,
-        RecoveryOwnerAndGuardian
+        RecoveryOwnerAndGuardian, 
+        OwnerAndRecoveryOwner
     }
 
     event WalletLocked();
     event WalletUnlocked();
+    event RecoveryUnlocked();
     event NewGuardian(address newGuardian);
     event GuardianRemoved(address removedGuardian);
-    event SuccesfullRecovery(address owner, address recoveryOwner);
+    event WalletRecovered(address newOwner, address newRecoveryOwner);
     event NewRecoveryOwner(address recoveryOwner);
 
     ///@dev modifier custom errors.
@@ -53,6 +55,13 @@ interface ISSR {
     function unlock() external;
 
     /**
+     * @dev Unlocks the wallet. Can only be called by the recovery owner + the owner.
+     * This is to avoid the wallet being locked forever if a guardian misbehaves.
+     * The guardians will be blocked until the owner decides otherwise.
+     */
+    function recoveryUnlock() external;
+
+    /**
      * @dev Can only recover with the signature of 1 guardian and the recovery owner.
      * @param newOwner The new owner address. This is generated instantaneously.
      * @param newRecoveryOwner The new recovery owner address. This is generated instantaneously.
@@ -60,4 +69,37 @@ interface ISSR {
      * The main reason of this is to restart the generation process in case an attacker has the current recoveryOwner.
      */
     function recover(address newOwner, address newRecoveryOwner) external;
+
+    /**
+     * @dev Changes the recoveryOwner address. Only the owner can call this function.
+     * @param newRecoveryOwner The new recovery owner address.
+     */
+    function changeRecoveryOwner(address newRecoveryOwner) external;
+
+    /**
+     * @dev Adds a guardian to the wallet.
+     * @param newGuardian Address of the new guardian.
+     * @notice Can only be called by the owner.
+     */
+    function addGuardian(address newGuardian) external;
+
+    /**
+     * @dev Removes a guardian to the wallet.
+     * @param prevGuardian Address of the previous guardian in the linked list.
+     * @param guardianToRemove Address of the guardian to be removed.
+     * @notice Can only be called by the owner.
+     */
+    function removeGuardian(address prevGuardian, address guardianToRemove)
+        external;
+
+    /**
+     * @param guardian Requested address.
+     * @return Boolean if the address is a guardian of the current wallet.
+     */
+    function isGuardian(address guardian) external view returns (bool);
+
+    /**
+     * @return Array of guardians of this.
+     */
+    function getGuardians() external view returns (address[] memory)
 }
