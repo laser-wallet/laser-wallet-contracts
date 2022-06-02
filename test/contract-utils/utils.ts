@@ -51,7 +51,8 @@ describe("Setup", () => {
             );
             const hash = ethers.utils.keccak256("0x1234");
             const sig = await sign(owner, hash);
-            const signer = await wallet.returnSigner(hash, sig);
+            const [r, s, v] = await wallet.splitSigs(sig, 0);
+            const signer = await wallet.returnSigner(hash, r, s, v);
             expect(signer).to.equal(ownerAddress);
         });
 
@@ -87,7 +88,8 @@ describe("Setup", () => {
 
             const sig = await EIP712Sig(ownerWallet, domain, txMessage);
             const hash = await wallet.userOperationHash(userOp);
-            const signer = await wallet.returnSigner(hash, sig);
+            const [r, s, v] = await wallet.splitSigs(sig, 0);
+            const signer = await wallet.returnSigner(hash, r, s, v);
             expect(signer).to.equal(ownerAddress);
         });
 
@@ -100,7 +102,7 @@ describe("Setup", () => {
             );
             const hash = ethers.utils.keccak256("0x1234");
             const sig = await sign(owner, hash);
-            const [r, s, v] = await wallet.splitSig(sig);
+            const [r, s, v] = await wallet.splitSigs(sig, 0);
             expect(r).to.equal(sig.slice(0, 66));
             expect(s).to.equal(`0x${sig.slice(66, 130)}`);
             expect(v).to.equal(parseInt(sig.slice(130), 16));
@@ -115,7 +117,8 @@ describe("Setup", () => {
             );
             const hash = ethers.utils.keccak256("0x1234");
             const sig = (await sign(owner, hash)).replace(/1f$/, "03");
-            await expect(wallet.returnSigner(hash, sig)).to.be.revertedWith(
+            const [r, s, v] = await wallet.splitSigs(sig, 0);
+            await expect(wallet.returnSigner(hash, r, s, v)).to.be.revertedWith(
                 "Utils__InvalidSignature()"
             );
         });

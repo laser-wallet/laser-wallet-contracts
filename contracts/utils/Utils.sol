@@ -10,17 +10,13 @@ contract Utils {
     /**
      * @dev Returns the signer of the hash.
      * @param dataHash The hash that was signed.
-     * @param signature Signature of the hash.
      */
-    function returnSigner(bytes32 dataHash, bytes memory signature)
-        public
-        pure
-        returns (address signer)
-    {
-        bytes32 r;
-        bytes32 s;
-        uint8 v;
-        (r, s, v) = splitSig(signature);
+    function returnSigner(
+        bytes32 dataHash,
+        bytes32 r,
+        bytes32 s,
+        uint8 v
+    ) public pure returns (address signer) {
         if (v > 30) {
             signer = ecrecover(
                 keccak256(
@@ -41,9 +37,10 @@ contract Utils {
 
     /**
      * @dev Returns the r, s and v of the signature.
-     * @param signature by the owner.
+     * @param signature Signature.
+     * @param pos Which signature to read.
      */
-    function splitSig(bytes memory signature)
+    function splitSigs(bytes memory signature, uint256 pos)
         public
         pure
         returns (
@@ -53,9 +50,10 @@ contract Utils {
         )
     {
         assembly {
-            r := mload(add(signature, 0x20))
-            s := mload(add(signature, 0x40))
-            v := byte(0, mload(add(signature, 0x60)))
+            let sigPos := mul(0x41, pos)
+            r := mload(add(signature, add(sigPos, 0x20)))
+            s := mload(add(signature, add(sigPos, 0x40)))
+            v := byte(0, mload(add(signature, add(sigPos, 0x60))))
         }
     }
 
@@ -66,7 +64,7 @@ contract Utils {
      * @param data Data payload.
      * @param txGas Amount of gas to forward.
      */
-    function execute(
+    function _call(
         address to,
         uint256 value,
         bytes memory data,

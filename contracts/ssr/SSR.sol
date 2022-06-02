@@ -3,15 +3,17 @@ pragma solidity 0.8.14;
 
 import "../core/SelfAuthorized.sol";
 import "../core/Owner.sol";
+import "../interfaces/IEIP1271.sol";
 import "../interfaces/IERC165.sol";
 import "../interfaces/ISSR.sol";
+import "../utils/Utils.sol";
 
 /**
  * @title SSR - Sovereign Social Recovery
  * @notice New wallet recovery mechanism.
  * @author Rodrigo Herrera I.
  */
-contract SSR is ISSR, SelfAuthorized, Owner {
+contract SSR is ISSR, SelfAuthorized, Owner, Utils {
     ///@dev pointer address for the nested mapping.
     address internal constant pointer = address(0x1);
 
@@ -25,15 +27,10 @@ contract SSR is ISSR, SelfAuthorized, Owner {
 
     mapping(address => address) internal guardians;
 
-    modifier isNotLocked() {
-        if (isLocked) revert SSR__walletLocked();
-        _;
-    }
-
     /**
      * @dev Locks the wallet. Can only be called by a guardian.
      */
-    function lock() external authorized isNotLocked {
+    function lock() external authorized {
         isLocked = true;
         emit WalletLocked();
     }
@@ -49,12 +46,19 @@ contract SSR is ISSR, SelfAuthorized, Owner {
     /**
      * @dev Unlocks the wallet. Can only be called by the recovery owner + the owner.
      * This is to avoid the wallet being locked forever if a guardian misbehaves.
-     * The guardians will be blocked until the owner decides otherwise.
+     * The guardians will be locked until the owner decides otherwise.
      */
     function recoveryUnlock() external authorized {
         isLocked = false;
         guardiansBlocked = true;
         emit RecoveryUnlocked();
+    }
+
+    /**
+     * @dev Unlocks the guardians. This can only be called by the owner.
+     */
+    function unlockGuardians() external authorized {
+        guardiansBlocked = false;
     }
 
     /**
@@ -96,14 +100,6 @@ contract SSR is ISSR, SelfAuthorized, Owner {
             newGuardian == owner ||
             guardians[newGuardian] != address(0)
         ) revert SSR__addGuardian__invalidAddress();
-
-        // Guardians can only be either EOA or Laser.
-        // Untill EIP1271 is more widely adopted ...
-        if (newGuardian.code.length > 0) {
-            if (!IERC165(newGuardian).supportsInterface(0xae029e0b)) {
-                revert SSR__addGuardian__contractNotLaser();
-            }
-        }
 
         guardians[newGuardian] = guardians[pointer];
         guardians[pointer] = newGuardian;
@@ -156,7 +152,7 @@ contract SSR is ISSR, SelfAuthorized, Owner {
     /**
      * @return Array of guardians of this.
      */
-    function getGuardians() external view returns (address[] memory) {
+    function getGuardians() public view returns (address[] memory) {
         address[] memory guardiansArray = new address[](guardianCount);
         address currentGuardian = guardians[pointer];
 
@@ -189,11 +185,6 @@ contract SSR is ISSR, SelfAuthorized, Owner {
                 guardian == currentGuardian ||
                 guardians[guardian] != address(0)
             ) revert SSR__initGuardians__invalidAddress();
-            if (guardian.code.length > 0) {
-                if (!IERC165(guardian).supportsInterface(0xae029e0b)) {
-                    revert SSR__initGuardians__invalidAddress();
-                }
-            }
 
             unchecked {
                 // Won't overflow...
@@ -214,19 +205,227 @@ contract SSR is ISSR, SelfAuthorized, Owner {
     function access(bytes4 funcSelector) internal view returns (Access) {
         if (funcSelector == this.lock.selector) {
             // Only a guardian can lock the wallet ...
-            // If  guardians are blocked, we revert ...
+            // If  guardians are locked, we revert ...
             if (guardiansBlocked) revert SSR__access__guardiansBlocked();
             else return Access.Guardian;
         } else if (funcSelector == this.unlock.selector) {
             // Only a guardian + the owner can unlock the wallet ...
             return Access.OwnerAndGuardian;
         } else if (funcSelector == this.recoveryUnlock.selector) {
+            // This is in case a guardian is misbehaving ...
             return Access.OwnerAndRecoveryOwner;
         } else if (funcSelector == this.recover.selector) {
             // Only the recovery owner + the guardian can recover the wallet (change the owner keys) ...
             return Access.RecoveryOwnerAndGuardian;
         } else {
-            return Access.Owner;
+            // Else is the owner ... If the the wallet is locked, we revert ...
+            if (isLocked) revert SSR__access__walletLocked();
+            else return Access.Owner;
         }
+    }
+
+    /**
+     * @dev Verifies that the signature matches the owner.
+     */
+    function verifyOwner(bytes32 dataHash, bytes memory signature)
+        internal
+        view
+    {
+        bytes32 r;
+        bytes32 s;
+        uint8 v;
+
+        if (signature.length < 65)
+            revert SSR__verifyGuardian__invalidSignature();
+
+        (r, s, v) = splitSigs(signature, 0);
+        address recovered = returnSigner(dataHash, r, s, v);
+        if (recovered != owner) revert SSR__verifyOwner__notOwner();
+    }
+
+    /**
+     * @dev Verifies that the signature matches a guardian.
+     */
+    function verifyGuardian(bytes32 dataHash, bytes memory signature)
+        internal
+        view
+    {
+        bytes32 r;
+        bytes32 s;
+        uint8 v;
+        bool _isGuardian;
+
+        if (signature.length < 65)
+            revert SSR__verifyGuardian__invalidSignature();
+
+        (r, s, v) = splitSigs(signature, 0);
+
+        // We first check if the guardian is a regular EOA ...
+        address recovered = returnSigner(dataHash, r, s, v);
+
+        if (guardians[recovered] != address(0)) {
+            _isGuardian = true;
+        } else {
+            // Else, the guardian can be a smart contract wallet ...
+            // Each wallet can pack their signatures in different ways,
+            // so we need to send the payload ...
+            address[] memory _guardians = getGuardians();
+
+            for (uint256 i = 0; i < guardianCount; ) {
+                address guardian = _guardians[i];
+                // We check if the guardian is a smart contract wallet ...
+                if (guardian.code.length > 0) {
+                    if (
+                        IEIP1271(guardian).isValidSignature(
+                            dataHash,
+                            signature
+                        ) == 0x1626ba7e
+                    ) _isGuardian = true;
+                }
+                unchecked {
+                    // Won't overflow ...
+                    ++i;
+                }
+            }
+        }
+        if (!_isGuardian) revert SSR__verifyGurdian__notGuardian();
+    }
+
+    /**
+     * @dev Verifies that the signatures correspond to the owner and guardian.
+     * The first signature needs to match the owner.
+     */
+    function verifyOwnerAndGuardian(bytes32 dataHash, bytes calldata signatures)
+        internal
+        view
+    {
+        bytes32 r;
+        bytes32 s;
+        uint8 v;
+
+        // The guardian can be an EOA or smart contract wallet ...
+        if (signatures.length < 130)
+            revert SSR__verifyOwnerAndGuardian__invalidSignature();
+
+        // The first signer needs to be the owner ...
+        (r, s, v) = splitSigs(signatures, 0);
+        address _isOwner = returnSigner(dataHash, r, s, v);
+        if (_isOwner != owner) revert SSR__verifyOwnerAndGuardian__notOwner();
+
+        // The second signer needs to be the guardian ...
+        // We first check if the guardian is a regular EOA ...
+        address recoveredGuardian;
+        bool _isGuardian;
+        recoveredGuardian = returnSigner(dataHash, r, s, v);
+        if (guardians[recoveredGuardian] != address(0)) {
+            _isGuardian = true;
+        } else {
+            // Else, the guardian can be a smart contract wallet ...
+            // Each wallet can pack their signatures in different ways,
+            // so we need to send the payload ...
+            address[] memory _guardians = getGuardians();
+
+            for (uint256 i = 0; i < guardianCount; ) {
+                address guardian = _guardians[i];
+                // We check if the guardian is a smart contract wallet ...
+                if (guardian.code.length > 0) {
+                    if (
+                        IEIP1271(guardian).isValidSignature(
+                            dataHash,
+                            signatures
+                        ) == 0x1626ba7e
+                    ) _isGuardian = true;
+                }
+                unchecked {
+                    // Won't overflow ...
+                    ++i;
+                }
+            }
+        }
+        if (!_isGuardian) revert SSR__verifyOwnerAndGuardian__notGuardian();
+    }
+
+    /**
+     * @dev Verifies that the signatures correspond to the recovery owner and guardian.
+     * The first signature needs to match the recovery owner.
+     */
+    function verifyRecoveryOwnerAndGurdian(
+        bytes32 dataHash,
+        bytes calldata signatures
+    ) internal view {
+        bytes32 r;
+        bytes32 s;
+        uint8 v;
+
+        // The guardian can be an EOA or smart contract wallet ...
+        if (signatures.length < 130)
+            revert SSR__verifyRecoveryOwnerAndGurdian__invalidSignature();
+
+        // The first signer needs to be the recovery owner ...
+        (r, s, v) = splitSigs(signatures, 0);
+        address _isRecoveryOwner = returnSigner(dataHash, r, s, v);
+        if (_isRecoveryOwner != recoveryOwner)
+            revert SSR__verifyRecoveryOwnerAndGurdian__notRecoveryOwner();
+
+        // The second signer needs to be the guardian ...
+        // We first check if the guardian is a regular EOA ...
+        bool _isGuardian;
+        address recoveredGuardian = returnSigner(dataHash, r, s, v);
+        if (guardians[recoveredGuardian] != address(0)) {
+            _isGuardian = true;
+        } else {
+            // Else, the guardian can be a smart contract wallet ...
+            // Each wallet can pack their signatures in different ways,
+            // so we need to send the payload ...
+            address[] memory _guardians = getGuardians();
+
+            for (uint256 i = 0; i < guardianCount; ) {
+                address guardian = _guardians[i];
+                // We check if the guardian is a smart contract wallet ...
+                if (guardian.code.length > 0) {
+                    if (
+                        IEIP1271(guardian).isValidSignature(
+                            dataHash,
+                            signatures
+                        ) == 0x1626ba7e
+                    ) _isGuardian = true;
+                }
+                unchecked {
+                    // Won't overflow ...
+                    ++i;
+                }
+            }
+        }
+        if (!_isGuardian)
+            revert SSR__verifyRecoveryOwnerAndGurdian__notGuardian();
+    }
+
+    /**
+     * @dev Verifies that the signatures correspond to the owner and recovery owner.
+     * The first signature needs to match the owner.
+     */
+    function verifyOwnerAndRecoveryOwner(
+        bytes32 dataHash,
+        bytes memory signatures
+    ) internal view {
+        bytes32 r;
+        bytes32 s;
+        uint8 v;
+
+        // Both, the owner and recovery owner must be EOA's ....
+        if (signatures.length != 130)
+            revert SSR__verifyOwnerAndRecoveryOwner__invalidSignature();
+
+        // The first signer needs to be the owner ...
+        (r, s, v) = splitSigs(signatures, 0);
+        address _isOwner = returnSigner(dataHash, r, s, v);
+        if (_isOwner != owner)
+            revert SSR__verifyOwnerAndRecoveryOwner__notOwner();
+
+        // The second signer needs to be the recovery owner ...
+        (r, s, v) = splitSigs(signatures, 1);
+        address _isRecoveryOwner = returnSigner(dataHash, r, s, v);
+        if (_isRecoveryOwner != recoveryOwner)
+            revert SSR__verifyOwnerAndRecoveryOwner__notRecoveryOwner();
     }
 }

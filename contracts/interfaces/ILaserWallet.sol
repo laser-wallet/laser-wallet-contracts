@@ -9,48 +9,18 @@ import {UserOperation} from "../libraries/UserOperation.sol";
  * @notice Has all the external functions, structs, events and errors for LaserWallet.sol.
  */
 interface ILaserWallet {
-    /**
-     * @dev Generic transaction struct primarily used for multicall.
-     */
-    struct Transaction {
-        address to;
-        uint256 value;
-        bytes data;
-    }
-
-    event Setup(address owner, address[] guardians, address entryPoint);
-    event Success(address to, uint256 value);
     event Received(address indexed sender, uint256 amount);
-    event GuardianSuccess(bytes4 funcSelector);
-    event MultiCallSuccess();
+    event Setup(address owner, address[] guardians, address entryPoint);
+    event Success(address to, uint256 value, bytes4 funcSelector);
 
-    ///@dev modifier error.
+    ///@dev modifier custom error.
     error LW__notEntryPoint();
 
-    ///@dev validateUserOp() custom errors.
+    ///@dev validateUserOp custom error.
     error LW__validateUserOp__invalidNonce();
-    error LW__validateUserOp__notOwner();
-    error LW__validateUserOp__walletLocked();
-    error LW__validateUserOp__notGuardian();
-    error LW__validateUserOp__invalidFuncSelector();
 
-    ///@dev exec() custom errors.
-    error LW__exec__ownerNotAllowed();
+    ///@dev exec() custom error.
     error LW__exec__failure();
-
-    ///@dev guardianCall() custom errors.
-    error LW__guardianCall__failure();
-    error LW__guardianCall__guardianNotAllowed();
-
-    ///@dev multiCall() custom errrors.
-    error LW__multiCall__ownerNotAllowed();
-    error LW__multiCall__failure();
-
-    ///@dev emergencyCall() custom errors.
-    error LW__emergencyCall__ownerNotAllowed();
-    error LW__emergencyCall__guardianNotAllowed();
-    error LW__emergencyCall__invalidCaller();
-    error LW__emergencyCall__failure();
 
     ///@dev isValidSignature() custom error.
     error LW__isValidSignature__invalidSigner();
@@ -85,39 +55,11 @@ interface ILaserWallet {
     /**
      * @dev Executes an AA transaction. The msg.sender needs to be the EntryPoint address.
      * The signatures are verified in validateUserOp().
-     * @ param to Destination address of Safe transaction.
-     * @param value Ether value of Safe transaction.
-     * @param callData Data payload of Safe transaction.
-     * @notice only the EntryPoint or owner can call this function.
-     */
-    function exec(
-        address to,
-        uint256 value,
-        bytes calldata callData
-    ) external;
-
-    /**
-     * @dev Starts the SSR mechanism. Can only be called by a guardian.
-     * @param data Data payload for this transaction. It is limited to guardian access.
-     */
-    function guardianCall(bytes memory data) external;
-
-    /**
-     * @dev Executes a series of transactions.
-     * @param transactions populated array of transactions.
-     * @notice If any transaction fails, the whole multiCall reverts.
-     */
-    function multiCall(Transaction[] calldata transactions) external;
-
-    /**
-     * @dev Executes a transaction.
      * @param to Destination address of the transaction.
      * @param value Ether value of the transaction.
      * @param data Data payload of the transaction.
-     * @notice This function is implemented in the case of a bug in the EntryPoint contract.
-     * So there is a direct interaction with this.
      */
-    function emergencyCall(
+    function exec(
         address to,
         uint256 value,
         bytes memory data

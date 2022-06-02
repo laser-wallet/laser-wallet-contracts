@@ -49,7 +49,7 @@ describe("Account Abstraction", () => {
         entryPoint = EntryPoint.address;
     });
 
-    describe("validateUserOp() 'handleOp'", () => {
+    describe("validateUserOp() 'handleOps'", () => {
         it("should only accept calls from the entry point", async () => {
             const { address, wallet } = await walletSetup(
                 ownerAddress,
@@ -233,43 +233,6 @@ describe("Account Abstraction", () => {
                 .reverted;
         });
 
-        it("should execute a multicall", async () => {
-            const { address, wallet } = await walletSetup(
-                ownerAddress,
-                recoveryOwnerAddr,
-                guardians,
-                entryPoint
-            );
-
-            await fund(address, relayer);
-            const initialBal = await ethers.provider.getBalance(address);
-            expect(initialBal).to.equal(tenEth);
-
-            const tx1 = {
-                to: address,
-                value: 0,
-                data: encodeFunctionData(abi, "changeOwner", [mock]),
-            };
-            const tx2 = {
-                to: mock,
-                value: twoEth,
-                data: "0x",
-            };
-            const transactions = [tx1, tx2];
-            userOp.sender = address;
-            userOp.nonce = 0;
-            userOp.callData = encodeFunctionData(abi, "multiCall", [
-                transactions,
-            ]);
-            const hash = await wallet.userOperationHash(userOp);
-            userOp.signature = await sign(owner, hash);
-            await EntryPoint.handleOps([userOp], address);
-
-            const postBal = await ethers.provider.getBalance(address);
-            expect(postBal).to.not.equal(tenEth);
-            expect(await wallet.owner()).to.equal(mock);
-        });
-
         it("should revert by providing an invalid nonce", async () => {
             const { address, wallet } = await walletSetup(
                 ownerAddress,
@@ -295,7 +258,7 @@ describe("Account Abstraction", () => {
                 .reverted;
         });
 
-        it("should revert if the owner calls 'guardianCall' ", async () => {
+        it("should revert if the owner calls 'lock' ", async () => {
             const { address, wallet } = await walletSetup(
                 ownerAddress,
                 recoveryOwnerAddr,
@@ -305,11 +268,14 @@ describe("Account Abstraction", () => {
 
             await fund(address, relayer);
 
-            const txData = encodeFunctionData(abi, "changeOwner", [mock]);
+            const txData = encodeFunctionData(abi, "lock", []);
             userOp.sender = address;
             userOp.nonce = 0;
-            userOp.callData = encodeFunctionData(abi, "guardianCall", ["0x"]);
-
+            userOp.callData = encodeFunctionData(abi, "exec", [
+                userOp.sender,
+                0,
+                txData,
+            ]);
             const hash = await wallet.userOperationHash(userOp);
             userOp.signature = await sign(owner, hash);
             await expect(EntryPoint.handleOps([userOp], address)).to.be
@@ -427,33 +393,6 @@ describe("Account Abstraction", () => {
                 txData,
             ]);
             await expect(wallet.exec(address, 0, txData)).to.be.reverted;
-        });
-
-        it("should update the entry point from 'emergencyCall' ", async () => {
-            const { address, wallet } = await walletSetup(
-                ownerAddress,
-                recoveryOwnerAddr,
-                guardians,
-                entryPoint
-            );
-
-            const _newEntryPoint = await ethers.getContractFactory(
-                "AccountAbstraction"
-            );
-            const newEntryPoint = await _newEntryPoint.deploy();
-            const addr = newEntryPoint.address;
-            const txData = encodeFunctionData(abi, "changeEntryPoint", [addr]);
-            userOp.sender = address;
-            userOp.nonce = 0;
-            userOp.callData = encodeFunctionData(abi, "exec", [
-                address,
-                0,
-                txData,
-            ]);
-            await expect(wallet.emergencyCall(address, 0, txData))
-                .to.emit(wallet, "EntryPointChanged")
-                .withArgs(addr);
-            expect(await wallet.entryPoint()).to.equal(addr);
         });
 
         it("should change entry point from 'handleOps' ", async () => {

@@ -6,8 +6,9 @@ import "./core/Singleton.sol";
 import "./handlers/Handler.sol";
 import "./interfaces/ILaserWallet.sol";
 import "./libraries/UserOperation.sol";
-import "./utils/Utils.sol";
 import "./ssr/SSR.sol";
+
+import "hardhat/console.sol";
 
 /**
  * @title LaserWallet - EVM based smart contract wallet. Implementes "sovereign social recovery" mechanism and account abstraction.
@@ -18,7 +19,6 @@ contract LaserWallet is
     AccountAbstraction,
     SSR,
     Handler,
-    Utils,
     ILaserWallet
 {
     string public constant VERSION = "1.0.0";
@@ -83,7 +83,8 @@ contract LaserWallet is
     ) external onlyEntryPoint {
         // Increase the nonce to avoid drained funds from multiple pay prefunds.
         if (nonce++ != userOp.nonce) revert LW__validateUserOp__invalidNonce();
-        // In order to check the signatures correctly, we encode the transaction data...
+
+        // We encode the transaction data ...
         bytes memory userOpData = encodeUserOperationData(
             userOp.sender,
             userOp.nonce,
@@ -96,28 +97,18 @@ contract LaserWallet is
             userOp.paymaster,
             userOp.paymasterData
         );
+
         // Now we hash it ...
         bytes32 dataHash = keccak256(userOpData);
-        // We recover the sender ...
-        address recovered = returnSigner(dataHash, userOp.signature);
-        // We get the function selector to check proper access ...
-        bytes4 funcSelector = bytes4(userOp.callData);
-        if (
-            // The owner can only call exec() or multiCall()
-            funcSelector == this.exec.selector ||
-            funcSelector == this.multiCall.selector
-        ) {
-            // We check that the sender is the owner ...
-            if (recovered != owner) revert LW__validateUserOp__notOwner();
-            // If the wallet is locked, we revert ...
-            if (isLocked) revert LW__validateUserOp__walletLocked();
-            // Guardians can only call the guardianCall() func ...
-        } else if (funcSelector == this.guardianCall.selector) {
-            // We check that the sender is a guardian ...
-            if (guardians[recovered] == address(0))
-                revert LW__validateUserOp__notGuardian();
-            // Else, the call is invalid ...
-        } else revert LW__validateUserOp__invalidFuncSelector();
+
+        // We get the actual function selector to determine access ...
+        bytes4 funcSelector = bytes4(userOp.callData[132:]);
+
+        // access() checks if the wallet is locked for the owner or guardians.
+        Access _access = access(funcSelector);
+
+        // We verify that the signatures are correct depending on the transaction type ...
+        verifySignatures(_access, dataHash, userOp.signature);
 
         // Finally... we can pay the costs to the EntryPoint ...
         payPrefund(_requiredPrefund);
@@ -135,93 +126,9 @@ contract LaserWallet is
         uint256 value,
         bytes memory data
     ) external onlyEntryPoint {
-        // We check that the the owner has proper access ...
-        if (access(bytes4(data)) != Access.Owner)
-            revert LW__exec__ownerNotAllowed();
-
-        bool success = execute(to, value, data, gasleft());
-
-        if (success) emit Success(to, value);
-        else revert LW__exec__failure();
-    }
-
-    /**
-     * @dev Starts the SSR mechanism. Can only be called by a guardian.
-     * @param data Data payload for this transaction. It is limited to guardian access.
-     */
-    function guardianCall(bytes memory data) external onlyEntryPoint {
-        bytes4 funcSelector = bytes4(data);
-        // We check that the guardian has proper access ...
-        if (access(funcSelector) != Access.Guardian)
-            revert LW__guardianCall__guardianNotAllowed();
-
-        bool success = execute(address(this), 0, data, gasleft());
-        if (success) emit GuardianSuccess(funcSelector);
-        else revert LW__guardianCall__failure();
-    }
-
-    /**
-     * @dev Executes a series of transactions.
-     * @param transactions populated array of transactions.
-     * @notice If any transaction fails, the whole multiCall reverts.
-     */
-    function multiCall(Transaction[] calldata transactions)
-        external
-        onlyEntryPoint
-    {
-        uint256 transactionsLength = transactions.length;
-        for (uint256 i = 0; i < transactionsLength; ) {
-            address to = transactions[i].to;
-            uint256 value = transactions[i].value;
-            bytes memory data = transactions[i].data;
-            bytes4 funcSelector = bytes4(data);
-            // We check that the the owner has proper access ...
-            if (access(funcSelector) != Access.Owner)
-                revert LW__multiCall__ownerNotAllowed();
-
-            bool success = execute(to, value, data, gasleft());
-            if (!success) revert LW__multiCall__failure();
-
-            unchecked {
-                // Won't overflow...
-                ++i;
-            }
-        }
-        emit MultiCallSuccess();
-    }
-
-    /**
-     * @dev Executes a transaction.
-     * @param to Destination address of the transaction.
-     * @param value Ether value of the transaction.
-     * @param data Data payload of the transaction.
-     * @notice This function is implemented in the case of a bug in the EntryPoint contract.
-     * So there is a direct interaction with this.
-     */
-    function emergencyCall(
-        address to,
-        uint256 value,
-        bytes memory data
-    ) external {
-        bytes4 funcSelector = bytes4(data);
-        ++nonce;
-        bool success;
-        // If the sender is the owner ...
-        if (msg.sender == owner) {
-            // We check that the the owner has proper access ...
-            if (access(funcSelector) != Access.Owner)
-                revert LW__emergencyCall__ownerNotAllowed();
-            success = execute(to, value, data, gasleft());
-            // If the sender is a guardian ...
-        } else if (guardians[msg.sender] != address(0)) {
-            if (access(funcSelector) != Access.Guardian)
-                revert LW__emergencyCall__guardianNotAllowed();
-            else success = execute(to, value, data, gasleft());
-            // If the sender is neither the owner nor the guardian, we revert ...
-        } else revert LW__emergencyCall__invalidCaller();
-
-        if (success) emit Success(to, value);
-        else revert LW__emergencyCall__failure();
+        bool success = _call(to, value, data, gasleft());
+        if (!success) revert LW__exec__failure();
+        else emit Success(to, value, bytes4(data));
     }
 
     /**
@@ -261,7 +168,11 @@ contract LaserWallet is
         view
         returns (bytes4)
     {
-        address recovered = returnSigner(hash, signature);
+        bytes32 r;
+        bytes32 s;
+        uint8 v;
+        (r, s, v) = splitSigs(signature, 0);
+        address recovered = returnSigner(hash, r, s, v);
         if (recovered != owner) revert LW__isValidSignature__invalidSigner();
         else return EIP1271_MAGIC_VALUE;
     }
@@ -294,7 +205,7 @@ contract LaserWallet is
         if (requiredPrefund > 0) {
             // If we need to pay back to EntryPoint ...
             // The only possible caller of this function is EntryPoint.
-            bool success = execute(
+            bool success = _call(
                 payable(msg.sender),
                 requiredPrefund,
                 new bytes(0),
@@ -302,6 +213,32 @@ contract LaserWallet is
             );
             // It is EntryPoint's job to check for success.
             (success);
+        }
+    }
+
+    /**
+     * @dev Verifies that the signature(s) match the transaction type and sender.
+     * @param _access Who has permission to invoke this transaction.
+     * @param dataHash The keccak256 has of the transaction's data playload.
+     * @param signatures The signatures sent by the UserOp.
+     */
+    function verifySignatures(
+        Access _access,
+        bytes32 dataHash,
+        bytes calldata signatures
+    ) internal view {
+        if (_access == Access.Owner) {
+            verifyOwner(dataHash, signatures);
+        } else if (_access == Access.Guardian) {
+            verifyGuardian(dataHash, signatures);
+        } else if (_access == Access.OwnerAndGuardian) {
+            verifyOwnerAndGuardian(dataHash, signatures);
+        } else if (_access == Access.RecoveryOwnerAndGuardian) {
+            verifyRecoveryOwnerAndGurdian(dataHash, signatures);
+        } else if (_access == Access.OwnerAndRecoveryOwner) {
+            verifyOwnerAndRecoveryOwner(dataHash, signatures);
+        } else {
+            revert();
         }
     }
 

@@ -1,8 +1,6 @@
-import { Console } from "console";
 import { Contract, Signer } from "ethers";
 import { ethers } from "hardhat";
 import { encodeFunctionData } from "./utils";
-import { LaserWallet } from "../../typechain-types/LaserWallet";
 import { Address } from "../types";
 
 const mock = ethers.Wallet.createRandom().address;
@@ -52,7 +50,6 @@ export async function walletSetup(
         guardians,
         _entryPoint,
     ]);
-    let _wallet: LaserWallet;
     const transaction = await factory.createProxy(initializer);
     const receipt = await transaction.wait();
     const proxyAddress = receipt.events[1].args.proxy;

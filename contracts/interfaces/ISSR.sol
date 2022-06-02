@@ -20,33 +20,44 @@ interface ISSR {
     event WalletRecovered(address newOwner, address newRecoveryOwner);
     event NewRecoveryOwner(address recoveryOwner);
 
-    ///@dev modifier custom errors.
-    error SSR__walletLocked();
-
-    ///@dev modifier custom errors.
-    error SSR__walletNotLocked();
-
-    ///@dev modifier custom errors.
-    error SSR__guardianFreeze();
-
-    ///@dev recover() custom errors.
-    error SSR__recover__walletNotLocked();
-
-    ///@dev initGuardians() custom errors.
-    error SSR__initGuardians__zeroGuardians();
-    error SSR__initGuardians__invalidAddress();
-
     ///@dev addGuardian() custom errors.
     error SSR__addGuardian__invalidAddress();
-    error SSR__addGuardian__contractNotLaser();
 
     ///@dev removeGuardian() custom errors.
     error SSR__removeGuardian__invalidAddress();
     error SSR__removeGuardian__incorrectPreviousGuardian();
     error SSR__removeGuardian__underflow();
 
-    ///@dev access() custom error.
+    ///@dev initGuardians() custom errors.
+    error SSR__initGuardians__zeroGuardians();
+    error SSR__initGuardians__invalidAddress();
+
+    ///@dev access() custom errors.
     error SSR__access__guardiansBlocked();
+    error SSR__access__walletLocked();
+
+    ///@dev verifyOwner() custom errors.
+    error SSR__verifyOwner__invalidSignature();
+    error SSR__verifyOwner__notOwner();
+
+    ///@dev verifyGuardian() custom errors.
+    error SSR__verifyGuardian__invalidSignature();
+    error SSR__verifyGurdian__notGuardian();
+
+    ///@dev verifyOwnerAndGuardian() custom errors.
+    error SSR__verifyOwnerAndGuardian__invalidSignature();
+    error SSR__verifyOwnerAndGuardian__notOwner();
+    error SSR__verifyOwnerAndGuardian__notGuardian();
+
+    ///@dev verifyRecoveryOwnerAndGurdian() custom errors.
+    error SSR__verifyRecoveryOwnerAndGurdian__invalidSignature();
+    error SSR__verifyRecoveryOwnerAndGurdian__notRecoveryOwner();
+    error SSR__verifyRecoveryOwnerAndGurdian__notGuardian();
+
+    ///@dev verifyOwnerAndRecoveryOwner() custom errors.
+    error SSR__verifyOwnerAndRecoveryOwner__invalidSignature();
+    error SSR__verifyOwnerAndRecoveryOwner__notOwner();
+    error SSR__verifyOwnerAndRecoveryOwner__notRecoveryOwner();
 
     /**
      * @dev Locks the wallet. Can only be called by a guardian.
@@ -61,12 +72,17 @@ interface ISSR {
     /**
      * @dev Unlocks the wallet. Can only be called by the recovery owner + the owner.
      * This is to avoid the wallet being locked forever if a guardian misbehaves.
-     * The guardians will be blocked until the owner decides otherwise.
+     * The guardians will be locked until the owner decides otherwise.
      */
     function recoveryUnlock() external;
 
     /**
-     * @dev Can only recover with the signature of 1 guardian and the recovery owner.
+     * @dev Unlocks the guardians. This can only be called by the owner.
+     */
+    function unlockGuardians() external;
+
+    /**
+     * @dev Can only recover with the signature of the recovery owner and guardian.
      * @param newOwner The new owner address. This is generated instantaneously.
      * @param newRecoveryOwner The new recovery owner address. This is generated instantaneously.
      * @notice The newOwner and newRecoveryOwner key pair should be generated from the mobile device.

@@ -10,6 +10,7 @@ interface IAccountAbstraction {
 
     ///@dev innitEntryPoint() custom error.
     error AA__initEntryPoint__invalidEntryPoint();
+    error AA__initEntryPoint__invalidSignature();
 
     ///@dev withdrawDeposit() custom error.
     error AA__withdrawDeposit__insufficientBalance();

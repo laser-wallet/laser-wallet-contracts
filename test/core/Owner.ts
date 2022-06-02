@@ -4,7 +4,6 @@ import { Contract, Signer, Wallet } from "ethers";
 import { walletSetup, encodeFunctionData, factorySetup } from "../utils";
 import { Address } from "../types";
 import { addrZero } from "../constants/constants";
-import { LaserWallet } from "../../typechain-types/LaserWallet";
 
 const mock = ethers.Wallet.createRandom().address;
 const {
@@ -110,19 +109,8 @@ describe("Owner", () => {
             await expect(wallet.exec(address, 0, txData)).to.be.reverted;
         });
 
-        it("should change the owner and emit event", async () => {
-            const { address, wallet } = await walletSetup(
-                ownerAddress,
-                recoveryOwnerAddr,
-                guardians,
-                entryPoint
-            );
-            expect(await wallet.owner()).to.equal(ownerAddress);
-            const txData = encodeFunctionData(abi, "changeOwner", [mock]);
-            await expect(wallet.emergencyCall(address, 0, txData))
-                .to.emit(wallet, "OwnerChanged")
-                .withArgs(mock);
-            expect(await wallet.owner()).to.equal(mock);
-        });
+        it("should change the owner and emit event", async () => {});
     });
+
+    describe("Recovery owner", () => {});
 });

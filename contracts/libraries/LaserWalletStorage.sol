@@ -14,11 +14,13 @@ contract LaserWalletStorage {
 
     // core/Owner.sol
     address public owner;
+    address public recoveryOwner;
 
     // ssr/SSR.sol
-    address public recoveryOwner;
-    uint256 public guardianCount;
+    uint256 internal guardianCount;
     bool public isLocked;
+    bool public guardiansBlocked;
+    mapping(address => address) internal guardians;
 
     // LaserWallet.sol
     uint256 public nonce;
