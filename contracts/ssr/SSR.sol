@@ -79,15 +79,6 @@ contract SSR is ISSR, SelfAuthorized, Owner, Utils {
     }
 
     /**
-     * @dev Changes the recoveryOwner address. Only the owner can call this function.
-     * @param newRecoveryOwner The new recovery owner address.
-     */
-    function changeRecoveryOwner(address newRecoveryOwner) external authorized {
-        recoveryOwner = newRecoveryOwner;
-        emit NewRecoveryOwner(recoveryOwner);
-    }
-
-    /**
      * @dev Adds a guardian to the wallet.
      * @param newGuardian Address of the new guardian.
      * @notice Can only be called by the owner.
@@ -95,11 +86,11 @@ contract SSR is ISSR, SelfAuthorized, Owner, Utils {
     function addGuardian(address newGuardian) external authorized {
         if (
             newGuardian == address(0) ||
-            newGuardian == pointer ||
-            newGuardian == address(this) ||
             newGuardian == owner ||
             guardians[newGuardian] != address(0)
         ) revert SSR__addGuardian__invalidAddress();
+        if (!IERC165(newGuardian).supportsInterface(0x1626ba7e))
+            revert SSR__addGuardian__invalidAddress();
 
         guardians[newGuardian] = guardians[pointer];
         guardians[pointer] = newGuardian;
@@ -121,7 +112,7 @@ contract SSR is ISSR, SelfAuthorized, Owner, Utils {
         external
         authorized
     {
-        if (guardianToRemove == address(0) || guardianToRemove == pointer) {
+        if (guardianToRemove == pointer) {
             revert SSR__removeGuardian__invalidAddress();
         }
 
@@ -181,10 +172,15 @@ contract SSR is ISSR, SelfAuthorized, Owner, Utils {
                 guardian == owner ||
                 guardian == address(0) ||
                 guardian == pointer ||
-                guardian == address(this) ||
                 guardian == currentGuardian ||
                 guardians[guardian] != address(0)
             ) revert SSR__initGuardians__invalidAddress();
+
+            if (guardian.code.length > 0) {
+                // If the guardian is a smart contract wallet, it needs to support EIP1271.
+                if (!IERC165(guardian).supportsInterface(0x1626ba7e))
+                    revert SSR__initGuardians__invalidAddress();
+            }
 
             unchecked {
                 // Won't overflow...

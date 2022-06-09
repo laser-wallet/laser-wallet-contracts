@@ -20,13 +20,19 @@ contract Owner is IOwner, SelfAuthorized {
      * @param newOwner The address of the new owner.
      */
     function changeOwner(address newOwner) external authorized {
-        if (
-            newOwner == owner ||
-            newOwner.code.length != 0 ||
-            newOwner == address(0)
-        ) revert Owner__changeOwner__invalidOwnerAddress();
+        if (newOwner.code.length != 0 || newOwner == address(0))
+            revert Owner__changeOwner__invalidOwnerAddress();
         owner = newOwner;
         emit OwnerChanged(newOwner);
+    }
+
+    /**
+     * @dev Changes the recoveryOwner address. Only the owner can call this function.
+     * @param newRecoveryOwner The new recovery owner address.
+     */
+    function changeRecoveryOwner(address newRecoveryOwner) external authorized {
+        recoveryOwner = newRecoveryOwner;
+        emit NewRecoveryOwner(recoveryOwner);
     }
 
     /**
@@ -48,11 +54,10 @@ contract Owner is IOwner, SelfAuthorized {
      * @param _recoveryOwner Recovery owner in case the owner looses the main device. Implementation of Sovereign Social Recovery.
      */
     function checkParams(address _owner, address _recoveryOwner) internal view {
-        if (_owner.code.length != 0 || _owner == address(0)) {
+        if (_owner.code.length != 0 || _owner == address(0))
             revert Owner__initOwner__invalidOwnerAddress();
-        }
-        if (_recoveryOwner.code.length != 0 || _recoveryOwner == address(0)) {
+
+        if (_recoveryOwner.code.length != 0 || _recoveryOwner == address(0))
             revert Owner__initOwner__invalidRecoveryOwnerAddress();
-        }
     }
 }

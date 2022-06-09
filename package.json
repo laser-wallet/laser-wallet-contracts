@@ -7,10 +7,7 @@
     "prettier:write:config": "npx prettier --write hardhat.config.ts",
     "test": "npx hardhat test",
     "compile": "npx hardhat compile",
-    "mainnet:laser_wallet": "npx hardhat run deploy/deploy_laser_wallet.js --network mainnet",
-    "mainnet:laser_factory": "npx hardhat run deploy/deploy_laser_factory.js --network mainnet",
-    "goerli:laser_wallet": "npx hardhat run deploy/deploy_laser_wallet.js --network goerli",
-    "goerli:laser_factory": "npx hardhat run deploy/deploy_laser_factory.js --network goerli"
+    "goerli": "npx hardhat run deploy/deploy_factory.ts --network goerli"
   },
   "author": "Rodrigo Herrera I.",
   "license": "LGPL-3.0",

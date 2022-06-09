@@ -18,7 +18,6 @@ interface ISSR {
     event NewGuardian(address newGuardian);
     event GuardianRemoved(address removedGuardian);
     event WalletRecovered(address newOwner, address newRecoveryOwner);
-    event NewRecoveryOwner(address recoveryOwner);
 
     ///@dev addGuardian() custom errors.
     error SSR__addGuardian__invalidAddress();
@@ -89,12 +88,6 @@ interface ISSR {
      * The main reason of this is to restart the generation process in case an attacker has the current recoveryOwner.
      */
     function recover(address newOwner, address newRecoveryOwner) external;
-
-    /**
-     * @dev Changes the recoveryOwner address. Only the owner can call this function.
-     * @param newRecoveryOwner The new recovery owner address.
-     */
-    function changeRecoveryOwner(address newRecoveryOwner) external;
 
     /**
      * @dev Adds a guardian to the wallet.

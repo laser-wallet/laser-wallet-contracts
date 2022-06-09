@@ -53,6 +53,7 @@ contract Handler is IHandler, IERC165 {
     {
         return
             _interfaceId == 0x01ffc9a7 || // ERC165 interface ID for ERC165
+            _interfaceId == 0x1626ba7e || // EIP 1271
             _interfaceId == 0xd9b67a26 || // ERC165 interface ID for ERC1155
             _interfaceId == 0x4e2312e0 || // ERC-1155 `ERC1155TokenReceiver` support (i.e. `bytes4(keccak256("onERC1155Received(address,address,uint256,uint256,bytes)")) ^bytes4(keccak256("onERC1155BatchReceived(address,address,uint256[],uint256[],bytes)"))`).
             _interfaceId == 0xae029e0b || // Laser Wallet contract: bytes4(keccak256("I_AM_LASER"))
