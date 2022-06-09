@@ -32,6 +32,8 @@ contract Owner is IOwner, SelfAuthorized {
      */
     function changeRecoveryOwner(address newRecoveryOwner) external authorized {
         recoveryOwner = newRecoveryOwner;
+        if (newRecoveryOwner.code.length != 0 || newRecoveryOwner == address(0))
+            revert Owner__changeRecoveryOwner__invalidRecoveryOwnerAddress();
         emit NewRecoveryOwner(recoveryOwner);
     }
 
