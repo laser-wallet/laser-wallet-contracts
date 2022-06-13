@@ -126,9 +126,29 @@ contract LaserWallet is
         uint256 value,
         bytes memory data
     ) external onlyEntryPoint {
+        // gasleft() will be the gas provided in userOp.callGas.
         bool success = _call(to, value, data, gasleft());
         if (!success) revert LW__exec__failure();
         else emit Success(to, value, bytes4(data));
+    }
+
+    /**
+     * @dev Simulates a transaction to have a rough estimate for UserOp.callGas.
+     * @notice Needs to be called off-chain from the address zero.
+     */
+    function simulateTransaction(
+        address to,
+        uint256 value,
+        bytes memory data
+    ) external returns (uint256 gasUsed) {
+        uint256 preGas = gasleft();
+        bool success = _call(to, value, data, gasleft());
+        require(success, "Execution failed");
+        gasUsed = preGas - gasleft();
+        require(
+            msg.sender == address(0),
+            "Must be called off-chain from address zero."
+        );
     }
 
     /**
