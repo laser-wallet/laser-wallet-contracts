@@ -10,6 +10,9 @@
 
 ### 3. Extra security features: It allows the user to use multi-sig or spending limit.
 
+## Acknowledgements
+
+### The design of the contracts were greatly inspired by Gnosis: https://github.com/safe-global/safe-contracts
 
 ## Building in the Open 
 
