@@ -3,7 +3,7 @@
  ** Only one instance required on each chain.
  **/
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity 0.8.14;
+pragma solidity ^0.8.12;
 
 import "./StakeManager.sol";
 import "./UserOperation.sol";
@@ -11,7 +11,7 @@ import "./IWallet.sol";
 import "./IPaymaster.sol";
 
 interface ICreate2Deployer {
-    function deploy(bytes memory _initCode, bytes32 _salt)
+    function deploy(bytes memory initCode, bytes32 salt)
         external
         returns (address);
 }
@@ -83,8 +83,7 @@ contract TestEntryPoint is StakeManager {
         uint32 _unstakeDelaySec
     ) StakeManager(_paymasterStake, _unstakeDelaySec) {
         require(_create2factory != address(0), "invalid create2factory");
-        // require(_unstakeDelaySec > 0, "invalid unstakeDelay");
-        // require(_paymasterStake > 0, "invalid paymasterStake");
+
         create2factory = _create2factory;
     }
 
@@ -112,7 +111,7 @@ contract TestEntryPoint is StakeManager {
         UserOpInfo[] memory opInfos = new UserOpInfo[](opslen);
 
         unchecked {
-            for (uint256 i = 0; i < opslen; ) {
+            for (uint256 i = 0; i < opslen; i++) {
                 uint256 preGas = gasleft();
                 UserOperation calldata op = ops[i];
 
@@ -136,12 +135,11 @@ contract TestEntryPoint is StakeManager {
                     contextOffset,
                     preGas - gasleft() + op.preVerificationGas
                 );
-                ++i;
             }
 
             uint256 collected = 0;
 
-            for (uint256 i = 0; i < opslen; ) {
+            for (uint256 i = 0; i < ops.length; i++) {
                 uint256 preGas = gasleft();
                 UserOperation calldata op = ops[i];
                 UserOpInfo memory opInfo = opInfos[i];
@@ -166,7 +164,6 @@ contract TestEntryPoint is StakeManager {
                         actualGas
                     );
                 }
-                ++i;
             }
 
             _compensate(beneficiary, collected);
