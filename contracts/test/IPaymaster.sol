@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity 0.8.14;
+pragma solidity ^0.8.12;
 
 import "./UserOperation.sol";
 
@@ -21,7 +21,7 @@ interface IPaymaster {
     function validatePaymasterUserOp(
         UserOperation calldata userOp,
         bytes32 requestId,
-        uint maxCost
+        uint256 maxCost
     ) external view returns (bytes memory context);
 
     /**
@@ -38,7 +38,7 @@ interface IPaymaster {
     function postOp(
         PostOpMode mode,
         bytes calldata context,
-        uint actualGasCost
+        uint256 actualGasCost
     ) external;
 
     enum PostOpMode {
