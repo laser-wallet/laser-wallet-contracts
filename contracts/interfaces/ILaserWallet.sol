@@ -41,38 +41,22 @@ interface ILaserWallet {
     ) external;
 
     /**
-     * @dev Core interface to be EIP4337 compliant.
-     * @param userOp the operation to be executed.
-     * @param _requiredPrefund the minimum amount to transfer to the sender(entryPoint) to be able to make the call.
-     * @notice only the EntryPoint contract can call this function.
-     */
-    function validateUserOp(
-        UserOperation calldata userOp,
-        bytes32,
-        uint256 _requiredPrefund
-    ) external;
-
-    /**
      * @dev Executes an AA transaction. The msg.sender needs to be the EntryPoint address.
      * The signatures are verified in validateUserOp().
      * @param to Destination address of the transaction.
      * @param value Ether value of the transaction.
-     * @param data Data payload of the transaction.
+     * @param callData Data payload of the transaction.
      */
     function exec(
         address to,
         uint256 value,
-        bytes memory data
+        bytes calldata callData,
+        uint256 _nonce,
+        uint256 maxFeePerGas,
+        uint256 maxPriorityFeePerGas,
+        uint256 gasTip,
+        bytes calldata signatures
     ) external;
-
-    /**
-     * @dev Returns the user operation hash to be signed by owners.
-     * @param userOp The UserOperation struct.
-     */
-    function userOperationHash(UserOperation calldata userOp)
-        external
-        view
-        returns (bytes32);
 
     /**
      * @dev Implementation of EIP 1271: https://eips.ethereum.org/EIPS/eip-1271.

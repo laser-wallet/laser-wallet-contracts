@@ -29,15 +29,14 @@ contract LaserWallet is
         keccak256(
             "LaserOp(address sender,uint256 nonce,bytes callData,uint256 callGas,uint256 verificationGas,uint256 preVerificationGas,uint256 maxFeePerGas,uint256 maxPriorityFeePerGas,address paymaster,bytes paymasterData)"
         );
+    bytes32 private constant LASER_TYPE_STRUCTURE =
+        keccak256(
+            "LaserOperation(address to,uint256 value,bytes callData,uint256 nonce,uint256 maxFeePerGas,uint256 maxPriorityFeePerGas,uint256 gasTip)"
+        );
     bytes4 private constant EIP1271_MAGIC_VALUE =
         bytes4(keccak256("isValidSignature(bytes32,bytes)"));
 
     uint256 public nonce;
-
-    modifier onlyEntryPoint() {
-        if (msg.sender != entryPoint) revert LW__notEntryPoint();
-        _;
-    }
 
     constructor() {
         // This makes the singleton unusable. e.g. (parity wallet hack).
@@ -70,66 +69,57 @@ contract LaserWallet is
         emit Setup(owner, _guardians, entryPoint);
     }
 
-    /**
-     * @dev Validates that the exeuction from EntryPoint is correct.
-     * EIP: https://eips.ethereum.org/EIPS/eip-4337
-     * @param userOp UserOperation struct that contains the transaction information.
-     * @param _requiredPrefund amount to pay to EntryPoint to perform execution.
-     */
-    function validateUserOp(
-        UserOperation calldata userOp,
-        bytes32,
-        uint256 _requiredPrefund
-    ) external onlyEntryPoint {
-        // Increase the nonce to avoid drained funds from multiple pay prefunds.
-        if (nonce++ != userOp.nonce) revert LW__validateUserOp__invalidNonce();
-
-        // We encode the transaction data ...
-        bytes memory userOpData = encodeUserOperationData(
-            userOp.sender,
-            userOp.nonce,
-            userOp.callData,
-            userOp.callGas,
-            userOp.verificationGas,
-            userOp.preVerificationGas,
-            userOp.maxFeePerGas,
-            userOp.maxPriorityFeePerGas,
-            userOp.paymaster,
-            userOp.paymasterData
-        );
-
-        // Now we hash it ...
-        bytes32 dataHash = keccak256(userOpData);
-
-        // We get the actual function selector to determine access ...
-        bytes4 funcSelector = bytes4(userOp.callData[132:]);
-
-        // access() checks if the wallet is locked for the owner or guardians ...
-        Access _access = access(funcSelector);
-
-        // We verify that the signatures are correct depending on the transaction type ...
-        verifySignatures(_access, dataHash, userOp.signature);
-
-        // Finally... we can pay the costs to the EntryPoint ...
-        payPrefund(_requiredPrefund);
-    }
-
-    /**
-     * @dev Executes an AA transaction. The msg.sender needs to be the EntryPoint address.
-     * The signatures are verified in validateUserOp().
-     * @param to Destination address of the transaction.
-     * @param value Ether value of the transaction.
-     * @param data Data payload of the transaction.
-     */
     function exec(
         address to,
         uint256 value,
-        bytes memory data
-    ) external onlyEntryPoint {
-        // gasleft() will be the gas provided in userOp.callGas.
-        bool success = _call(to, value, data, gasleft());
+        bytes calldata callData,
+        uint256 _nonce,
+        uint256 maxFeePerGas,
+        uint256 maxPriorityFeePerGas,
+        uint256 gasTip,
+        bytes calldata signatures
+    ) external {
+        // This is just for a quick trial, the userOp needs to change.
+        uint256 initialGas = gasleft();
+        // We immediately increase the nonce to avoid replay attacks.
+        if (nonce++ != _nonce) revert LW__validateUserOp__invalidNonce();
+
+        // We verify that the signatures are correct ...
+        verifyTransaction(
+            to,
+            value,
+            callData,
+            _nonce,
+            maxFeePerGas,
+            maxPriorityFeePerGas,
+            gasTip,
+            signatures
+        );
+
+        // We execute the main transaction ...
+        bool success = _call(to, value, callData, gasleft());
+
+        // If the transaction returns false, we revert ...
         if (!success) revert LW__exec__failure();
-        else emit Success(to, value, bytes4(data));
+
+        // We calculate the gas price, as per the user's request ...
+        uint256 gasPrice = calculateGasPrice(
+            maxFeePerGas,
+            maxPriorityFeePerGas
+        );
+
+        // We check the amount of gas the transaction consumed ...
+        uint256 gasUsed = initialGas - gasleft();
+
+        // We refund the relayer for sending the transaction + tip.
+        // The gasTip can be the amount of gas used for the initial callData call. (In theory no real tip).
+        uint256 refundAmount = (gasUsed + gasTip) * gasPrice;
+
+        // We refund the relayer ...
+        success = _call(msg.sender, refundAmount, new bytes(0), gasleft());
+
+        // If the transaction returns false, we revert ..
+        if (!success) revert LW__exec__failure();
     }
 
     /**
@@ -139,40 +129,61 @@ contract LaserWallet is
     function simulateTransaction(
         address to,
         uint256 value,
-        bytes memory data
-    ) external returns (uint256 gasUsed) {
-        uint256 preGas = gasleft();
-        bool success = _call(to, value, data, gasleft());
-        require(success, "Execution failed");
-        gasUsed = preGas - gasleft();
+        bytes calldata callData,
+        uint256 _nonce,
+        uint256 maxFeePerGas,
+        uint256 maxPriorityFeePerGas,
+        uint256 gasTip,
+        bytes calldata signatures
+    ) external returns (uint256 totalGas) {
+        uint256 initialGas = gasleft();
+        if (nonce++ != _nonce) revert LW__validateUserOp__invalidNonce();
+        verifyTransaction(
+            to,
+            value,
+            callData,
+            _nonce,
+            maxFeePerGas,
+            maxPriorityFeePerGas,
+            gasTip,
+            signatures
+        );
+        bool success = _call(to, value, callData, gasleft());
+        if (!success) revert LW__exec__failure();
+        uint256 gasPrice = calculateGasPrice(
+            maxFeePerGas,
+            maxPriorityFeePerGas
+        );
+        uint256 gasUsed = initialGas - gasleft();
+        uint256 refundAmount = (gasUsed + gasTip) * gasPrice;
+        success = _call(msg.sender, refundAmount, new bytes(0), gasleft());
+        if (!success) revert LW__exec__failure();
+        totalGas = initialGas - gasleft();
         require(
             msg.sender == address(0),
             "Must be called off-chain from address zero."
         );
     }
 
-    /**
-     * @dev Returns the user operation hash to be signed by owners.
-     * @param userOp The UserOperation struct.
-     */
-    function userOperationHash(UserOperation calldata userOp)
-        external
-        view
-        returns (bytes32)
-    {
+    function operationHash(
+        address to,
+        uint256 value,
+        bytes calldata callData,
+        uint256 _nonce,
+        uint256 maxFeePerGas,
+        uint256 maxPriorityFeePerGas,
+        uint256 gasTip
+    ) public view returns (bytes32) {
         return
             keccak256(
-                encodeUserOperationData(
-                    userOp.sender,
-                    userOp.nonce,
-                    userOp.callData,
-                    userOp.callGas,
-                    userOp.verificationGas,
-                    userOp.preVerificationGas,
-                    userOp.maxFeePerGas,
-                    userOp.maxPriorityFeePerGas,
-                    userOp.paymaster,
-                    userOp.paymasterData
+                encodeOperation(
+                    to,
+                    value,
+                    callData,
+                    _nonce,
+                    maxFeePerGas,
+                    maxPriorityFeePerGas,
+                    gasTip
                 )
             );
     }
@@ -217,23 +228,38 @@ contract LaserWallet is
             );
     }
 
-    /**
-     * @dev Pays the required amount to the EntryPoint contract.
-     * @param requiredPrefund amount to pay to EntryPoint to perform execution.
-     */
-    function payPrefund(uint256 requiredPrefund) internal {
-        if (requiredPrefund > 0) {
-            // If we need to pay back to EntryPoint ...
-            // The only possible caller of this function is EntryPoint.
-            bool success = _call(
-                payable(msg.sender),
-                requiredPrefund,
-                new bytes(0),
-                gasleft()
-            );
-            // It is EntryPoint's job to check for success.
-            (success);
-        }
+    function verifyTransaction(
+        address to,
+        uint256 value,
+        bytes calldata callData,
+        uint256 _nonce,
+        uint256 maxFeePerGas,
+        uint256 maxPriorityFeePerGas,
+        uint256 gasTip,
+        bytes calldata signatures
+    ) internal view {
+        // We encode the transaction data.
+        bytes memory encodedData = encodeOperation(
+            to,
+            value,
+            callData,
+            _nonce,
+            maxFeePerGas,
+            maxPriorityFeePerGas,
+            gasTip
+        );
+
+        // Now we hash it ...
+        bytes32 dataHash = keccak256(encodedData);
+
+        // We get the actual function selector to determine access ...
+        bytes4 funcSelector = bytes4(callData);
+
+        // access() checks if the wallet is locked for the owner or guardians ...
+        Access _access = access(funcSelector);
+
+        // We verify that the signatures are correct depending on the transaction type ...
+        verifySignatures(_access, dataHash, signatures);
     }
 
     /**
@@ -262,52 +288,34 @@ contract LaserWallet is
         }
     }
 
-    /**
-     * @dev Returns the bytes that are hashed to be signed by owners.
-     * @param sender The wallet making the operation (should be address(this)).
-     * @param _nonce Anti-replay parameter; also used as the salt for first-time wallet creation.
-     * @param callData The data to pass to the sender during the main execution call.
-     * @param callGas The amount of gas to allocate the main execution call.
-     * @param verificationGas The amount of gas to allocate for the verification step.
-     * @param preVerificationGas The amount of gas to pay to compensate the bundler for the pre-verification execution and calldata.
-     * @param maxFeePerGas Maximum fee per gas (similar to EIP 1559  max_fee_per_gas).
-     * @param maxPriorityFeePerGas Maximum priority fee per gas (similar to EIP 1559 max_priority_fee_per_gas).
-     * @param paymaster Address sponsoring the transaction (or zero for regular self-sponsored transactions).
-     * @param paymasterData Extra data to send to the paymaster.
-     */
-    function encodeUserOperationData(
-        address sender,
-        uint256 _nonce,
+    function encodeOperation(
+        address to,
+        uint256 value,
         bytes calldata callData,
-        uint256 callGas,
-        uint256 verificationGas,
-        uint256 preVerificationGas,
+        uint256 _nonce,
         uint256 maxFeePerGas,
         uint256 maxPriorityFeePerGas,
-        address paymaster,
-        bytes calldata paymasterData
+        uint256 gasTip
     ) internal view returns (bytes memory) {
-        bytes32 _userOperationHash = keccak256(
+        bytes32 userOperationHash = keccak256(
             abi.encode(
-                LASER_OP_TYPEHASH,
-                sender,
-                _nonce,
+                LASER_TYPE_STRUCTURE,
+                to,
+                value,
                 keccak256(callData),
-                callGas,
-                verificationGas,
-                preVerificationGas,
+                _nonce,
                 maxFeePerGas,
                 maxPriorityFeePerGas,
-                paymaster,
-                keccak256(paymasterData)
+                gasTip
             )
         );
+
         return
             abi.encodePacked(
                 bytes1(0x19),
                 bytes1(0x01),
                 domainSeparator(),
-                _userOperationHash
+                userOperationHash
             );
     }
 }
