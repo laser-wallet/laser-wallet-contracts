@@ -36,9 +36,7 @@ export async function factorySetup(
 export async function walletSetup(
     owner: Address,
     recoveryOwner: Address,
-    guardians: Address[],
-    _entryPoint: Address,
-    _recoveryOwner?: Address
+    guardians: Address[]
 ): Promise<ReturnWalletSetup> {
     const LaserWallet = await ethers.getContractFactory("LaserWallet");
     const singleton = await LaserWallet.deploy();
@@ -48,7 +46,6 @@ export async function walletSetup(
         owner,
         recoveryOwner,
         guardians,
-        _entryPoint,
     ]);
     const transaction = await factory.createProxy(initializer);
     const receipt = await transaction.wait();

@@ -1,10 +1,9 @@
 // SPDX-License-Identifier: LGPL-3.0-only
-pragma solidity 0.8.14;
+pragma solidity 0.8.9;
 
 import "./core/Singleton.sol";
 import "./handlers/Handler.sol";
 import "./interfaces/ILaserWallet.sol";
-import "./libraries/UserOperation.sol";
 import "./ssr/SSR.sol";
 
 import "hardhat/console.sol";
@@ -52,7 +51,7 @@ contract LaserWallet is Singleton, SSR, Handler, ILaserWallet {
         // This is enough to protect init() from being called after initialization.
         initOwners(_owner, _recoveryOwner);
         initGuardians(_guardians);
-        emit Setup(owner, _guardians, entryPoint);
+        emit Setup(owner, _recoveryOwner, _guardians);
     }
 
     function exec(

@@ -1,3 +1,5 @@
+pragma solidity 0.8.9;
+
 /**
  * @title ISSR
  * @notice Has all the external functions, structs, events and errors for SSR.sol.

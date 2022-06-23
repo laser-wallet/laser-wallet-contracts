@@ -58,11 +58,10 @@ describe("Sovereign Social Recovery", () => {
 
     describe("Basic init", () => {
         it("correct setup", async () => {
-            const { address, wallet } = await walletSetup(
+           const { address, wallet } = await walletSetup(
                 ownerAddress,
                 recoveryOwnerAddr,
-                guardians,
-                entryPoint
+                guardians
             );
             const owner = await wallet.owner();
             const recoveryOwner = await wallet.recoveryOwner();
@@ -79,8 +78,7 @@ describe("Sovereign Social Recovery", () => {
             const { address, wallet } = await walletSetup(
                 ownerAddress,
                 recoveryOwnerAddr,
-                guardians,
-                entryPoint
+                guardians
             );
             await expect(wallet.lock()).to.be.revertedWith(
                 "SelfAuthorized__notWallet()"
@@ -91,8 +89,7 @@ describe("Sovereign Social Recovery", () => {
             const { address, wallet } = await walletSetup(
                 ownerAddress,
                 recoveryOwnerAddr,
-                guardians,
-                entryPoint
+                guardians
             );
             await fund(address, relayer);
             expect(await wallet.isLocked()).to.equal(false);
@@ -112,8 +109,7 @@ describe("Sovereign Social Recovery", () => {
             const { address, wallet } = await walletSetup(
                 ownerAddress,
                 recoveryOwnerAddr,
-                guardians,
-                entryPoint
+                guardians
             );
             await fund(address, relayer);
             expect(await wallet.isLocked()).to.equal(false);
@@ -133,8 +129,7 @@ describe("Sovereign Social Recovery", () => {
             const { address, wallet } = await walletSetup(
                 ownerAddress,
                 recoveryOwnerAddr,
-                guardians,
-                entryPoint
+                guardians
             );
             await fund(address, relayer);
             expect(await wallet.isLocked()).to.equal(false);

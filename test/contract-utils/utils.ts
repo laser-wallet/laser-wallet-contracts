@@ -1,20 +1,20 @@
 import { expect } from "chai";
 import { ethers } from "hardhat";
-import { Contract, Signer, Wallet } from "ethers";
+import { Contract, providers, Signer, Wallet } from "ethers";
 import {
     walletSetup,
     factorySetup,
     encodeFunctionData,
     sign,
     signTypedData,
-    EIP712Sig,
+    generateTransaction
 } from "../utils";
-import { userOp, types, Address } from "../types";
+import { Transaction, Address, Domain } from "../types";
 import { ownerWallet } from "../constants/constants";
 
 const mock = ethers.Wallet.createRandom().address;
 const {
-    abi,
+    abi
 } = require("../../artifacts/contracts/LaserWallet.sol/LaserWallet.json");
 
 describe("Setup", () => {
@@ -23,22 +23,22 @@ describe("Setup", () => {
     let recoveryOwner: Signer;
     let recoveryOwnerAddr: Address;
     let guardians: Address[];
-    let entryPoint: Address;
     let _guardian1: Signer;
     let _guardian2: Signer;
 
     beforeEach(async () => {
-        [owner, recoveryOwner, _guardian1, _guardian2] =
-            await ethers.getSigners();
+        [
+            owner,
+            recoveryOwner,
+            _guardian1,
+            _guardian2
+        ] = await ethers.getSigners();
         ownerAddress = await owner.getAddress();
         recoveryOwnerAddr = await recoveryOwner.getAddress();
         guardians = [
             await _guardian1.getAddress(),
-            await _guardian2.getAddress(),
+            await _guardian2.getAddress()
         ];
-        const EP = await ethers.getContractFactory("TestEntryPoint");
-        const _entryPoint = await EP.deploy(mock, 0, 0);
-        entryPoint = _entryPoint.address;
     });
 
     describe("Utils", () => {
@@ -46,10 +46,33 @@ describe("Setup", () => {
             const { address, wallet } = await walletSetup(
                 ownerAddress,
                 recoveryOwnerAddr,
-                guardians,
-                entryPoint
+                guardians
             );
             const hash = ethers.utils.keccak256("0x1234");
+            const sig = await sign(owner, hash);
+            const [r, s, v] = await wallet.splitSigs(sig, 0);
+            const signer = await wallet.returnSigner(hash, r, s, v);
+            expect(signer).to.equal(ownerAddress);
+        });
+
+        it("should return correct signer", async () => {
+            const { address, wallet } = await walletSetup(
+                ownerAddress,
+                recoveryOwnerAddr,
+                guardians
+            );
+
+            const [tx, laserTypes] = await generateTransaction();
+            tx.to = address;
+            const hash = await wallet.operationHash(
+                tx.to,
+                tx.value,
+                tx.callData,
+                tx.nonce,
+                tx.maxFeePerGas,
+                tx.maxPriorityFeePerGas,
+                tx.gasTip
+            );
             const sig = await sign(owner, hash);
             const [r, s, v] = await wallet.splitSigs(sig, 0);
             const signer = await wallet.returnSigner(hash, r, s, v);
@@ -60,45 +83,27 @@ describe("Setup", () => {
             const { address, wallet } = await walletSetup(
                 ownerAddress,
                 recoveryOwnerAddr,
-                guardians,
-                entryPoint
+                guardians
             );
 
-            // This is just to check the signature, it is mocking a transaction only
-            // for the purposes of the Utils contract (not an actual transaction).
-            userOp.sender = address;
-            userOp.nonce = 0;
-            userOp.callData = "0x";
-            const domain = {
+            const [tx, laserTypes] = await generateTransaction();
+            const domain: Domain = {
                 chainId: await wallet.getChainId(),
-                verifyingContract: address,
+                verifyingContract: address
             };
-            const txMessage = {
-                sender: userOp.sender,
-                nonce: userOp.nonce,
-                callData: userOp.callData,
-                callGas: userOp.callGas,
-                verificationGas: userOp.verificationGas,
-                preVerificationGas: userOp.preVerificationGas,
-                maxFeePerGas: userOp.maxFeePerGas,
-                maxPriorityFeePerGas: userOp.maxPriorityFeePerGas,
-                paymaster: userOp.paymaster,
-                paymasterData: userOp.paymasterData,
-            };
-
-            const sig = await EIP712Sig(ownerWallet, domain, txMessage);
-            const hash = await wallet.userOperationHash(userOp);
-            const [r, s, v] = await wallet.splitSigs(sig, 0);
-            const signer = await wallet.returnSigner(hash, r, s, v);
-            expect(signer).to.equal(ownerAddress);
+            // tx.signatures = await signTypedData(
+            //     ownerWallet,
+            //     domain,
+            //     laserTypes
+            // );
+            // // console.log(tx);
         });
 
         it("should correctly split 'v', 'r', and 's' ", async () => {
             const { address, wallet } = await walletSetup(
                 ownerAddress,
                 recoveryOwnerAddr,
-                guardians,
-                entryPoint
+                guardians
             );
             const hash = ethers.utils.keccak256("0x1234");
             const sig = await sign(owner, hash);
@@ -112,8 +117,7 @@ describe("Setup", () => {
             const { address, wallet } = await walletSetup(
                 ownerAddress,
                 recoveryOwnerAddr,
-                guardians,
-                entryPoint
+                guardians
             );
             const hash = ethers.utils.keccak256("0x1234");
             const sig = (await sign(owner, hash)).replace(/1f$/, "03");

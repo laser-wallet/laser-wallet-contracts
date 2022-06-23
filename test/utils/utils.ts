@@ -1,6 +1,6 @@
-import { ethers, Wallet, Contract, BigNumber } from "ethers";
-// import { Domain, types, TxMessage, SafeTx, UserOp } from "../types";
-
+import { Wallet, Contract, BigNumber} from "ethers";
+import { ethers } from "hardhat";
+import { LaserTypes, Transaction } from "../types";
 // const {
 //     abi
 // } = require("../../artifacts/contracts/LaserWallet.sol/LaserWallet.json");
@@ -14,6 +14,35 @@ export function encodeFunctionData(
     const iface = new ethers.utils.Interface(abi);
     const data = iface.encodeFunctionData(functionName, params);
     return data;
+}
+
+export async function generateTransaction(): Promise<[Transaction, LaserTypes]> {
+    const baseFee = (await ethers.provider.send("eth_getBlockByNumber", ["latest", true])).baseFeePerGas;
+    const _maxPriorityFeePerGas = 2000000000;
+    const _maxFeePerGas = (2 * baseFee) + _maxPriorityFeePerGas;
+    const transaction = {
+        to: "", 
+        value: 0, 
+        callData: "0x", 
+        nonce: 0, 
+        maxFeePerGas: _maxFeePerGas, 
+        maxPriorityFeePerGas: _maxPriorityFeePerGas, 
+        gasTip: 30000, 
+        signatures: "0x",
+    }
+
+    const laserTypes = {
+        to: "", 
+        value: 0, 
+        callData: "0x", 
+        nonce: 0, 
+        maxFeePerGas: _maxFeePerGas, 
+        maxPriorityFeePerGas: _maxPriorityFeePerGas, 
+        gasTip: 30000
+    }
+
+    return [transaction, laserTypes];
+    
 }
 
 // export async function signMessage(
