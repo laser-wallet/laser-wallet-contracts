@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 pragma solidity 0.8.14;
 
-import "./core/AccountAbstraction.sol";
 import "./core/Singleton.sol";
 import "./handlers/Handler.sol";
 import "./interfaces/ILaserWallet.sol";
@@ -14,21 +13,11 @@ import "hardhat/console.sol";
  * @title LaserWallet - EVM based smart contract wallet. Implementes "sovereign social recovery" mechanism and account abstraction.
  * @author Rodrigo Herrera I.
  */
-contract LaserWallet is
-    Singleton,
-    AccountAbstraction,
-    SSR,
-    Handler,
-    ILaserWallet
-{
+contract LaserWallet is Singleton, SSR, Handler, ILaserWallet {
     string public constant VERSION = "1.0.0";
 
     bytes32 private constant DOMAIN_SEPARATOR_TYPEHASH =
         keccak256("EIP712Domain(uint256 chainId,address verifyingContract)");
-    bytes32 private constant LASER_OP_TYPEHASH =
-        keccak256(
-            "LaserOp(address sender,uint256 nonce,bytes callData,uint256 callGas,uint256 verificationGas,uint256 preVerificationGas,uint256 maxFeePerGas,uint256 maxPriorityFeePerGas,address paymaster,bytes paymasterData)"
-        );
     bytes32 private constant LASER_TYPE_STRUCTURE =
         keccak256(
             "LaserOperation(address to,uint256 value,bytes callData,uint256 nonce,uint256 maxFeePerGas,uint256 maxPriorityFeePerGas,uint256 gasTip)"
@@ -52,20 +41,17 @@ contract LaserWallet is
      * @param _owner The owner of the wallet.
      * @param _recoveryOwner Recovery owner in case the owner looses the main device. Implementation of Sovereign Social Recovery.
      * @param _guardians Addresses that can activate the social recovery mechanism.
-     * @param _entryPoint Entry Point contract address.
      * @notice It can't be called after initialization.
      */
     function init(
         address _owner,
         address _recoveryOwner,
-        address[] calldata _guardians,
-        address _entryPoint
+        address[] calldata _guardians
     ) external {
         // initOwner() requires that the current owner is address 0.
         // This is enough to protect init() from being called after initialization.
         initOwners(_owner, _recoveryOwner);
         initGuardians(_guardians);
-        initEntryPoint(_entryPoint);
         emit Setup(owner, _guardians, entryPoint);
     }
 
