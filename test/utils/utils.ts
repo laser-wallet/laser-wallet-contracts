@@ -1,6 +1,6 @@
-import { Wallet, Contract, BigNumber} from "ethers";
+import { Wallet, Contract, BigNumber, Signer } from "ethers";
 import { ethers } from "hardhat";
-import { LaserTypes, Transaction } from "../types";
+import { Address, LaserTypes, Transaction } from "../types";
 // const {
 //     abi
 // } = require("../../artifacts/contracts/LaserWallet.sol/LaserWallet.json");
@@ -16,33 +16,85 @@ export function encodeFunctionData(
     return data;
 }
 
-export async function generateTransaction(): Promise<[Transaction, LaserTypes]> {
-    const baseFee = (await ethers.provider.send("eth_getBlockByNumber", ["latest", true])).baseFeePerGas;
+export async function getHash(
+    wallet: Contract,
+    transaction: Transaction
+): Promise<string> {
+    const hash = await wallet.operationHash(
+        transaction.to,
+        transaction.value,
+        transaction.callData,
+        transaction.nonce,
+        transaction.maxFeePerGas,
+        transaction.maxPriorityFeePerGas,
+        transaction.gasTip
+    );
+    return hash;
+}
+
+export async function sendTx(
+    wallet: Contract,
+    transaction: Transaction, 
+    signer?: Signer
+): Promise<void> {
+    if (signer) {
+        await wallet.connect(signer).exec(
+        transaction.to,
+        transaction.value,
+        transaction.callData,
+        transaction.nonce,
+        transaction.maxFeePerGas,
+        transaction.maxPriorityFeePerGas,
+        transaction.gasTip,
+        transaction.signatures
+        , {
+            gasLimit: 120000
+        }
+    );
+    } else {
+        await wallet.exec(
+        transaction.to,
+        transaction.value,
+        transaction.callData,
+        transaction.nonce,
+        transaction.maxFeePerGas,
+        transaction.maxPriorityFeePerGas,
+        transaction.gasTip,
+        transaction.signatures
+        , {
+            gasLimit: 120000
+        }
+    );
+    }
+}
+
+export async function generateTransaction(): Promise<Transaction> {
+    const baseFee = (
+        await ethers.provider.send("eth_getBlockByNumber", ["latest", true])
+    ).baseFeePerGas;
     const _maxPriorityFeePerGas = 2000000000;
-    const _maxFeePerGas = (2 * baseFee) + _maxPriorityFeePerGas;
-    const transaction = {
-        to: "", 
-        value: 0, 
-        callData: "0x", 
-        nonce: 0, 
-        maxFeePerGas: _maxFeePerGas, 
-        maxPriorityFeePerGas: _maxPriorityFeePerGas, 
-        gasTip: 30000, 
-        signatures: "0x",
-    }
+    const _maxFeePerGas = 2 * baseFee + _maxPriorityFeePerGas;
+    return {
+        to: "",
+        value: 0,
+        callData: "0x",
+        nonce: 0,
+        maxFeePerGas: _maxFeePerGas,
+        maxPriorityFeePerGas: _maxPriorityFeePerGas,
+        gasTip: 30000,
+        signatures: "0x"
+    };
+}
 
-    const laserTypes = {
-        to: "", 
-        value: 0, 
-        callData: "0x", 
-        nonce: 0, 
-        maxFeePerGas: _maxFeePerGas, 
-        maxPriorityFeePerGas: _maxPriorityFeePerGas, 
-        gasTip: 30000
-    }
-
-    return [transaction, laserTypes];
-    
+export async function fundWallet(
+    sender: Signer,
+    address: Address
+): Promise<void> {
+    const oneEth = ethers.utils.parseEther("1");
+    await sender.sendTransaction({
+        to: address,
+        value: oneEth
+    });
 }
 
 // export async function signMessage(

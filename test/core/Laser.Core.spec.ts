@@ -6,10 +6,9 @@ import {
     factorySetup,
     encodeFunctionData,
     sign,
-    signTypedData,
-    EIP712Sig,
+    signTypedData
 } from "../utils";
-import { userOp, types, Address } from "../types";
+import { types, Address } from "../types";
 import { ownerWallet, tenEth, twoEth } from "../constants/constants";
 
 const mock = ethers.Wallet.createRandom().address;

@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "Core repository of Laser's smart contracts",
   "scripts": {
-    "prettier:write": "npx prettier --write test",
+    "prettier:write": "npx prettier --write test/",
     "prettier:write:config": "npx prettier --write hardhat.config.ts",
     "test": "npx hardhat test",
     "compile": "npx hardhat compile",
@@ -19,7 +19,6 @@
     "@types/chai": "^4.3.1",
     "@types/mocha": "^9.1.1",
     "@types/node": "^17.0.36",
-    "axios": "^0.27.2",
     "chai": "^4.3.6",
     "dotenv": "^16.0.1",
     "ethereum-waffle": "^3.4.4",
@@ -28,6 +27,7 @@
     "hardhat-deploy": "^0.11.4",
     "hardhat-gas-reporter": "^1.0.8",
     "hardhat-storage-layout": "^0.1.6",
+    "prettier": "^1.19.1",
     "ts-node": "^10.8.0",
     "typechain": "^8.0.0",
     "typescript": "^4.7.2"

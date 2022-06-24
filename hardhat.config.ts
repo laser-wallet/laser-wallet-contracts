@@ -22,46 +22,46 @@ const config: HardhatUserConfig = {
         settings: {
             optimizer: {
                 enabled: true,
-                runs: 800,
+                runs: 800
             },
             outputSelection: {
                 "*": {
-                    "*": ["storageLayout"],
-                },
-            },
-        },
+                    "*": ["storageLayout"]
+                }
+            }
+        }
     },
     networks: {
         mainnet: {
             url: MAINNET_URL,
-            accounts: [`0x${DEPLOYER_PRIVATE_KEY}`],
+            accounts: [`0x${DEPLOYER_PRIVATE_KEY}`]
         },
         goerli: {
             url: GOERLI_URL,
-            accounts: [`0x${DEPLOYER_PRIVATE_KEY}`],
+            accounts: [`0x${DEPLOYER_PRIVATE_KEY}`]
         },
         optimism: {
             url: "https://mainnet.optimism.io",
-            accounts: [`0x${DEPLOYER_PRIVATE_KEY}`],
+            accounts: [`0x${DEPLOYER_PRIVATE_KEY}`]
         },
         rinkeby: {
             url: GOERLI_URL,
-            accounts: [`0x${DEPLOYER_PRIVATE_KEY}`],
+            accounts: [`0x${DEPLOYER_PRIVATE_KEY}`]
         },
         "optimism-kovan": {
             url: "https://kovan.optimism.io",
-            accounts: [`0x${DEPLOYER_PRIVATE_KEY}`],
+            accounts: [`0x${DEPLOYER_PRIVATE_KEY}`]
         },
         hardhat: {
             forking: {
                 enabled: process.env.FORKING === "true",
-                url: `${ALCHEMY_URL}`,
-            },
-        },
+                url: `${ALCHEMY_URL}`
+            }
+        }
     },
     gasReporter: {
-        enabled: process.env.REPORT_GAS === "true",
-    },
+        enabled: process.env.REPORT_GAS === "true"
+    }
 };
 
 export default config;

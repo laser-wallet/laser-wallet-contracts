@@ -55,14 +55,14 @@ describe("Setup", () => {
             expect(signer).to.equal(ownerAddress);
         });
 
-        it("should return correct signer", async () => {
+        it("should return correct signer by signing the hash", async () => {
             const { address, wallet } = await walletSetup(
                 ownerAddress,
                 recoveryOwnerAddr,
                 guardians
             );
 
-            const [tx, laserTypes] = await generateTransaction();
+            const tx = await generateTransaction();
             tx.to = address;
             const hash = await wallet.operationHash(
                 tx.to,
@@ -86,17 +86,26 @@ describe("Setup", () => {
                 guardians
             );
 
-            const [tx, laserTypes] = await generateTransaction();
+            const tx = await generateTransaction();
+            tx.to = address;
             const domain: Domain = {
                 chainId: await wallet.getChainId(),
                 verifyingContract: address
             };
-            // tx.signatures = await signTypedData(
-            //     ownerWallet,
-            //     domain,
-            //     laserTypes
-            // );
-            // // console.log(tx);
+
+            const sig = await signTypedData(ownerWallet, domain, tx);
+            const hash = await wallet.operationHash(
+                tx.to,
+                tx.value,
+                tx.callData,
+                tx.nonce,
+                tx.maxFeePerGas,
+                tx.maxPriorityFeePerGas,
+                tx.gasTip
+            );
+            const [r, s, v] = await wallet.splitSigs(sig, 0);
+            const signer = await wallet.returnSigner(hash, r, s, v);
+            expect(signer).to.equal(ownerAddress);
         });
 
         it("should correctly split 'v', 'r', and 's' ", async () => {

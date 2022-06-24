@@ -1,9 +1,11 @@
 import { expect } from "chai";
 import { ethers } from "hardhat";
 import { Contract, Signer, Wallet } from "ethers";
-import { walletSetup, encodeFunctionData, factorySetup } from "../utils";
+import { walletSetup, encodeFunctionData, factorySetup, getHash, generateTransaction, sendTx } from "../utils";
 import { Address } from "../types";
 import { addrZero } from "../constants/constants";
+import { fundWallet } from "../utils";
+import { sign } from "../utils/sign";
 
 const mock = ethers.Wallet.createRandom().address;
 const {
@@ -73,22 +75,30 @@ describe("Owner", () => {
                 recoveryOwnerAddr,
                 guardians
             );
-            const txData = encodeFunctionData(abi, "changeOwner", [addrZero]);
+            const tx = await generateTransaction();
+            tx.callData = encodeFunctionData(abi, "changeOwner", [addrZero]);
+            tx.to = address;          
+            const hash = await getHash(wallet, tx);
+            tx.signatures = await sign(owner, hash);
             
-            const hash = await wallet.operationHash(address, 0, txData)
-            await expect(wallet.exec(address, 0, txData)).to.be.reverted;
+            await expect(sendTx(wallet, tx)).to.be.reverted;
         });
 
-        // it("should revert by changing the owner to an address with code", async () => {
-        //     const { address, wallet } = await walletSetup(
-        //         ownerAddress,
-        //         recoveryOwnerAddr,
-        //         guardians,
-        //         entryPoint
-        //     );
-        //     const txData = encodeFunctionData(abi, "changeOwner", [entryPoint]);
-        //     await expect(wallet.exec(address, 0, txData)).to.be.reverted;
-        // });
+        it("should revert by changing the owner to an address with code", async () => {
+             const { address, wallet } = await walletSetup(
+                ownerAddress,
+                recoveryOwnerAddr,
+                guardians
+            );
+            const cFactory = await ethers.getContractFactory("LaserWallet");
+            const c = await cFactory.deploy();
+            const tx = await generateTransaction();
+            tx.callData = encodeFunctionData(abi, "changeOwner", [c.address]);
+            tx.to = address;
+            const hash = await getHash(wallet, tx);
+            tx.signatures = await sign(owner, hash);
+            await expect(sendTx(wallet, tx)).to.be.reverted;
+        });
 
         // it("should revert by changing the owner to the current owner", async () => {
         //     const { address, wallet } = await walletSetup(
@@ -101,6 +111,24 @@ describe("Owner", () => {
         //     const txData = encodeFunctionData(abi, "changeOwner", [owner]);
         //     await expect(wallet.exec(address, 0, txData)).to.be.reverted;
         // });
+
+        it("should change the owner", async () => {
+            const { address, wallet } = await walletSetup(
+                ownerAddress,
+                recoveryOwnerAddr,
+                guardians
+            );
+            const newOwner = ethers.Wallet.createRandom().address;
+            const tx = await generateTransaction();
+            tx.callData = encodeFunctionData(abi, "changeOwner", [newOwner]);
+            tx.to = address;
+            const hash = await getHash(wallet, tx);
+            tx.signatures = await sign(owner, hash);
+
+            await fundWallet(owner, address);
+            await sendTx(wallet, tx);
+            expect(await wallet.owner()).to.equal(newOwner);
+        });
 
         // it("should change the owner and emit event", async () => {});
     });
