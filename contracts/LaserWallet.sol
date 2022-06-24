@@ -85,6 +85,7 @@ contract LaserWallet is Singleton, SSR, Handler, ILaserWallet {
         bool success = _call(to, value, callData, gasleft());
         // If the transaction returns false, we revert ...
         if (!success) revert LW__exec__failure();
+
         // We calculate the gas price, as per the user's request ...
         uint256 gasPrice = calculateGasPrice(
             maxFeePerGas,

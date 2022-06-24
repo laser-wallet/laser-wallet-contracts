@@ -7,7 +7,9 @@
     "prettier:write:config": "npx prettier --write hardhat.config.ts",
     "test": "npx hardhat test",
     "compile": "npx hardhat compile",
-    "goerli": "npx hardhat run deploy/deploy_factory.ts --network goerli"
+    "deploy:goerli": "npx hardhat run deploy/deploy_factory.ts --network goerli",
+    "deploy:rinkeby": "npx hardhat run deploy/deploy_factory.ts --network rinkeby",
+    "deploy:mainnet": "npx hardhat run deploy/deploy_factory.ts --network mainnet"
   },
   "author": "Rodrigo Herrera I.",
   "license": "LGPL-3.0",
