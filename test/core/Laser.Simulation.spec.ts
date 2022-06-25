@@ -7,12 +7,13 @@ import { addrZero } from "../constants/constants";
 import { fundWallet } from "../utils";
 import { sign } from "../utils/sign";
 
+
 const mock = ethers.Wallet.createRandom().address;
 const {
     abi,
 } = require("../../artifacts/contracts/LaserWallet.sol/LaserWallet.json");
 
-describe("Signatures", () => {
+describe("Owner", () => {
     let owner: Signer;
     let ownerAddress: Address;
     let recoveryOwner: Signer;
@@ -33,14 +34,9 @@ describe("Signatures", () => {
         ];
     });
 
-    describe("Signatures", async () => {
-        it("owner should execute a transaction by signing the hash", async() => {});
+    describe("Owner", async () => {
+        it("should have the correct owner", async () => {
 
-        it("owner should execute a transaction by signing typed data", async() => {});
-
-        it("transaction should fail by hash miss-match", async() => {});
-
-        it("transaction should fail by signing wrong types", async() => {});
-
+        });
     });
 });

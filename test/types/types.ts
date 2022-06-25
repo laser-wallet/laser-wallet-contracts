@@ -17,7 +17,7 @@ export const types = {
 };
 
 export type Domain = {
-    chainId: number | string;
+    chainId: BigNumberish;
     verifyingContract: string;
 };
 

@@ -2,6 +2,8 @@ import { Contract, Signer } from "ethers";
 import { ethers } from "hardhat";
 import { encodeFunctionData } from "./utils";
 import { Address } from "../types";
+import { LaserWallet } from "../../typechain-types";
+import { LaserProxyFactory } from "../../typechain-types";
 
 const mock = ethers.Wallet.createRandom().address;
 const {
@@ -17,7 +19,7 @@ type ReturnFactorySetup = {
 
 type ReturnWalletSetup = {
     address: string;
-    wallet: Contract;
+    wallet: LaserWallet;
 };
 
 export async function factorySetup(
@@ -25,7 +27,7 @@ export async function factorySetup(
 ): Promise<ReturnFactorySetup> {
     const ProxyFactory = await ethers.getContractFactory("LaserProxyFactory");
 
-    const proxyFactory = await ProxyFactory.deploy(_singleton);
+    const proxyFactory = (await ProxyFactory.deploy(_singleton)) as LaserProxyFactory;
 
     return {
         address: proxyFactory.address,
@@ -39,7 +41,7 @@ export async function walletSetup(
     guardians: Address[]
 ): Promise<ReturnWalletSetup> {
     const LaserWallet = await ethers.getContractFactory("LaserWallet");
-    const singleton = await LaserWallet.deploy();
+    const singleton = (await LaserWallet.deploy()) as LaserWallet;
     const singletonAddress = singleton.address;
     const { address, factory } = await factorySetup(singletonAddress);
     const initializer = encodeFunctionData(abi, "init", [
@@ -50,8 +52,9 @@ export async function walletSetup(
     const transaction = await factory.createProxy(initializer);
     const receipt = await transaction.wait();
     const proxyAddress = receipt.events[1].args.proxy;
+    const wallet = (await ethers.getContractAt(abi, proxyAddress)) as LaserWallet;
     return {
         address: proxyAddress,
-        wallet: await ethers.getContractAt(abi, proxyAddress),
+        wallet: wallet,
     };
 }

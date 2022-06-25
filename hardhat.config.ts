@@ -3,6 +3,7 @@ import "@nomiclabs/hardhat-etherscan";
 import "@nomiclabs/hardhat-ethers";
 import "@nomiclabs/hardhat-solhint";
 import { HardhatUserConfig } from "hardhat/types";
+import '@typechain/hardhat'
 import "hardhat-gas-reporter";
 import "hardhat-storage-layout";
 import "hardhat-deploy";
@@ -19,7 +20,7 @@ const RINKEBY_URL = `https://rinkeby.infura.io/v3/${INFURA_KEY}`;
 
 const config: HardhatUserConfig = {
     solidity: {
-        version: "0.8.9",
+        version: "0.8.15",
         settings: {
             optimizer: {
                 enabled: true,

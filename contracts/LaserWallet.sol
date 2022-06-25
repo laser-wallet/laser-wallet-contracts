@@ -1,15 +1,13 @@
 // SPDX-License-Identifier: LGPL-3.0-only
-pragma solidity 0.8.9;
+pragma solidity 0.8.15;
 
 import "./core/Singleton.sol";
 import "./handlers/Handler.sol";
 import "./interfaces/ILaserWallet.sol";
 import "./ssr/SSR.sol";
 
-import "hardhat/console.sol";
-
 /**
- * @title LaserWallet - EVM based smart contract wallet. Implementes "sovereign social recovery" mechanism and account abstraction.
+ * @title LaserWallet - EVM based smart contract wallet. Implementes "smart social recovery" mechanism.
  * @author Rodrigo Herrera I.
  */
 contract LaserWallet is Singleton, SSR, Handler, ILaserWallet {
@@ -83,26 +81,25 @@ contract LaserWallet is Singleton, SSR, Handler, ILaserWallet {
 
         // We execute the main transaction ...
         bool success = _call(to, value, callData, gasleft());
-        // If the transaction returns false, we revert ...
-        if (!success) revert LW__exec__failure();
+
+        if (success) emit ExecSuccess(to, value, nonce);
+        else emit ExecFailure(to, value, nonce);
 
         // We calculate the gas price, as per the user's request ...
         uint256 gasPrice = calculateGasPrice(
             maxFeePerGas,
             maxPriorityFeePerGas
         );
-        // We check the amount of gas the transaction consumed ...
-        uint256 gasUsed = initialGas - gasleft();
 
         // We refund the relayer for sending the transaction + tip.
         // The gasTip can be the amount of gas used for the initial callData call. (In theory no real tip).
-        uint256 refundAmount = (gasUsed + gasTip) * gasPrice;
+        uint256 refundAmount = (initialGas - gasleft() + gasTip) * gasPrice;
 
         // We refund the relayer ...
         success = _call(msg.sender, refundAmount, new bytes(0), gasleft());
 
         // If the transaction returns false, we revert ..
-        if (!success) revert LW__exec__failure();
+        if (!success) revert LW__exec__refundFailure();
     }
 
     /**
@@ -132,7 +129,7 @@ contract LaserWallet is Singleton, SSR, Handler, ILaserWallet {
             signatures
         );
         bool success = _call(to, value, callData, gasleft());
-        if (!success) revert LW__exec__failure();
+        if (!success) revert LW__simulateTransaction__mainCallError();
         uint256 gasPrice = calculateGasPrice(
             maxFeePerGas,
             maxPriorityFeePerGas
@@ -140,7 +137,7 @@ contract LaserWallet is Singleton, SSR, Handler, ILaserWallet {
         uint256 gasUsed = initialGas - gasleft();
         uint256 refundAmount = (gasUsed + gasTip) * gasPrice;
         success = _call(msg.sender, refundAmount, new bytes(0), gasleft());
-        if (!success) revert LW__exec__failure();
+        if (!success) revert LW__simulateTransaction__refundFailure();
         totalGas = initialGas - gasleft();
         require(
             msg.sender == address(0),

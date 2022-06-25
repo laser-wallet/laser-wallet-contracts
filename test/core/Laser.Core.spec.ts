@@ -20,8 +20,6 @@ describe("Core", () => {
     let owner: Signer;
     let ownerAddress: Address;
     let guardians: Address[];
-    let entryPoint: Address;
-    let EntryPoint: Contract;
     let _guardian1: Signer;
     let _guardian2: Signer;
     let relayer: Signer;
@@ -36,10 +34,7 @@ describe("Core", () => {
         guardians = [
             await _guardian1.getAddress(),
             await _guardian2.getAddress(),
-        ];
-        const EP = await ethers.getContractFactory("TestEntryPoint");
-        EntryPoint = await EP.deploy(mock, 0, 0);
-        entryPoint = EntryPoint.address;
+        ];    
     });
 
     describe("init()", async () => {
@@ -47,12 +42,13 @@ describe("Core", () => {
             const { address, wallet } = await walletSetup(
                 ownerAddress,
                 recoveryOwnerAddr,
-                guardians,
-                entryPoint
+                guardians
             );
+            
             await expect(
-                wallet.init(mock, recoveryOwnerAddr, guardians, entryPoint)
+                wallet.init(mock, recoveryOwnerAddr, guardians)
             ).to.be.revertedWith("Owner__initOwner__walletInitialized(");
+
         });
     });
 });

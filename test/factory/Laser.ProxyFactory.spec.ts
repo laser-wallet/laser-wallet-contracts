@@ -27,14 +27,10 @@ describe("Proxy Factory", () => {
             await _guardian1.getAddress(),
             await _guardian2.getAddress(),
         ];
-        const EP = await ethers.getContractFactory("TestEntryPoint");
-        const _entryPoint = await EP.deploy(mock, 0, 0);
-        const entryPoint = _entryPoint.address;
         initializer = encodeFunctionData(abi, "init", [
             owner,
             recoveryOwner,
-            guardians,
-            entryPoint,
+            guardians
         ]);
     });
 

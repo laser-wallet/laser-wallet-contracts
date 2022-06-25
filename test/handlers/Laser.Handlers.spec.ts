@@ -29,9 +29,6 @@ describe("Handlers", () => {
             "TokenCaller"
         );
         TokenCaller = await tokenCallerFactory.deploy();
-        const EP = await ethers.getContractFactory("TestEntryPoint");
-        const _entryPoint = await EP.deploy(mock, 0, 0);
-        entryPoint = _entryPoint.address;
     });
 
     describe("Token Handlers", () => {
@@ -39,8 +36,7 @@ describe("Handlers", () => {
             const { address, wallet } = await walletSetup(
                 ownerAddress,
                 recoveryOwnerAddr,
-                guardians,
-                entryPoint
+                guardians
             );
             const magicValue = "0x4e2312e0";
             const result = await TokenCaller.checkERC165(address, magicValue);
@@ -51,8 +47,7 @@ describe("Handlers", () => {
             const { address, wallet } = await walletSetup(
                 ownerAddress,
                 recoveryOwnerAddr,
-                guardians,
-                entryPoint
+                guardians
             );
             //`bytes4(keccak256("onERC1155Received(address,address,uint256,uint256,bytes)"))`
             const magicValue = "0xf23a6e61";
@@ -64,8 +59,7 @@ describe("Handlers", () => {
             const { address, wallet } = await walletSetup(
                 ownerAddress,
                 recoveryOwnerAddr,
-                guardians,
-                entryPoint
+                guardians
             );
             //`bytes4(keccak256("onERC1155BatchReceived(address,address,uint256[],uint256[],bytes)"))`
             const magicValue = "0xbc197c81";
@@ -77,8 +71,7 @@ describe("Handlers", () => {
             const { address, wallet } = await walletSetup(
                 ownerAddress,
                 recoveryOwnerAddr,
-                guardians,
-                entryPoint
+                guardians
             );
             //bytes4(keccak256("onERC721Received(address,address,uint256,bytes)"))
             const magicValue = "0x150b7a02";
@@ -90,8 +83,7 @@ describe("Handlers", () => {
             const { address, wallet } = await walletSetup(
                 ownerAddress,
                 recoveryOwnerAddr,
-                guardians,
-                entryPoint
+                guardians
             );
             const interfaceId = "0x150b7a02";
             const result = await TokenCaller.checkERC165(address, interfaceId);
@@ -102,8 +94,7 @@ describe("Handlers", () => {
             const { address, wallet } = await walletSetup(
                 ownerAddress,
                 recoveryOwnerAddr,
-                guardians,
-                entryPoint
+                guardians
             );
             const interfaceId = "0x01ffc9a7";
             const result = await TokenCaller.checkERC165(address, interfaceId);
@@ -114,8 +105,7 @@ describe("Handlers", () => {
             const { address, wallet } = await walletSetup(
                 ownerAddress,
                 recoveryOwnerAddr,
-                guardians,
-                entryPoint
+                guardians
             );
             const invalidValue = "0xffffffff";
             const result = await TokenCaller.checkERC165(address, invalidValue);
@@ -126,8 +116,7 @@ describe("Handlers", () => {
             const { address, wallet } = await walletSetup(
                 ownerAddress,
                 recoveryOwnerAddr,
-                guardians,
-                entryPoint
+                guardians
             );
             const interfaceId = "0xd9b67a26";
             expect(await wallet.supportsInterface(interfaceId)).to.equal(true);
@@ -139,8 +128,7 @@ describe("Handlers", () => {
             const { address, wallet } = await walletSetup(
                 ownerAddress,
                 recoveryOwnerAddr,
-                guardians,
-                entryPoint
+                guardians
             );
             // bytes4(keccak256("I_AM_LASER"))
             const hash = ethers.utils.keccak256(

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity 0.8.9;
+pragma solidity 0.8.15;
 
 /**
  * @title ILaserWallet
@@ -9,13 +9,18 @@ pragma solidity 0.8.9;
 interface ILaserWallet {
     event Received(address indexed sender, uint256 amount);
     event Setup(address owner, address recoveryOwner, address[] guardians);
-    event Success(address to, uint256 value, bytes4 funcSelector);
+    event ExecSuccess(address to, uint256 value, uint256 nonce);
+    event ExecFailure(address to, uint256 value, uint256 nonce);
 
     ///@dev validateUserOp custom error.
     error LW__validateUserOp__invalidNonce();
 
-    ///@dev exec() custom error.
-    error LW__exec__failure();
+    ///@dev exec() custom errors.
+    error LW__exec__refundFailure();
+
+    ///@dev simulateTransaction() custom errors.
+    error LW__simulateTransaction__mainCallError();
+    error LW__simulateTransaction__refundFailure();
 
     ///@dev isValidSignature() custom error.
     error LW__isValidSignature__invalidSigner();

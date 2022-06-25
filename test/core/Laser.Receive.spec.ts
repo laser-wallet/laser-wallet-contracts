@@ -17,7 +17,6 @@ describe("Receive", () => {
     let recoveryOwner: Signer;
     let recoveryOwnerAddr: Address;
     let guardians: Address[];
-    let entryPoint: Address;
     let _guardian1: Signer;
     let _guardian2: Signer;
 
@@ -30,9 +29,6 @@ describe("Receive", () => {
             await _guardian1.getAddress(),
             await _guardian2.getAddress(),
         ];
-        const EP = await ethers.getContractFactory("TestEntryPoint");
-        const _entryPoint = await EP.deploy(mock, 0, 0);
-        entryPoint = _entryPoint.address;
     });
 
     describe("receive", () => {
@@ -40,8 +36,7 @@ describe("Receive", () => {
             const { address, wallet } = await walletSetup(
                 ownerAddress,
                 recoveryOwnerAddr,
-                guardians,
-                entryPoint
+                guardians
             );
             expect(
                 await owner.sendTransaction({
@@ -59,8 +54,7 @@ describe("Receive", () => {
             const { address, wallet } = await walletSetup(
                 ownerAddress,
                 recoveryOwnerAddr,
-                guardians,
-                entryPoint
+                guardians
             );
             const initialBalance = await ethers.provider.getBalance(
                 wallet.address

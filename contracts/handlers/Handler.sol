@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity 0.8.9;
+pragma solidity 0.8.15;
 
 import "../interfaces/IHandler.sol";
 import "../interfaces/IERC165.sol";

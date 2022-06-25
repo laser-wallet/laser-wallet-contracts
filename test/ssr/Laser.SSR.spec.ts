@@ -6,10 +6,9 @@ import {
     factorySetup,
     encodeFunctionData,
     sign,
-    signTypedData,
-    EIP712Sig,
+    signTypedData
 } from "../utils";
-import { userOp, types, Address, Numberish } from "../types";
+import { types, Address, Numberish } from "../types";
 import {
     ownerWallet,
     recoveryOwnerWallet,
@@ -17,7 +16,6 @@ import {
     tenEth,
     twoEth,
 } from "../constants/constants";
-import { lock } from "../utils/funcs";
 
 const mock = ethers.Wallet.createRandom().address;
 const {
@@ -36,8 +34,6 @@ describe("Sovereign Social Recovery", () => {
     let recoveryOwner: Signer;
     let recoveryOwnerAddr: Address;
     let guardians: Address[];
-    let entryPoint: Address;
-    let EntryPoint: Contract;
     let _guardian1: Signer;
     let _guardian2: Signer;
     let relayer: Signer;
@@ -51,9 +47,6 @@ describe("Sovereign Social Recovery", () => {
             await _guardian1.getAddress(),
             await _guardian2.getAddress(),
         ];
-        const _EntryPoint = await ethers.getContractFactory("TestEntryPoint");
-        EntryPoint = await _EntryPoint.deploy(mock, 0, 0);
-        entryPoint = EntryPoint.address;
     });
 
     describe("Basic init", () => {
@@ -86,63 +79,13 @@ describe("Sovereign Social Recovery", () => {
         });
 
         it("guardian should be able to lock the wallet ", async () => {
-            const { address, wallet } = await walletSetup(
-                ownerAddress,
-                recoveryOwnerAddr,
-                guardians
-            );
-            await fund(address, relayer);
-            expect(await wallet.isLocked()).to.equal(false);
-            const domain = {
-                chainId: await wallet.getChainId(),
-                verifyingContract: address,
-            };
 
-            const txData = encodeFunctionData(abi, "lock", []);
-            const data = encodeFunctionData(abi, "exec", [address, 0, txData]);
-            await lock(guardianWallet, EntryPoint, domain, address, 0, data);
-
-            expect(await wallet.isLocked()).to.equal(true);
         });
 
         it("owner should not be able to lock the wallet 'handleOps' ", async () => {
-            const { address, wallet } = await walletSetup(
-                ownerAddress,
-                recoveryOwnerAddr,
-                guardians
-            );
-            await fund(address, relayer);
-            expect(await wallet.isLocked()).to.equal(false);
-            const domain = {
-                chainId: await wallet.getChainId(),
-                verifyingContract: address,
-            };
-
-            const txData = encodeFunctionData(abi, "lock", []);
-            const data = encodeFunctionData(abi, "exec", [address, 0, txData]);
-            await expect(
-                lock(ownerWallet, EntryPoint, domain, address, 0, data)
-            ).to.be.reverted;
         });
 
         it("recovery owner should not be able to lock the wallet 'handleOps' ", async () => {
-            const { address, wallet } = await walletSetup(
-                ownerAddress,
-                recoveryOwnerAddr,
-                guardians
-            );
-            await fund(address, relayer);
-            expect(await wallet.isLocked()).to.equal(false);
-            const domain = {
-                chainId: await wallet.getChainId(),
-                verifyingContract: address,
-            };
-
-            const txData = encodeFunctionData(abi, "lock", []);
-            const data = encodeFunctionData(abi, "exec", [address, 0, txData]);
-            await expect(
-                lock(recoveryOwnerWallet, EntryPoint, domain, address, 0, data)
-            ).to.be.reverted;
         });
     });
 });
