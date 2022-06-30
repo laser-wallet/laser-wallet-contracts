@@ -7,7 +7,7 @@ import "./interfaces/ILaserWallet.sol";
 import "./ssr/SSR.sol";
 
 /**
- * @title LaserWallet - EVM based smart contract wallet. Implementes "smart social recovery" mechanism.
+ * @title LaserWallet - EVM based smart contract wallet. Implementes smart social recovery mechanism.
  * @author Rodrigo Herrera I.
  */
 contract LaserWallet is Singleton, SSR, Handler, ILaserWallet {
@@ -36,22 +36,33 @@ contract LaserWallet is Singleton, SSR, Handler, ILaserWallet {
     /**
      * @dev Setup function, sets initial storage of contract.
      * @param _owner The owner of the wallet.
-     * @param _recoveryOwner Recovery owner in case the owner looses the main device. Implementation of Sovereign Social Recovery.
+     * @param _recoveryOwners Array of recovery owners. Implementation of Sovereign Social Recovery.
      * @param _guardians Addresses that can activate the social recovery mechanism.
      * @notice It can't be called after initialization.
      */
     function init(
         address _owner,
-        address _recoveryOwner,
+        address[] calldata _recoveryOwners,
         address[] calldata _guardians
     ) external {
         // initOwner() requires that the current owner is address 0.
         // This is enough to protect init() from being called after initialization.
-        initOwners(_owner, _recoveryOwner);
+        initOwner(_owner);
+        initRecoveryOwners(_recoveryOwners);
         initGuardians(_guardians);
-        emit Setup(owner, _recoveryOwner, _guardians);
+        emit Setup(owner, _recoveryOwners, _guardians);
     }
 
+    /**
+     * @dev Executes a generic transaction. It does not support 'delegatecall' for security reasons.
+     * @param to Destination address.
+     * @param value Amount to send.
+     * @param callData Data payload for the transaction.
+     * @param _nonce Unsigned integer to avoid replay attacks. It needs to match the current wallet's nonce.
+     * @param maxFeePerGas Maximum amount that the user is willing to pay for a unit of gas.
+     * @param maxPriorityFeePerGas Miner's tip.
+     * @param signatures The signatures of the transaction.
+     */
     function exec(
         address to,
         uint256 value,
@@ -62,12 +73,20 @@ contract LaserWallet is Singleton, SSR, Handler, ILaserWallet {
         uint256 gasTip,
         bytes calldata signatures
     ) external {
-        // This is just for a quick trial, the userOp needs to change.
-        uint256 initialGas = gasleft();
-        // We immediately increase the nonce to avoid replay attacks.
-        if (nonce++ != _nonce) revert LW__validateUserOp__invalidNonce();
+        uint256 maximumGasTip = 21000 + msg.data.length * 16;
+        // gasTip cannot exceed maximumGasTip.
+        if (gasTip > maximumGasTip) revert LW__exec__gasTipOverflow();
 
-        // We verify that the signatures are correct ...
+        uint256 initialGas = gasleft();
+
+        // We immediately increase the nonce to avoid replay attacks.
+        unchecked {
+            // Won't overflow ...
+            if (nonce++ != _nonce) revert LW__exec__invalidNonce();
+        }
+
+        // Verifies the correctness of the transaction. It checks that the signatures are
+        // correct and that the signer has access for the transaction.
         verifyTransaction(
             to,
             value,
@@ -79,9 +98,10 @@ contract LaserWallet is Singleton, SSR, Handler, ILaserWallet {
             signatures
         );
 
-        // We execute the main transaction ...
+        // Once we verified that the transaction is correct, we execute the main call.
         bool success = _call(to, value, callData, gasleft());
 
+        // We do not revert the call if it fails, because the wallet needs to pay the relayer even in case of failure.
         if (success) emit ExecSuccess(to, value, nonce);
         else emit ExecFailure(to, value, nonce);
 
@@ -93,7 +113,8 @@ contract LaserWallet is Singleton, SSR, Handler, ILaserWallet {
 
         // We refund the relayer for sending the transaction + tip.
         // The gasTip can be the amount of gas used for the initial callData call. (In theory no real tip).
-        uint256 refundAmount = (initialGas - gasleft() + gasTip) * gasPrice;
+        uint256 refundAmount = (initialGas - gasleft() + gasTip + 3000) *
+            gasPrice;
 
         // We refund the relayer ...
         success = _call(msg.sender, refundAmount, new bytes(0), gasleft());
@@ -103,8 +124,34 @@ contract LaserWallet is Singleton, SSR, Handler, ILaserWallet {
     }
 
     /**
-     * @dev Simulates a transaction to have a rough estimate for UserOp.callGas.
-     * @notice Needs to be called off-chain from the address zero.
+     * @dev Executes a series of generic transactions. It can only be called from exec.
+     * @param transactions Basic transactions array (to, value, calldata).
+     */
+    function multiCall(Transaction[] calldata transactions)
+        external
+        authorized
+    {
+        uint256 transactionsLength = transactions.length;
+        for (uint256 i = 0; i < transactionsLength; ) {
+            Transaction calldata transaction = transactions[i];
+            bool success = _call(
+                transaction.to,
+                transaction.value,
+                transaction.callData,
+                gasleft()
+            );
+            (success);
+            unchecked {
+                // Won't overflow .... You would need way more gas usage than current available block gas (30m) to overflow it.
+                ++i;
+            }
+        }
+    }
+
+    /**
+     * @dev Simulates a transaction. This should be called from the relayer, to verify that the transaction will not revert.
+     * This does not guarantees 100% that the transaction will succeed, the state will be different next block.
+     * @notice Needs to be called off-chain from  address zero.
      */
     function simulateTransaction(
         address to,
@@ -117,7 +164,7 @@ contract LaserWallet is Singleton, SSR, Handler, ILaserWallet {
         bytes calldata signatures
     ) external returns (uint256 totalGas) {
         uint256 initialGas = gasleft();
-        if (nonce++ != _nonce) revert LW__validateUserOp__invalidNonce();
+        if (nonce++ != _nonce) revert LW__simulateTransaction__invalidNonce();
         verifyTransaction(
             to,
             value,
@@ -145,6 +192,30 @@ contract LaserWallet is Singleton, SSR, Handler, ILaserWallet {
         );
     }
 
+    /**
+     * @dev Calculates the gas consumed for the initial calldata.
+     * @notice Needs to be called off-chain from  address zero.
+     */
+    function calculateCallDataCost(
+        address to,
+        uint256 value,
+        bytes calldata callData,
+        uint256 _nonce,
+        uint256 maxFeePerGas,
+        uint256 maxPriorityFeePerGas,
+        uint256 gasTip,
+        bytes calldata signatures
+    ) external returns (uint256 totalGas) {
+        totalGas = gasleft();
+        require(
+            msg.sender == address(0),
+            "Must be called off-chain from address zero."
+        );
+    }
+
+    /**
+     * @dev The transaction's hash. This is necessary to check that the signatures are correct and to avoid replay attacks.
+     */
     function operationHash(
         address to,
         uint256 value,
@@ -153,7 +224,7 @@ contract LaserWallet is Singleton, SSR, Handler, ILaserWallet {
         uint256 maxFeePerGas,
         uint256 maxPriorityFeePerGas,
         uint256 gasTip
-    ) public view returns (bytes32) {
+    ) external view returns (bytes32) {
         return
             keccak256(
                 encodeOperation(
@@ -184,7 +255,7 @@ contract LaserWallet is Singleton, SSR, Handler, ILaserWallet {
         uint8 v;
         (r, s, v) = splitSigs(signature, 0);
         address recovered = returnSigner(hash, r, s, v);
-        if (recovered != owner) revert LW__isValidSignature__invalidSigner();
+        if (recovered != owner) revert LaserWallet__invalidSignature();
         else return EIP1271_MAGIC_VALUE;
     }
 

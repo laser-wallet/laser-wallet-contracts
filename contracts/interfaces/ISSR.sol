@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: LGPL-3.0-only
 pragma solidity 0.8.15;
 
 /**
@@ -5,6 +6,12 @@ pragma solidity 0.8.15;
  * @notice Has all the external functions, structs, events and errors for SSR.sol.
  */
 interface ISSR {
+    ///@dev Struct for the recovery owner's chain.
+    struct RecoverySettings {
+        uint256 ownerIndex;
+        uint256 time;
+    }
+
     ///@dev Determines who has access to call a specific function.
     enum Access {
         Owner,
@@ -28,6 +35,10 @@ interface ISSR {
     error SSR__removeGuardian__invalidAddress();
     error SSR__removeGuardian__incorrectPreviousGuardian();
     error SSR__removeGuardian__underflow();
+
+    ///@dev initRecoveryOwners() custom error.
+    error SSR_initRecoveryOwners__underflow();
+    error SSR_initRecoveryOwners__invalidAddress();
 
     ///@dev initGuardians() custom errors.
     error SSR__initGuardians__zeroGuardians();
