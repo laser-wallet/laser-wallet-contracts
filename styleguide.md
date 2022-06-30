@@ -1,7 +1,7 @@
 # Style Guide for Laser Contracts
 
 
-### We are adhering to Solidity's style guide recommendations: https://docs.soliditylang.org/en/latest/style-guide.html
+### We are adhering to Solidity's style guide recommendations: https://docs.soliditylang.org/en/latest/style-guide.html
 
 
 
