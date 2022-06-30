@@ -14,12 +14,12 @@ import {
     recoveryOwnerWallet,
     guardianWallet,
     tenEth,
-    twoEth,
+    twoEth
 } from "../constants/constants";
 
 const mock = ethers.Wallet.createRandom().address;
 const {
-    abi,
+    abi
 } = require("../../artifacts/contracts/LaserWallet.sol/LaserWallet.json");
 
 // Sends 10 eth...
@@ -31,38 +31,36 @@ async function fund(to: Address, from: Signer): Promise<void> {
 describe("Sovereign Social Recovery", () => {
     let owner: Signer;
     let ownerAddress: Address;
-    let recoveryOwner: Signer;
-    let recoveryOwnerAddr: Address;
+    let recoveryOwner1: Signer;
+    let recoveryOwner2: Signer;
     let guardians: Address[];
     let _guardian1: Signer;
     let _guardian2: Signer;
     let relayer: Signer;
+    let recoveryOwners: Address[];
 
     beforeEach(async () => {
-        [owner, recoveryOwner, _guardian1, _guardian2, relayer] =
-            await ethers.getSigners();
+        [
+            owner,
+            recoveryOwner1,
+            recoveryOwner2,
+            _guardian1,
+            _guardian2,
+            relayer
+        ] = await ethers.getSigners();
         ownerAddress = await owner.getAddress();
-        recoveryOwnerAddr = await recoveryOwner.getAddress();
+        recoveryOwners = [
+            await recoveryOwner1.getAddress(),
+            await recoveryOwner2.getAddress()
+        ];
         guardians = [
             await _guardian1.getAddress(),
-            await _guardian2.getAddress(),
+            await _guardian2.getAddress()
         ];
     });
 
     describe("Basic init", () => {
         it("correct setup", async () => {
-           const { address, wallet } = await walletSetup(
-                ownerAddress,
-                recoveryOwnerAddr,
-                guardians
-            );
-            const owner = await wallet.owner();
-            const recoveryOwner = await wallet.recoveryOwner();
-            expect(owner).to.equal(ownerWallet.address);
-            expect(recoveryOwner).to.equal(recoveryOwnerWallet.address);
-            expect(await wallet.isGuardian(guardianWallet.address)).to.equal(
-                true
-            );
         });
     });
 
@@ -70,7 +68,7 @@ describe("Sovereign Social Recovery", () => {
         it("should not allow to call the function directly", async () => {
             const { address, wallet } = await walletSetup(
                 ownerAddress,
-                recoveryOwnerAddr,
+                recoveryOwners,
                 guardians
             );
             await expect(wallet.lock()).to.be.revertedWith(
@@ -78,14 +76,10 @@ describe("Sovereign Social Recovery", () => {
             );
         });
 
-        it("guardian should be able to lock the wallet ", async () => {
+        it("guardian should be able to lock the wallet ", async () => {});
 
-        });
+        it("owner should not be able to lock the wallet 'handleOps' ", async () => {});
 
-        it("owner should not be able to lock the wallet 'handleOps' ", async () => {
-        });
-
-        it("recovery owner should not be able to lock the wallet 'handleOps' ", async () => {
-        });
+        it("recovery owner should not be able to lock the wallet 'handleOps' ", async () => {});
     });
 });

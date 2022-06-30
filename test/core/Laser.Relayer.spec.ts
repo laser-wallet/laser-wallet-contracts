@@ -1,7 +1,14 @@
 import { expect } from "chai";
 import { ethers } from "hardhat";
 import { Contract, Signer, Wallet } from "ethers";
-import { walletSetup, encodeFunctionData, factorySetup, getHash, generateTransaction, sendTx } from "../utils";
+import {
+    walletSetup,
+    encodeFunctionData,
+    factorySetup,
+    getHash,
+    generateTransaction,
+    sendTx
+} from "../utils";
 import { Address } from "../types";
 import { addrZero } from "../constants/constants";
 import { fundWallet } from "../utils";
@@ -15,23 +22,28 @@ const {
 describe("Setup", () => {
     let owner: Signer;
     let ownerAddress: Address;
-    let recoveryOwner: Signer;
-    let recoveryOwnerAddr: Address;
+    let recoveryOwner1: Signer;
+    let recoveryOwner2: Signer;
     let guardians: Address[];
     let _guardian1: Signer;
     let _guardian2: Signer;
     let relayer: Signer;
+    let recoveryOwners: Address[];
 
     beforeEach(async () => {
         [
             owner,
-            recoveryOwner,
+            recoveryOwner1,
+            recoveryOwner2,
             _guardian1,
             _guardian2,
             relayer
         ] = await ethers.getSigners();
         ownerAddress = await owner.getAddress();
-        recoveryOwnerAddr = await recoveryOwner.getAddress();
+        recoveryOwners = [
+            await recoveryOwner1.getAddress(),
+            await recoveryOwner2.getAddress()
+        ];
         guardians = [
             await _guardian1.getAddress(),
             await _guardian2.getAddress()
@@ -39,27 +51,12 @@ describe("Setup", () => {
     });
 
     describe("Relayer", () => {
-         it("should refund the relayer", async () => {
-             const { address, wallet } = await walletSetup(
-                ownerAddress,
-                recoveryOwnerAddr,
-                guardians
-            );
-            const tx = await generateTransaction();
-            const initialBal = await ethers.provider.getBalance(await relayer.getAddress());
-            console.log("initial bal -->", initialBal.toString());
-            await fundWallet(owner, address);
-            tx.callData = "0x";
-            const random = ethers.Wallet.createRandom().address;
-            tx.to = random;
-            tx.value = 1000000;
-            tx.nonce = 0;
-            const hash = await getHash(wallet, tx);
-            tx.signatures = await sign(owner, hash);
-            await sendTx(wallet.connect(relayer), tx);
+        it("should refund the relayer", async () => {});
+    });
 
-            const postBal = await ethers.provider.getBalance(await relayer.getAddress());
-            console.log("post bal -->", postBal.toString());
-        });
+    describe("Gas costs", () => {
+        it("should refund the exact amount", async () => {});
+
+        it("relayer should not overpay", async () => {});
     });
 });

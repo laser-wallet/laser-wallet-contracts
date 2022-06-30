@@ -20,21 +20,28 @@ const {
 describe("Setup", () => {
     let owner: Signer;
     let ownerAddress: Address;
-    let recoveryOwner: Signer;
-    let recoveryOwnerAddr: Address;
+    let recoveryOwner1: Signer;
+    let recoveryOwner2: Signer;
     let guardians: Address[];
     let _guardian1: Signer;
     let _guardian2: Signer;
+    let relayer: Signer;
+    let recoveryOwners: Address[];
 
     beforeEach(async () => {
         [
             owner,
-            recoveryOwner,
+            recoveryOwner1,
+            recoveryOwner2,
             _guardian1,
-            _guardian2
+            _guardian2,
+            relayer
         ] = await ethers.getSigners();
         ownerAddress = await owner.getAddress();
-        recoveryOwnerAddr = await recoveryOwner.getAddress();
+        recoveryOwners = [
+            await recoveryOwner1.getAddress(),
+            await recoveryOwner2.getAddress()
+        ];
         guardians = [
             await _guardian1.getAddress(),
             await _guardian2.getAddress()
@@ -45,7 +52,7 @@ describe("Setup", () => {
         it("should return correct signer if v is adjusted to 31", async () => {
             const { address, wallet } = await walletSetup(
                 ownerAddress,
-                recoveryOwnerAddr,
+                recoveryOwners,
                 guardians
             );
             const hash = ethers.utils.keccak256("0x1234");
@@ -58,7 +65,7 @@ describe("Setup", () => {
         it("should return correct signer by signing the hash", async () => {
             const { address, wallet } = await walletSetup(
                 ownerAddress,
-                recoveryOwnerAddr,
+                recoveryOwners,
                 guardians
             );
 
@@ -82,7 +89,7 @@ describe("Setup", () => {
         it("should return correct signer by signing typed data", async () => {
             const { address, wallet } = await walletSetup(
                 ownerAddress,
-                recoveryOwnerAddr,
+                recoveryOwners,
                 guardians
             );
 
@@ -111,7 +118,7 @@ describe("Setup", () => {
         it("should correctly split 'v', 'r', and 's' ", async () => {
             const { address, wallet } = await walletSetup(
                 ownerAddress,
-                recoveryOwnerAddr,
+                recoveryOwners,
                 guardians
             );
             const hash = ethers.utils.keccak256("0x1234");
@@ -125,7 +132,7 @@ describe("Setup", () => {
         it("should revert if the recovered signer is address(0)", async () => {
             const { address, wallet } = await walletSetup(
                 ownerAddress,
-                recoveryOwnerAddr,
+                recoveryOwners,
                 guardians
             );
             const hash = ethers.utils.keccak256("0x1234");

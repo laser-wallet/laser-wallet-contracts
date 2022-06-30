@@ -6,25 +6,40 @@ import { Address } from "../types";
 
 const mock = Wallet.createRandom().address;
 const {
-    abi,
+    abi
 } = require("../../artifacts/contracts/LaserWallet.sol/LaserWallet.json");
 
 describe("Handlers", () => {
+    let owner: Signer;
     let ownerAddress: Address;
-    let recoveryOwnerAddr: Address;
+    let recoveryOwner1: Signer;
+    let recoveryOwner2: Signer;
     let guardians: Address[];
-    let entryPoint: Address;
+    let _guardian1: Signer;
+    let _guardian2: Signer;
+    let relayer: Signer;
+    let recoveryOwners: Address[];
     let TokenCaller: Contract;
 
     beforeEach(async () => {
-        const [owner, recoveryOwner, guardian1, guardian2] =
-            await ethers.getSigners();
+        [
+            owner,
+            recoveryOwner1,
+            recoveryOwner2,
+            _guardian1,
+            _guardian2,
+            relayer
+        ] = await ethers.getSigners();
         ownerAddress = await owner.getAddress();
-        recoveryOwnerAddr = await recoveryOwner.getAddress();
-        guardians = [
-            await guardian1.getAddress(),
-            await guardian2.getAddress(),
+        recoveryOwners = [
+            await recoveryOwner1.getAddress(),
+            await recoveryOwner2.getAddress()
         ];
+        guardians = [
+            await _guardian1.getAddress(),
+            await _guardian2.getAddress()
+        ];
+
         const tokenCallerFactory = await ethers.getContractFactory(
             "TokenCaller"
         );
@@ -35,7 +50,7 @@ describe("Handlers", () => {
         it("should support ERC1155 interface", async () => {
             const { address, wallet } = await walletSetup(
                 ownerAddress,
-                recoveryOwnerAddr,
+                recoveryOwners,
                 guardians
             );
             const magicValue = "0x4e2312e0";
@@ -46,7 +61,7 @@ describe("Handlers", () => {
         it("should handle onERC1155Received", async () => {
             const { address, wallet } = await walletSetup(
                 ownerAddress,
-                recoveryOwnerAddr,
+                recoveryOwners,
                 guardians
             );
             //`bytes4(keccak256("onERC1155Received(address,address,uint256,uint256,bytes)"))`
@@ -58,7 +73,7 @@ describe("Handlers", () => {
         it("should handle onERC1155BatchReceived", async () => {
             const { address, wallet } = await walletSetup(
                 ownerAddress,
-                recoveryOwnerAddr,
+                recoveryOwners,
                 guardians
             );
             //`bytes4(keccak256("onERC1155BatchReceived(address,address,uint256[],uint256[],bytes)"))`
@@ -70,7 +85,7 @@ describe("Handlers", () => {
         it("should handle onERC721Received", async () => {
             const { address, wallet } = await walletSetup(
                 ownerAddress,
-                recoveryOwnerAddr,
+                recoveryOwners,
                 guardians
             );
             //bytes4(keccak256("onERC721Received(address,address,uint256,bytes)"))
@@ -82,7 +97,7 @@ describe("Handlers", () => {
         it("should support ERC721 interface", async () => {
             const { address, wallet } = await walletSetup(
                 ownerAddress,
-                recoveryOwnerAddr,
+                recoveryOwners,
                 guardians
             );
             const interfaceId = "0x150b7a02";
@@ -93,7 +108,7 @@ describe("Handlers", () => {
         it("should support ERC165", async () => {
             const { address, wallet } = await walletSetup(
                 ownerAddress,
-                recoveryOwnerAddr,
+                recoveryOwners,
                 guardians
             );
             const interfaceId = "0x01ffc9a7";
@@ -104,7 +119,7 @@ describe("Handlers", () => {
         it("should not support invalid interface", async () => {
             const { address, wallet } = await walletSetup(
                 ownerAddress,
-                recoveryOwnerAddr,
+                recoveryOwners,
                 guardians
             );
             const invalidValue = "0xffffffff";
@@ -115,7 +130,7 @@ describe("Handlers", () => {
         it("should support ERC165 for ERC1155", async () => {
             const { address, wallet } = await walletSetup(
                 ownerAddress,
-                recoveryOwnerAddr,
+                recoveryOwners,
                 guardians
             );
             const interfaceId = "0xd9b67a26";
@@ -127,7 +142,7 @@ describe("Handlers", () => {
         it("should support Laser's magic value", async () => {
             const { address, wallet } = await walletSetup(
                 ownerAddress,
-                recoveryOwnerAddr,
+                recoveryOwners,
                 guardians
             );
             // bytes4(keccak256("I_AM_LASER"))
