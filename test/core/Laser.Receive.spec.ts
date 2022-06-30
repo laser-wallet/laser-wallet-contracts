@@ -8,26 +8,37 @@ const oneEth = ethers.utils.parseEther("1");
 
 const mock = Wallet.createRandom().address;
 const {
-    abi,
+    abi
 } = require("../../artifacts/contracts/LaserWallet.sol/LaserWallet.json");
 
 describe("Receive", () => {
     let owner: Signer;
     let ownerAddress: Address;
-    let recoveryOwner: Signer;
-    let recoveryOwnerAddr: Address;
+    let recoveryOwner1: Signer;
+    let recoveryOwner2: Signer;
     let guardians: Address[];
     let _guardian1: Signer;
     let _guardian2: Signer;
+    let relayer: Signer;
+    let recoveryOwners: Address[];
 
     beforeEach(async () => {
-        [owner, recoveryOwner, _guardian1, _guardian2] =
-            await ethers.getSigners();
+        [
+            owner,
+            recoveryOwner1,
+            recoveryOwner2,
+            _guardian1,
+            _guardian2,
+            relayer
+        ] = await ethers.getSigners();
         ownerAddress = await owner.getAddress();
-        recoveryOwnerAddr = await recoveryOwner.getAddress();
+        recoveryOwners = [
+            await recoveryOwner1.getAddress(),
+            await recoveryOwner2.getAddress()
+        ];
         guardians = [
             await _guardian1.getAddress(),
-            await _guardian2.getAddress(),
+            await _guardian2.getAddress()
         ];
     });
 
@@ -35,13 +46,13 @@ describe("Receive", () => {
         it("should be able to receive eth via send transaction", async () => {
             const { address, wallet } = await walletSetup(
                 ownerAddress,
-                recoveryOwnerAddr,
+                recoveryOwners,
                 guardians
             );
             expect(
                 await owner.sendTransaction({
                     to: wallet.address,
-                    value: oneEth,
+                    value: oneEth
                 })
             )
                 .to.emit(wallet, "SafeReceived")
@@ -53,7 +64,7 @@ describe("Receive", () => {
         it("should be able to receive eth via a contract call", async () => {
             const { address, wallet } = await walletSetup(
                 ownerAddress,
-                recoveryOwnerAddr,
+                recoveryOwners,
                 guardians
             );
             const initialBalance = await ethers.provider.getBalance(
@@ -65,7 +76,7 @@ describe("Receive", () => {
             // Funding the caller.
             await owner.sendTransaction({
                 to: caller.address,
-                value: oneEth,
+                value: oneEth
             });
             // Executing the transaction from the caller.
             await caller._call(address, oneEth, "0x");
@@ -73,7 +84,6 @@ describe("Receive", () => {
                 wallet.address
             );
             expect(postBalance).to.equal(oneEth);
-            
         });
     });
 });

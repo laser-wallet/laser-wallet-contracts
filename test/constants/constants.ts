@@ -13,6 +13,7 @@ export const recoveryOwnerWallet = new ethers.Wallet(recoveryOwnerPrivateKey);
 // Hardhat account 2
 const guardianPrivateKey =
     "0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a";
+
 export const guardianWallet = new ethers.Wallet(guardianPrivateKey);
 
 export const twoEth = ethers.utils.parseEther("2");

@@ -6,7 +6,7 @@ import { encodeFunctionData } from "../utils";
 
 const mock = ethers.Wallet.createRandom().address;
 const {
-    abi,
+    abi
 } = require("../../artifacts/contracts/LaserWallet.sol/LaserWallet.json");
 
 describe("Proxy Factory", () => {
@@ -19,17 +19,26 @@ describe("Proxy Factory", () => {
         const _singleton = await singletonFactory.deploy();
         singleton = _singleton.address;
         _factory = await ethers.getContractFactory("LaserProxyFactory");
-        const [_owner, _guardian1, _guardian2, _recoveryOwner] =
-            await ethers.getSigners();
+        const [
+            _owner,
+            recoveryOwner1,
+            recoveryOwner2,
+            _guardian1,
+            _guardian2,
+            _recoveryOwner
+        ] = await ethers.getSigners();
         const owner = await _owner.getAddress();
-        const recoveryOwner = await _recoveryOwner.getAddress();
+        const recoveryOwners = [
+            await recoveryOwner1.getAddress(),
+            await recoveryOwner2.getAddress()
+        ];
         const guardians = [
             await _guardian1.getAddress(),
-            await _guardian2.getAddress(),
+            await _guardian2.getAddress()
         ];
         initializer = encodeFunctionData(abi, "init", [
             owner,
-            recoveryOwner,
+            recoveryOwners,
             guardians
         ]);
     });
@@ -66,7 +75,7 @@ describe("Proxy Factory", () => {
             const nonce = 1;
             const precompute = ethers.utils.getContractAddress({
                 from: from,
-                nonce: nonce,
+                nonce: nonce
             });
 
             const tx = await factory.createProxy(initializer);

@@ -81,7 +81,7 @@ export async function generateTransaction(): Promise<Transaction> {
         nonce: 0,
         maxFeePerGas: _maxFeePerGas,
         maxPriorityFeePerGas: _maxPriorityFeePerGas,
-        gasTip: 30000,
+        gasTip: 25000,
         signatures: "0x"
     };
 }
