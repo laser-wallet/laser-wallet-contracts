@@ -78,7 +78,7 @@ describe("Setup", () => {
                 tx.nonce,
                 tx.maxFeePerGas,
                 tx.maxPriorityFeePerGas,
-                tx.gasTip
+                tx.gasLimit
             );
             const sig = await sign(owner, hash);
             const [r, s, v] = await wallet.splitSigs(sig, 0);
@@ -108,7 +108,7 @@ describe("Setup", () => {
                 tx.nonce,
                 tx.maxFeePerGas,
                 tx.maxPriorityFeePerGas,
-                tx.gasTip
+                tx.gasLimit
             );
             const [r, s, v] = await wallet.splitSigs(sig, 0);
             const signer = await wallet.returnSigner(hash, r, s, v);

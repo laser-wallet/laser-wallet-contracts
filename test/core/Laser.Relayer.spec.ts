@@ -55,8 +55,57 @@ describe("Setup", () => {
     });
 
     describe("Gas costs", () => {
-        it("should refund the exact amount", async () => {});
+        it("should refund the exact amount", async () => {
+            const { address, wallet } = await walletSetup(
+                ownerAddress,
+                recoveryOwners,
+                guardians
+            );
+            const tx = await generateTransaction();
+            tx.to = address;
+            tx.callData = "0x";
+            tx.value = 10000;
+            const hash = await getHash(wallet, tx);
+            tx.signatures = await sign(owner, hash);
+            tx.gasLimit = 100000;
+            await owner.sendTransaction({to: address, value: ethers.utils.parseEther("1000")})
+            const relayerAddress = await relayer.getAddress();
+            tx.maxPriorityFeePerGas = tx.maxFeePerGas;
 
-        it("relayer should not overpay", async () => {});
+            for (let i = 0; i<5; i++) {
+                tx.nonce = i;
+                const initialBalance = await ethers.provider.getBalance(relayerAddress);
+                const transaction = await wallet.connect(relayer).exec(
+                    tx.to, 
+                    tx.value, 
+                    tx.callData, 
+                    tx.nonce, 
+                    tx.maxFeePerGas, 
+                    tx.maxPriorityFeePerGas, 
+                    tx.gasLimit, 
+                    tx.signatures, 
+                    {
+                        gasLimit: 100000,
+                        gasPrice: tx.maxFeePerGas
+                    }
+                ); 
+                const receipt = await transaction.wait();
+                const postBalance = await ethers.provider.getBalance(relayerAddress);
+                const total = initialBalance.sub(postBalance);
+            }
+        });
+
+        it("relayer should not overpay", async () => {
+            const { address, wallet } = await walletSetup(
+                ownerAddress,
+                recoveryOwners,
+                guardians
+            );
+
+            console.log(await wallet.getRecoveryOwners());
+
+        });
     });
 });
+
+

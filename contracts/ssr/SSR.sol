@@ -8,6 +8,8 @@ import "../interfaces/IERC165.sol";
 import "../interfaces/ISSR.sol";
 import "../utils/Utils.sol";
 
+import "hardhat/console.sol";
+
 /**
  * @title SSR - Sovereign Social Recovery
  * @notice New wallet recovery mechanism.
@@ -17,17 +19,19 @@ contract SSR is ISSR, SelfAuthorized, Owner, Utils {
     ///@dev pointer address for the nested mapping.
     address internal constant pointer = address(0x1);
 
+    uint256 internal recoveryOwnersCount;
+
     uint256 internal guardianCount;
 
     uint256 internal timeLock;
 
     bool public isLocked;
 
-    ///@dev If guardians are blocked, they cannot do any transaction.
+    ///@dev If guardians are locked, they cannot do any transaction.
     ///This is to completely prevent from guardians misbehaving.
     bool public guardiansLocked;
 
-    mapping(address => uint256) internal recoveryOwners;
+    mapping(uint256 => RecoverySettings) internal recoveryOwners;
 
     mapping(address => address) internal guardians;
 
@@ -94,8 +98,10 @@ contract SSR is ISSR, SelfAuthorized, Owner, Utils {
             newGuardian == owner ||
             guardians[newGuardian] != address(0)
         ) revert SSR__addGuardian__invalidAddress();
-        if (!IERC165(newGuardian).supportsInterface(0x1626ba7e))
+
+        if (!IERC165(newGuardian).supportsInterface(0x1626ba7e)) {
             revert SSR__addGuardian__invalidAddress();
+        }
 
         guardians[newGuardian] = guardians[pointer];
         guardians[pointer] = newGuardian;
@@ -146,6 +152,24 @@ contract SSR is ISSR, SelfAuthorized, Owner, Utils {
     }
 
     /**
+     * @return Array of the recovery owners in struct format 'RecoverySettings'.
+     */
+    function getRecoveryOwners()
+        external
+        view
+        returns (RecoverySettings[] memory)
+    {
+        RecoverySettings[] memory recoveryOwnersArray = new RecoverySettings[](
+            recoveryOwnersCount
+        );
+
+        for (uint256 i = 0; i < recoveryOwnersCount; i++) {
+            recoveryOwnersArray[i] = recoveryOwners[i];
+        }
+        return recoveryOwnersArray;
+    }
+
+    /**
      * @return Array of guardians of this.
      */
     function getGuardians() public view returns (address[] memory) {
@@ -161,17 +185,17 @@ contract SSR is ISSR, SelfAuthorized, Owner, Utils {
         return guardiansArray;
     }
 
-    function initRecoveryOwners(address[] calldata _recoveryOwners)
-        internal
-        view
-    {
+    /**
+     * @dev Inits the recovery owners.
+     * @param _recoveryOwners Array of ricovery owners.
+     * @notice There needs to be at least 2 recovery owners.
+     */
+    function initRecoveryOwners(address[] calldata _recoveryOwners) internal {
         uint256 recoveryOwnersLength = _recoveryOwners.length;
         // There needs to be at least 2 recovery owners.
         if (recoveryOwnersLength < 2) {
-            revert SSR_initRecoveryOwners__underflow();
+            revert SSR__initRecoveryOwners__underflow();
         }
-
-        address currentRecoveryOwner = pointer;
 
         for (uint256 i = 0; i < recoveryOwnersLength; ) {
             address recoveryOwner = _recoveryOwners[i];
@@ -179,14 +203,24 @@ contract SSR is ISSR, SelfAuthorized, Owner, Utils {
             if (recoveryOwner.code.length > 0) {
                 // If the recovery owner is a smart contract wallet, it needs to support EIP1271.
                 if (!IERC165(recoveryOwner).supportsInterface(0x1626ba7e)) {
-                    revert SSR__initGuardians__invalidAddress();
+                    revert SSR__initRecoveryOwners__invalidAddress();
                 }
             }
+
+            if (recoveryOwner == address(0) || recoveryOwner == owner) {
+                revert SSR__initRecoveryOwners__invalidAddress();
+            }
+
+            recoveryOwners[i] = RecoverySettings({
+                recoveryOwner: recoveryOwner,
+                ownerIndex: i,
+                time: i * 1 weeks
+            });
             unchecked {
                 ++i;
             }
-            // recoveryOwners[currentRecoveryOwner] = recoveryOwner;
         }
+        recoveryOwnersCount = recoveryOwnersLength;
     }
 
     /**

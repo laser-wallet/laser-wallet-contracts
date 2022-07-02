@@ -8,6 +8,7 @@ import "hardhat-gas-reporter";
 import "hardhat-storage-layout";
 import "hardhat-deploy";
 import dotenv from "dotenv";
+import { tasks } from "hardhat";
 
 dotenv.config();
 
@@ -17,6 +18,7 @@ const DEPLOYER_PRIVATE_KEY = process.env.DEPLOYER_PRIVATE_KEY;
 const MAINNET_URL = `https://mainnet.infura.io/v3/${INFURA_KEY}`;
 const GOERLI_URL = `https://goerli.infura.io/v3/${INFURA_KEY}`;
 const RINKEBY_URL = `https://rinkeby.infura.io/v3/${INFURA_KEY}`;
+
 
 const config: HardhatUserConfig = {
     solidity: {
