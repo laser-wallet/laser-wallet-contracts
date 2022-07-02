@@ -1,14 +1,12 @@
 # Laser Wallet Contracts
 
-## Laser Wallet is a non-custodial smart contract based mobile wallet for Ethereum mainnet and rollups. 
+## Laser Wallet is a non-custodial smart contract wallet made for the EVM.
 
 ### It implements the following features:
 
-### 1. Sovereign Social Recovery: A new recovery mechanism that abstracts away the seed phrase while remaining non-custodial. 
+### 1. Smart Social Recovery: A new recovery mechanism that abstracts away the seed phrase while remaining non-custodial. 
 
-### 2. EIP-4337: Account abstraction, allows for the smart contract wallet to behave like a regular EOA, while providing all the benefits of a smart contract. 
-
-### 3. Extra security features: It allows the user to use multi-sig or spending limit.
+### 2. It is primarily made so the transactions are sent through a relayer, so it abstracts away the need to pay gas through an EOA.
 
 ## Acknowledgements
 
