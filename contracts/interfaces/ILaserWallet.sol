@@ -7,13 +7,18 @@ pragma solidity 0.8.15;
  * @notice Has all the external functions, structs, events and errors for LaserWallet.sol.
  */
 interface ILaserWallet {
+    struct Transaction {
+        address to;
+        uint256 value;
+        bytes callData;
+    }
+
     event Received(address indexed sender, uint256 amount);
     event Setup(address owner, address[] recoveryOwners, address[] guardians);
     event ExecSuccess(address to, uint256 value, uint256 nonce);
     event ExecFailure(address to, uint256 value, uint256 nonce);
 
     ///@dev exec() custom errors.
-    error LW__exec__incorrectGasLimit();
     error LW__exec__invalidNonce();
     error LW__exec__refundFailure();
 
@@ -24,12 +29,6 @@ interface ILaserWallet {
 
     ///@dev isValidSignature() Laser custom error.
     error LaserWallet__invalidSignature();
-
-    struct Transaction {
-        address to;
-        uint256 value;
-        bytes callData;
-    }
 
     /**
      * @dev Setup function, sets initial storage of contract.
@@ -69,6 +68,12 @@ interface ILaserWallet {
         uint256 gasLimit,
         bytes calldata signatures
     ) external;
+
+    /**
+     * @dev Executes a series of generic transactions. It can only be called from exec.
+     * @param transactions Basic transactions array (to, value, calldata).
+     */
+    function multiCall(Transaction[] calldata transactions) external;
 
     /**
      * @dev Simulates a transaction. This should be called from the relayer, to verify that the transaction will not revert.
