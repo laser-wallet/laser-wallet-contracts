@@ -8,6 +8,7 @@ pragma solidity 0.8.15;
 interface ISSR {
     ///@dev Struct for the recovery owner's chain.
     struct RecoverySettings {
+        address recoveryOwner;
         uint256 ownerIndex;
         uint256 time;
     }
@@ -37,8 +38,8 @@ interface ISSR {
     error SSR__removeGuardian__underflow();
 
     ///@dev initRecoveryOwners() custom error.
-    error SSR_initRecoveryOwners__underflow();
-    error SSR_initRecoveryOwners__invalidAddress();
+    error SSR__initRecoveryOwners__underflow();
+    error SSR__initRecoveryOwners__invalidAddress();
 
     ///@dev initGuardians() custom errors.
     error SSR__initGuardians__zeroGuardians();
@@ -123,6 +124,14 @@ interface ISSR {
      * @return Boolean if the address is a guardian of the current wallet.
      */
     function isGuardian(address guardian) external view returns (bool);
+
+    /**
+     * @return Array of the recovery owners in struct format 'RecoverySettings'.
+     */
+    function getRecoveryOwners()
+        external
+        view
+        returns (RecoverySettings[] memory);
 
     /**
      * @return Array of guardians of this.

@@ -13,7 +13,7 @@ interface ILaserWallet {
     event ExecFailure(address to, uint256 value, uint256 nonce);
 
     ///@dev exec() custom errors.
-    error LW__exec__gasTipOverflow();
+    error LW__exec__incorrectGasLimit();
     error LW__exec__invalidNonce();
     error LW__exec__refundFailure();
 
@@ -42,6 +42,7 @@ interface ILaserWallet {
         address owner,
         address[] calldata recoveryOwners,
         address[] calldata guardians
+        // ropsten, kovan, sepoia.
     ) external;
 
     /**
@@ -52,7 +53,11 @@ interface ILaserWallet {
      * @param _nonce Unsigned integer to avoid replay attacks. It needs to match the current wallet's nonce.
      * @param maxFeePerGas Maximum amount that the user is willing to pay for a unit of gas.
      * @param maxPriorityFeePerGas Miner's tip.
+     * @param gasLimit The transaction's gas limit. It needs to be the same as the actual transaction gas limit.
      * @param signatures The signatures of the transaction.
+     * @notice If 'gasLimit' does not match the actual gas limit of the transaction, the relayer can incur losses.
+     * It is the relayer's responsability to make sure that they are the same, the user does not get affected if a mistake is made.
+     * We prefer to prioritize the user's safety (not overpay) over the relayer.
      */
     function exec(
         address to,
@@ -61,7 +66,7 @@ interface ILaserWallet {
         uint256 _nonce,
         uint256 maxFeePerGas,
         uint256 maxPriorityFeePerGas,
-        uint256 gasTip,
+        uint256 gasLimit,
         bytes calldata signatures
     ) external;
 
@@ -77,7 +82,7 @@ interface ILaserWallet {
         uint256 _nonce,
         uint256 maxFeePerGas,
         uint256 maxPriorityFeePerGas,
-        uint256 gasTip,
+        uint256 gasLimit,
         bytes calldata signatures
     ) external returns (uint256 totalGas);
 
@@ -91,7 +96,7 @@ interface ILaserWallet {
         uint256 _nonce,
         uint256 maxFeePerGas,
         uint256 maxPriorityFeePerGas,
-        uint256 gasTip
+        uint256 gasLimit
     ) external view returns (bytes32);
 
     /**

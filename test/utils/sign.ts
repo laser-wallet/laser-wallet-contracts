@@ -15,7 +15,7 @@ export async function signTypedData(
         nonce: transaction.nonce, 
         maxFeePerGas: transaction.maxFeePerGas, 
         maxPriorityFeePerGas: transaction.maxPriorityFeePerGas, 
-        gasTip: transaction.gasTip
+        gasLimit: transaction.gasLimit
     };
     const signature = await signer._signTypedData(domain, types, laserTypes);
     return signature;

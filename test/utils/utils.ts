@@ -27,7 +27,7 @@ export async function getHash(
         transaction.nonce,
         transaction.maxFeePerGas,
         transaction.maxPriorityFeePerGas,
-        transaction.gasTip
+        transaction.gasLimit
     );
     return hash;
 }
@@ -45,10 +45,10 @@ export async function sendTx(
         transaction.nonce,
         transaction.maxFeePerGas,
         transaction.maxPriorityFeePerGas,
-        transaction.gasTip,
+        transaction.gasLimit,
         transaction.signatures
         , {
-            gasLimit: 120000
+            gasLimit: transaction.gasLimit
         }
     );
     } else {
@@ -59,10 +59,10 @@ export async function sendTx(
         transaction.nonce,
         transaction.maxFeePerGas,
         transaction.maxPriorityFeePerGas,
-        transaction.gasTip,
+        transaction.gasLimit,
         transaction.signatures
         , {
-            gasLimit: 120000
+            gasLimit: transaction.gasLimit
         }
     );
     }
@@ -81,7 +81,7 @@ export async function generateTransaction(): Promise<Transaction> {
         nonce: 0,
         maxFeePerGas: _maxFeePerGas,
         maxPriorityFeePerGas: _maxPriorityFeePerGas,
-        gasTip: 25000,
+        gasLimit: 100000,
         signatures: "0x"
     };
 }

@@ -6,6 +6,8 @@ import "./handlers/Handler.sol";
 import "./interfaces/ILaserWallet.sol";
 import "./ssr/SSR.sol";
 
+import "hardhat/console.sol";
+
 /**
  * @title LaserWallet - EVM based smart contract wallet. Implementes smart social recovery mechanism.
  * @author Rodrigo Herrera I.
@@ -17,7 +19,7 @@ contract LaserWallet is Singleton, SSR, Handler, ILaserWallet {
         keccak256("EIP712Domain(uint256 chainId,address verifyingContract)");
     bytes32 private constant LASER_TYPE_STRUCTURE =
         keccak256(
-            "LaserOperation(address to,uint256 value,bytes callData,uint256 nonce,uint256 maxFeePerGas,uint256 maxPriorityFeePerGas,uint256 gasTip)"
+            "LaserOperation(address to,uint256 value,bytes callData,uint256 nonce,uint256 maxFeePerGas,uint256 maxPriorityFeePerGas,uint256 gasLimit)"
         );
     bytes4 private constant EIP1271_MAGIC_VALUE =
         bytes4(keccak256("isValidSignature(bytes32,bytes)"));
@@ -61,7 +63,11 @@ contract LaserWallet is Singleton, SSR, Handler, ILaserWallet {
      * @param _nonce Unsigned integer to avoid replay attacks. It needs to match the current wallet's nonce.
      * @param maxFeePerGas Maximum amount that the user is willing to pay for a unit of gas.
      * @param maxPriorityFeePerGas Miner's tip.
+     * @param gasLimit The transaction's gas limit. It needs to be the same as the actual transaction gas limit.
      * @param signatures The signatures of the transaction.
+     * @notice If 'gasLimit' does not match the actual gas limit of the transaction, the relayer can incur losses.
+     * It is the relayer's responsability to make sure that they are the same, the user does not get affected if a mistake is made.
+     * We prefer to prioritize the user's safety (not overpay) over the relayer.
      */
     function exec(
         address to,
@@ -70,15 +76,9 @@ contract LaserWallet is Singleton, SSR, Handler, ILaserWallet {
         uint256 _nonce,
         uint256 maxFeePerGas,
         uint256 maxPriorityFeePerGas,
-        uint256 gasTip,
+        uint256 gasLimit,
         bytes calldata signatures
     ) external {
-        uint256 maximumGasTip = 21000 + msg.data.length * 16;
-        // gasTip cannot exceed maximumGasTip.
-        if (gasTip > maximumGasTip) revert LW__exec__gasTipOverflow();
-
-        uint256 initialGas = gasleft();
-
         // We immediately increase the nonce to avoid replay attacks.
         unchecked {
             // Won't overflow ...
@@ -94,12 +94,13 @@ contract LaserWallet is Singleton, SSR, Handler, ILaserWallet {
             _nonce,
             maxFeePerGas,
             maxPriorityFeePerGas,
-            gasTip,
+            gasLimit,
             signatures
         );
 
         // Once we verified that the transaction is correct, we execute the main call.
-        bool success = _call(to, value, callData, gasleft());
+        // We subtract 10_000 to have enough gas to complete the function.
+        bool success = _call(to, value, callData, gasleft() - 10000);
 
         // We do not revert the call if it fails, because the wallet needs to pay the relayer even in case of failure.
         if (success) emit ExecSuccess(to, value, nonce);
@@ -111,10 +112,12 @@ contract LaserWallet is Singleton, SSR, Handler, ILaserWallet {
             maxPriorityFeePerGas
         );
 
-        // We refund the relayer for sending the transaction + tip.
-        // The gasTip can be the amount of gas used for the initial callData call. (In theory no real tip).
-        uint256 refundAmount = (initialGas - gasleft() + gasTip + 3000) *
-            gasPrice;
+        // gasUsed is the total amount of gas consumed for this transaction.
+        // This is contemplating the initial callData cost, the main transaction,
+        // and we add the surplus for what is left (refund the relayer).
+        uint256 gasUsed = gasLimit - gasleft() + 7000;
+
+        uint256 refundAmount = gasUsed * gasPrice;
 
         // We refund the relayer ...
         success = _call(msg.sender, refundAmount, new bytes(0), gasleft());
@@ -160,10 +163,9 @@ contract LaserWallet is Singleton, SSR, Handler, ILaserWallet {
         uint256 _nonce,
         uint256 maxFeePerGas,
         uint256 maxPriorityFeePerGas,
-        uint256 gasTip,
+        uint256 gasLimit,
         bytes calldata signatures
     ) external returns (uint256 totalGas) {
-        uint256 initialGas = gasleft();
         if (nonce++ != _nonce) revert LW__simulateTransaction__invalidNonce();
         verifyTransaction(
             to,
@@ -172,7 +174,7 @@ contract LaserWallet is Singleton, SSR, Handler, ILaserWallet {
             _nonce,
             maxFeePerGas,
             maxPriorityFeePerGas,
-            gasTip,
+            gasLimit,
             signatures
         );
         bool success = _call(to, value, callData, gasleft());
@@ -181,32 +183,11 @@ contract LaserWallet is Singleton, SSR, Handler, ILaserWallet {
             maxFeePerGas,
             maxPriorityFeePerGas
         );
-        uint256 gasUsed = initialGas - gasleft();
-        uint256 refundAmount = (gasUsed + gasTip) * gasPrice;
+        uint256 gasUsed = gasLimit - gasleft() + 7000;
+        uint256 refundAmount = gasUsed * gasPrice;
         success = _call(msg.sender, refundAmount, new bytes(0), gasleft());
         if (!success) revert LW__simulateTransaction__refundFailure();
-        totalGas = initialGas - gasleft();
-        require(
-            msg.sender == address(0),
-            "Must be called off-chain from address zero."
-        );
-    }
-
-    /**
-     * @dev Calculates the gas consumed for the initial calldata.
-     * @notice Needs to be called off-chain from  address zero.
-     */
-    function calculateCallDataCost(
-        address to,
-        uint256 value,
-        bytes calldata callData,
-        uint256 _nonce,
-        uint256 maxFeePerGas,
-        uint256 maxPriorityFeePerGas,
-        uint256 gasTip,
-        bytes calldata signatures
-    ) external returns (uint256 totalGas) {
-        totalGas = gasleft();
+        totalGas = gasLimit - gasleft();
         require(
             msg.sender == address(0),
             "Must be called off-chain from address zero."
@@ -223,7 +204,7 @@ contract LaserWallet is Singleton, SSR, Handler, ILaserWallet {
         uint256 _nonce,
         uint256 maxFeePerGas,
         uint256 maxPriorityFeePerGas,
-        uint256 gasTip
+        uint256 gasLimit
     ) external view returns (bytes32) {
         return
             keccak256(
@@ -234,7 +215,7 @@ contract LaserWallet is Singleton, SSR, Handler, ILaserWallet {
                     _nonce,
                     maxFeePerGas,
                     maxPriorityFeePerGas,
-                    gasTip
+                    gasLimit
                 )
             );
     }
@@ -286,7 +267,7 @@ contract LaserWallet is Singleton, SSR, Handler, ILaserWallet {
         uint256 _nonce,
         uint256 maxFeePerGas,
         uint256 maxPriorityFeePerGas,
-        uint256 gasTip,
+        uint256 gasLimit,
         bytes calldata signatures
     ) internal view {
         // We encode the transaction data.
@@ -297,7 +278,7 @@ contract LaserWallet is Singleton, SSR, Handler, ILaserWallet {
             _nonce,
             maxFeePerGas,
             maxPriorityFeePerGas,
-            gasTip
+            gasLimit
         );
 
         // Now we hash it ...
@@ -346,7 +327,7 @@ contract LaserWallet is Singleton, SSR, Handler, ILaserWallet {
         uint256 _nonce,
         uint256 maxFeePerGas,
         uint256 maxPriorityFeePerGas,
-        uint256 gasTip
+        uint256 gasLimit
     ) internal view returns (bytes memory) {
         bytes32 userOperationHash = keccak256(
             abi.encode(
@@ -357,7 +338,7 @@ contract LaserWallet is Singleton, SSR, Handler, ILaserWallet {
                 _nonce,
                 maxFeePerGas,
                 maxPriorityFeePerGas,
-                gasTip
+                gasLimit
             )
         );
 
