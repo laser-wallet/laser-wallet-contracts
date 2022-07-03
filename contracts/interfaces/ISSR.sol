@@ -49,28 +49,8 @@ interface ISSR {
     error SSR__access__guardiansBlocked();
     error SSR__access__walletLocked();
 
-    ///@dev verifyOwner() custom errors.
-    error SSR__verifyOwner__invalidSignature();
-    error SSR__verifyOwner__notOwner();
-
-    ///@dev verifyGuardian() custom errors.
-    error SSR__verifyGuardian__invalidSignature();
-    error SSR__verifyGurdian__notGuardian();
-
-    ///@dev verifyOwnerAndGuardian() custom errors.
-    error SSR__verifyOwnerAndGuardian__invalidSignature();
-    error SSR__verifyOwnerAndGuardian__notOwner();
-    error SSR__verifyOwnerAndGuardian__notGuardian();
-
-    ///@dev verifyRecoveryOwnerAndGurdian() custom errors.
-    error SSR__verifyRecoveryOwnerAndGurdian__invalidSignature();
-    error SSR__verifyRecoveryOwnerAndGurdian__notRecoveryOwner();
-    error SSR__verifyRecoveryOwnerAndGurdian__notGuardian();
-
-    ///@dev verifyOwnerAndRecoveryOwner() custom errors.
-    error SSR__verifyOwnerAndRecoveryOwner__invalidSignature();
-    error SSR__verifyOwnerAndRecoveryOwner__notOwner();
-    error SSR__verifyOwnerAndRecoveryOwner__notRecoveryOwner();
+    ///@dev validateRecoveryOwner() custom error.
+    error SSR__validateRecoveryOwner__notAuthorized();
 
     /**
      * @dev Locks the wallet. Can only be called by a guardian.

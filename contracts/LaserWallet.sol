@@ -235,6 +235,9 @@ contract LaserWallet is Singleton, SSR, Handler, ILaserWallet {
         uint8 v;
         (r, s, v) = splitSigs(signature, 0);
         address recovered = returnSigner(hash, r, s, v, signature);
+
+        // The guardians and recovery owners should not be able to sign transactions that are out of scope from this wallet.
+        // Only the owner should be able to sign external bytes.
         if (recovered != owner) revert LaserWallet__invalidSignature();
         else return EIP1271_MAGIC_VALUE;
     }
@@ -286,7 +289,7 @@ contract LaserWallet is Singleton, SSR, Handler, ILaserWallet {
         // We get the actual function selector to determine access ...
         bytes4 funcSelector = bytes4(callData);
 
-        // access() checks if the wallet is locked for the owner or guardians ...
+        // access() checks if the wallet is locked for the owner or guardians and returns who has access ...
         Access _access = access(funcSelector);
 
         // We verify that the signatures are correct depending on the transaction type ...
@@ -304,6 +307,8 @@ contract LaserWallet is Singleton, SSR, Handler, ILaserWallet {
         bytes32 dataHash,
         bytes calldata signatures
     ) internal view {
+        // If it is the owner or guardian, then only 1 signature is required.
+        // For all other operations, 2 signatures are required.
         uint256 requiredSignatures = _access == Access.Owner ||
             _access == Access.Guardian
             ? 1
@@ -337,7 +342,9 @@ contract LaserWallet is Singleton, SSR, Handler, ILaserWallet {
                 }
             } else if (_access == Access.OwnerAndGuardian) {
                 // If access == owner and guardian, the first signer needs to be the owner.
+
                 if (i == 0) {
+                    // The first signer needs to be the owner.
                     if (owner != signer) {
                         revert LW__verifySignatures__notOwner();
                     }
@@ -351,12 +358,37 @@ contract LaserWallet is Singleton, SSR, Handler, ILaserWallet {
                 // If access == recovery owner and guardian, the first signer needs to be the recovery owner.
 
                 // We do not need further checks, they were done in 'access'.
-                if (i == 0) {}
+                if (i == 0) {
+                    // The first signer needs to be a recovery owner.
+
+                    // validateRecoveryOwner() handles all the necessary checks.
+                    validateRecoveryOwner(signer);
+                } else {
+                    // The second signer needs to be a guardian.
+                    if (guardians[signer] == address(0)) {
+                        revert LW__verifySignatures__notGuardian();
+                    }
+                }
+            } else if (_access == Access.OwnerAndRecoveryOwner) {
+                // If access == owner and recovery owner, the first signer needs to be the owner.
+
+                if (i == 0) {
+                    if (owner != signer) {
+                        revert LW__verifySignatures__notOwner();
+                    }
+                } else {
+                    // The second signer needs to be the recovery owner.
+
+                    // validateRecoveryOwner() handles all the necessary checks.
+                    validateRecoveryOwner(signer);
+                }
             } else {
+                // This else statement should never reach.
                 revert();
             }
 
             unchecked {
+                // Won't overflow ...
                 ++i;
             }
         }

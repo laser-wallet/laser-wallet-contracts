@@ -61,22 +61,23 @@ describe("Setup", () => {
                 recoveryOwners,
                 guardians
             );
-            const tx = await generateTransaction();
-            tx.to = address;
-            tx.callData = "0x";
-            tx.value = 10000;
-            const hash = await getHash(wallet, tx);
-            tx.signatures = await sign(owner, hash);
-            tx.gasLimit = 100000;
+
             await owner.sendTransaction({
                 to: address,
                 value: ethers.utils.parseEther("1000"),
             });
             const relayerAddress = await relayer.getAddress();
-            tx.maxPriorityFeePerGas = tx.maxFeePerGas;
 
             for (let i = 0; i < 5; i++) {
+                const tx = await generateTransaction();
+                tx.maxPriorityFeePerGas = tx.maxFeePerGas;
+                tx.to = address;
+                tx.callData = "0x";
+                tx.value = 10000;
+                tx.gasLimit = 100000;
                 tx.nonce = i;
+                const hash = await getHash(wallet, tx);
+                tx.signatures = await sign(owner, hash);
                 const initialBalance = await ethers.provider.getBalance(
                     relayerAddress
                 );
