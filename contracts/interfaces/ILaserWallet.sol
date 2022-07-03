@@ -30,6 +30,11 @@ interface ILaserWallet {
     ///@dev isValidSignature() Laser custom error.
     error LaserWallet__invalidSignature();
 
+    ///@dev verifySignatures() custom errors.
+    error LW__verifySignatures__invalidSignatureLength();
+    error LW__verifySignatures__notOwner();
+    error LW__verifySignatures__notGuardian();
+
     /**
      * @dev Setup function, sets initial storage of contract.
      * @param owner The owner of the wallet.

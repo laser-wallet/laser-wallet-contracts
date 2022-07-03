@@ -8,7 +8,7 @@ const oneEth = ethers.utils.parseEther("1");
 
 const mock = Wallet.createRandom().address;
 const {
-    abi
+    abi,
 } = require("../../artifacts/contracts/LaserWallet.sol/LaserWallet.json");
 
 describe("Receive", () => {
@@ -29,16 +29,16 @@ describe("Receive", () => {
             recoveryOwner2,
             _guardian1,
             _guardian2,
-            relayer
+            relayer,
         ] = await ethers.getSigners();
         ownerAddress = await owner.getAddress();
         recoveryOwners = [
             await recoveryOwner1.getAddress(),
-            await recoveryOwner2.getAddress()
+            await recoveryOwner2.getAddress(),
         ];
         guardians = [
             await _guardian1.getAddress(),
-            await _guardian2.getAddress()
+            await _guardian2.getAddress(),
         ];
     });
 
@@ -52,7 +52,7 @@ describe("Receive", () => {
             expect(
                 await owner.sendTransaction({
                     to: wallet.address,
-                    value: oneEth
+                    value: oneEth,
                 })
             )
                 .to.emit(wallet, "SafeReceived")
@@ -76,7 +76,7 @@ describe("Receive", () => {
             // Funding the caller.
             await owner.sendTransaction({
                 to: caller.address,
-                value: oneEth
+                value: oneEth,
             });
             // Executing the transaction from the caller.
             await caller._call(address, oneEth, "0x");

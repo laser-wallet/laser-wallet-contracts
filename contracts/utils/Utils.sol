@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 pragma solidity 0.8.15;
 
+import "../interfaces/IUtils.sol";
+import "../interfaces/IEIP1271.sol";
+
 /**
  * @title Utils - Helper functions for LaserWallet.
  */
-contract Utils {
-    error Utils__InvalidSignature();
-
+contract Utils is IUtils {
     /**
      * @dev Returns the signer of the hash.
      * @param dataHash The hash that was signed.
@@ -15,9 +16,28 @@ contract Utils {
         bytes32 dataHash,
         bytes32 r,
         bytes32 s,
-        uint8 v
-    ) public pure returns (address signer) {
-        if (v > 30) {
+        uint8 v,
+        bytes memory signatures
+    ) public view returns (address signer) {
+        if (v == 0) {
+            // If v is 0, then it is a contract signature.
+
+            // The address of the contract is encoded into r.
+            signer = address(uint160(uint256(r)));
+
+            // The actual signature.
+            bytes memory contractSignature;
+            assembly {
+                contractSignature := add(add(signatures, s), 0x20)
+            }
+            require(
+                IEIP1271(signer).isValidSignature(
+                    dataHash,
+                    contractSignature
+                ) == 0x1626ba7e,
+                "incorrect contract signature"
+            );
+        } else if (v > 30) {
             signer = ecrecover(
                 keccak256(
                     abi.encodePacked(
@@ -32,15 +52,17 @@ contract Utils {
         } else {
             signer = ecrecover(dataHash, v, r, s);
         }
-        if (signer == address(0)) revert Utils__InvalidSignature();
+        if (signer == address(0)) {
+            revert Utils__returnSigner__invalidSignature();
+        }
     }
 
     /**
      * @dev Returns the r, s and v of the signature.
-     * @param signature Signature.
+     * @param signatures Signature.
      * @param pos Which signature to read.
      */
-    function splitSigs(bytes memory signature, uint256 pos)
+    function splitSigs(bytes memory signatures, uint256 pos)
         public
         pure
         returns (
@@ -51,9 +73,9 @@ contract Utils {
     {
         assembly {
             let sigPos := mul(0x41, pos)
-            r := mload(add(signature, add(sigPos, 0x20)))
-            s := mload(add(signature, add(sigPos, 0x40)))
-            v := byte(0, mload(add(signature, add(sigPos, 0x60))))
+            r := mload(add(signatures, add(sigPos, 0x20)))
+            s := mload(add(signatures, add(sigPos, 0x40)))
+            v := byte(0, mload(add(signatures, add(sigPos, 0x60))))
         }
     }
 

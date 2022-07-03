@@ -7,7 +7,7 @@ import {
     factorySetup,
     getHash,
     generateTransaction,
-    sendTx
+    sendTx,
 } from "../utils";
 import { Address } from "../types";
 import { addrZero } from "../constants/constants";
@@ -16,7 +16,7 @@ import { sign } from "../utils/sign";
 
 const mock = ethers.Wallet.createRandom().address;
 const {
-    abi
+    abi,
 } = require("../../artifacts/contracts/LaserWallet.sol/LaserWallet.json");
 
 describe("Owner", () => {
@@ -37,16 +37,16 @@ describe("Owner", () => {
             recoveryOwner2,
             _guardian1,
             _guardian2,
-            relayer
+            relayer,
         ] = await ethers.getSigners();
         ownerAddress = await owner.getAddress();
         recoveryOwners = [
             await recoveryOwner1.getAddress(),
-            await recoveryOwner2.getAddress()
+            await recoveryOwner2.getAddress(),
         ];
         guardians = [
             await _guardian1.getAddress(),
-            await _guardian2.getAddress()
+            await _guardian2.getAddress(),
         ];
     });
 
@@ -68,7 +68,7 @@ describe("Owner", () => {
             const initializer = encodeFunctionData(abi, "init", [
                 addrZero,
                 recoveryOwners,
-                guardians
+                guardians,
             ]);
             await expect(factory.createProxy(initializer)).to.be.reverted;
         });
@@ -81,7 +81,7 @@ describe("Owner", () => {
             const initializer = encodeFunctionData(abi, "init", [
                 address,
                 recoveryOwners,
-                guardians
+                guardians,
             ]);
             await expect(factory.createProxy(initializer)).to.be.reverted;
         });

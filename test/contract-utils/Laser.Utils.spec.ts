@@ -7,14 +7,14 @@ import {
     encodeFunctionData,
     sign,
     signTypedData,
-    generateTransaction
+    generateTransaction,
 } from "../utils";
 import { Transaction, Address, Domain } from "../types";
 import { ownerWallet } from "../constants/constants";
 
 const mock = ethers.Wallet.createRandom().address;
 const {
-    abi
+    abi,
 } = require("../../artifacts/contracts/LaserWallet.sol/LaserWallet.json");
 
 describe("Setup", () => {
@@ -35,16 +35,17 @@ describe("Setup", () => {
             recoveryOwner2,
             _guardian1,
             _guardian2,
-            relayer
+            relayer,
         ] = await ethers.getSigners();
         ownerAddress = await owner.getAddress();
+
         recoveryOwners = [
             await recoveryOwner1.getAddress(),
-            await recoveryOwner2.getAddress()
+            await recoveryOwner2.getAddress(),
         ];
         guardians = [
             await _guardian1.getAddress(),
-            await _guardian2.getAddress()
+            await _guardian2.getAddress(),
         ];
     });
 
@@ -58,7 +59,7 @@ describe("Setup", () => {
             const hash = ethers.utils.keccak256("0x1234");
             const sig = await sign(owner, hash);
             const [r, s, v] = await wallet.splitSigs(sig, 0);
-            const signer = await wallet.returnSigner(hash, r, s, v);
+            const signer = await wallet.returnSigner(hash, r, s, v, sig);
             expect(signer).to.equal(ownerAddress);
         });
 
@@ -82,7 +83,7 @@ describe("Setup", () => {
             );
             const sig = await sign(owner, hash);
             const [r, s, v] = await wallet.splitSigs(sig, 0);
-            const signer = await wallet.returnSigner(hash, r, s, v);
+            const signer = await wallet.returnSigner(hash, r, s, v, sig);
             expect(signer).to.equal(ownerAddress);
         });
 
@@ -97,7 +98,7 @@ describe("Setup", () => {
             tx.to = address;
             const domain: Domain = {
                 chainId: await wallet.getChainId(),
-                verifyingContract: address
+                verifyingContract: address,
             };
 
             const sig = await signTypedData(ownerWallet, domain, tx);
@@ -111,7 +112,7 @@ describe("Setup", () => {
                 tx.gasLimit
             );
             const [r, s, v] = await wallet.splitSigs(sig, 0);
-            const signer = await wallet.returnSigner(hash, r, s, v);
+            const signer = await wallet.returnSigner(hash, r, s, v, sig);
             expect(signer).to.equal(ownerAddress);
         });
 
@@ -138,9 +139,9 @@ describe("Setup", () => {
             const hash = ethers.utils.keccak256("0x1234");
             const sig = (await sign(owner, hash)).replace(/1f$/, "03");
             const [r, s, v] = await wallet.splitSigs(sig, 0);
-            await expect(wallet.returnSigner(hash, r, s, v)).to.be.revertedWith(
-                "Utils__InvalidSignature()"
-            );
+            await expect(
+                wallet.returnSigner(hash, r, s, v, sig)
+            ).to.be.revertedWith("Utils__returnSigner__invalidSignature()");
         });
     });
 });

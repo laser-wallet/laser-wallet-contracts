@@ -7,7 +7,7 @@ import {
     factorySetup,
     getHash,
     generateTransaction,
-    sendTx
+    sendTx,
 } from "../utils";
 import { Address } from "../types";
 import { addrZero } from "../constants/constants";
@@ -16,7 +16,7 @@ import { sign } from "../utils/sign";
 
 const mock = ethers.Wallet.createRandom().address;
 const {
-    abi
+    abi,
 } = require("../../artifacts/contracts/LaserWallet.sol/LaserWallet.json");
 
 describe("Setup", () => {
@@ -37,16 +37,16 @@ describe("Setup", () => {
             recoveryOwner2,
             _guardian1,
             _guardian2,
-            relayer
+            relayer,
         ] = await ethers.getSigners();
         ownerAddress = await owner.getAddress();
         recoveryOwners = [
             await recoveryOwner1.getAddress(),
-            await recoveryOwner2.getAddress()
+            await recoveryOwner2.getAddress(),
         ];
         guardians = [
             await _guardian1.getAddress(),
-            await _guardian2.getAddress()
+            await _guardian2.getAddress(),
         ];
     });
 
@@ -68,29 +68,38 @@ describe("Setup", () => {
             const hash = await getHash(wallet, tx);
             tx.signatures = await sign(owner, hash);
             tx.gasLimit = 100000;
-            await owner.sendTransaction({to: address, value: ethers.utils.parseEther("1000")})
+            await owner.sendTransaction({
+                to: address,
+                value: ethers.utils.parseEther("1000"),
+            });
             const relayerAddress = await relayer.getAddress();
             tx.maxPriorityFeePerGas = tx.maxFeePerGas;
 
-            for (let i = 0; i<5; i++) {
+            for (let i = 0; i < 5; i++) {
                 tx.nonce = i;
-                const initialBalance = await ethers.provider.getBalance(relayerAddress);
-                const transaction = await wallet.connect(relayer).exec(
-                    tx.to, 
-                    tx.value, 
-                    tx.callData, 
-                    tx.nonce, 
-                    tx.maxFeePerGas, 
-                    tx.maxPriorityFeePerGas, 
-                    tx.gasLimit, 
-                    tx.signatures, 
-                    {
-                        gasLimit: 100000,
-                        gasPrice: tx.maxFeePerGas
-                    }
-                ); 
+                const initialBalance = await ethers.provider.getBalance(
+                    relayerAddress
+                );
+                const transaction = await wallet
+                    .connect(relayer)
+                    .exec(
+                        tx.to,
+                        tx.value,
+                        tx.callData,
+                        tx.nonce,
+                        tx.maxFeePerGas,
+                        tx.maxPriorityFeePerGas,
+                        tx.gasLimit,
+                        tx.signatures,
+                        {
+                            gasLimit: 100000,
+                            gasPrice: tx.maxFeePerGas,
+                        }
+                    );
                 const receipt = await transaction.wait();
-                const postBalance = await ethers.provider.getBalance(relayerAddress);
+                const postBalance = await ethers.provider.getBalance(
+                    relayerAddress
+                );
                 const total = initialBalance.sub(postBalance);
             }
         });
@@ -101,11 +110,6 @@ describe("Setup", () => {
                 recoveryOwners,
                 guardians
             );
-
-            console.log(await wallet.getRecoveryOwners());
-
         });
     });
 });
-
-

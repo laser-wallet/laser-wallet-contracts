@@ -19,6 +19,7 @@ contract LaserWallet is Singleton, SSR, Handler, ILaserWallet {
         keccak256(
             "LaserOperation(address to,uint256 value,bytes callData,uint256 nonce,uint256 maxFeePerGas,uint256 maxPriorityFeePerGas,uint256 gasLimit)"
         );
+
     bytes4 private constant EIP1271_MAGIC_VALUE =
         bytes4(keccak256("isValidSignature(bytes32,bytes)"));
 
@@ -233,7 +234,7 @@ contract LaserWallet is Singleton, SSR, Handler, ILaserWallet {
         bytes32 s;
         uint8 v;
         (r, s, v) = splitSigs(signature, 0);
-        address recovered = returnSigner(hash, r, s, v);
+        address recovered = returnSigner(hash, r, s, v, signature);
         if (recovered != owner) revert LaserWallet__invalidSignature();
         else return EIP1271_MAGIC_VALUE;
     }
@@ -303,18 +304,61 @@ contract LaserWallet is Singleton, SSR, Handler, ILaserWallet {
         bytes32 dataHash,
         bytes calldata signatures
     ) internal view {
-        if (_access == Access.Owner) {
-            verifyOwner(dataHash, signatures);
-        } else if (_access == Access.Guardian) {
-            verifyGuardian(dataHash, signatures);
-        } else if (_access == Access.OwnerAndGuardian) {
-            verifyOwnerAndGuardian(dataHash, signatures);
-        } else if (_access == Access.RecoveryOwnerAndGuardian) {
-            verifyRecoveryOwnerAndGurdian(dataHash, signatures);
-        } else if (_access == Access.OwnerAndRecoveryOwner) {
-            verifyOwnerAndRecoveryOwner(dataHash, signatures);
-        } else {
-            revert();
+        uint256 requiredSignatures = _access == Access.Owner ||
+            _access == Access.Guardian
+            ? 1
+            : 2;
+
+        if (signatures.length < requiredSignatures * 65) {
+            revert LW__verifySignatures__invalidSignatureLength();
+        }
+
+        address signer;
+        bytes32 r;
+        bytes32 s;
+        uint8 v;
+
+        for (uint256 i = 0; i < requiredSignatures; ) {
+            (r, s, v) = splitSigs(signatures, i);
+
+            signer = returnSigner(dataHash, r, s, v, signatures);
+
+            if (_access == Access.Owner) {
+                // If access == owner, the signer needs to be the owner.
+
+                // We do not need further checks e.g 'is the wallet locked', they were done in 'access'.
+                if (owner != signer) revert LW__verifySignatures__notOwner();
+            } else if (_access == Access.Guardian) {
+                // If access == guardian, the signer needs to be a guardian.
+
+                // The guardian by itself can only lock the wallet, additional checks were done in 'access'.
+                if (guardians[signer] == address(0)) {
+                    revert LW__verifySignatures__notGuardian();
+                }
+            } else if (_access == Access.OwnerAndGuardian) {
+                // If access == owner and guardian, the first signer needs to be the owner.
+                if (i == 0) {
+                    if (owner != signer) {
+                        revert LW__verifySignatures__notOwner();
+                    }
+                } else {
+                    // The second signer needs to be a guardian.
+                    if (guardians[signer] == address(0)) {
+                        revert LW__verifySignatures__notGuardian();
+                    }
+                }
+            } else if (_access == Access.RecoveryOwnerAndGuardian) {
+                // If access == recovery owner and guardian, the first signer needs to be the recovery owner.
+
+                // We do not need further checks, they were done in 'access'.
+                if (i == 0) {}
+            } else {
+                revert();
+            }
+
+            unchecked {
+                ++i;
+            }
         }
     }
 

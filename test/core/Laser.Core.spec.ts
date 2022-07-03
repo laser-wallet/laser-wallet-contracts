@@ -6,14 +6,14 @@ import {
     factorySetup,
     encodeFunctionData,
     sign,
-    signTypedData
+    signTypedData,
 } from "../utils";
 import { types, Address } from "../types";
 import { ownerWallet, tenEth, twoEth } from "../constants/constants";
 
 const mock = ethers.Wallet.createRandom().address;
 const {
-    abi
+    abi,
 } = require("../../artifacts/contracts/LaserWallet.sol/LaserWallet.json");
 
 describe("Core", () => {
@@ -34,16 +34,16 @@ describe("Core", () => {
             recoveryOwner2,
             _guardian1,
             _guardian2,
-            relayer
+            relayer,
         ] = await ethers.getSigners();
         ownerAddress = await owner.getAddress();
         recoveryOwners = [
             await recoveryOwner1.getAddress(),
-            await recoveryOwner2.getAddress()
+            await recoveryOwner2.getAddress(),
         ];
         guardians = [
             await _guardian1.getAddress(),
-            await _guardian2.getAddress()
+            await _guardian2.getAddress(),
         ];
     });
 
