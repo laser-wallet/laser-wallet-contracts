@@ -288,6 +288,7 @@ contract SSR is ISSR, SelfAuthorized, Owner, Utils {
             return Access.RecoveryOwnerAndGuardian;
         } else {
             // Else is the owner ... If the the wallet is locked, we revert ...
+
             if (isLocked) revert SSR__access__walletLocked();
             else return Access.Owner;
         }
@@ -295,11 +296,29 @@ contract SSR is ISSR, SelfAuthorized, Owner, Utils {
 
     /**
      * @dev Validates that a recovery owner can execute an operation 'now'.
-     * @param signer The returned address.
+     * @param signer The returned address from the provided signature and hash.
      */
     function validateRecoveryOwner(address signer) internal view {
+        // Time elapsed since the recovery mechanism was activated.
         uint256 elapsedTime = block.timestamp - timeLock;
 
-        ///@todo Check that the recovery owner has proper access ...
+        bool isAuthorized;
+
+        for (uint256 i = 0; i < recoveryOwnersCount; ) {
+            address recoveryOwner = recoveryOwners[i].recoveryOwner;
+
+            if (elapsedTime > 1 weeks * i) {
+                // Each recovery owner (index ordered) has access to sign the transaction after 1 week.
+                // e.g The first recovery owner (indexed 0) can sign immediately, the second recovery owner needs to wait 1 week, and so on ...
+
+                if (recoveryOwner == signer) isAuthorized = true;
+            }
+
+            unchecked {
+                ++i;
+            }
+        }
+
+        if (!isAuthorized) revert SSR__validateRecoveryOwner__notAuthorized();
     }
 }
