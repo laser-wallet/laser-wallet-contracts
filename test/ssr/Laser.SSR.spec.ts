@@ -6,7 +6,7 @@ import {
     factorySetup,
     encodeFunctionData,
     sign,
-    signTypedData
+    signTypedData,
 } from "../utils";
 import { types, Address, Numberish } from "../types";
 import {
@@ -14,18 +14,21 @@ import {
     recoveryOwnerWallet,
     guardianWallet,
     tenEth,
-    twoEth
+    twoEth,
 } from "../constants/constants";
 
 const mock = ethers.Wallet.createRandom().address;
 const {
-    abi
+    abi,
 } = require("../../artifacts/contracts/LaserWallet.sol/LaserWallet.json");
 
 // Sends 10 eth...
 async function fund(to: Address, from: Signer): Promise<void> {
     const amount = tenEth;
-    await from.sendTransaction({ to: to, value: amount });
+    await from.sendTransaction({
+        to: to,
+        value: amount,
+    });
 }
 
 describe("Sovereign Social Recovery", () => {
@@ -46,35 +49,21 @@ describe("Sovereign Social Recovery", () => {
             recoveryOwner2,
             _guardian1,
             _guardian2,
-            relayer
+            relayer,
         ] = await ethers.getSigners();
         ownerAddress = await owner.getAddress();
         recoveryOwners = [
             await recoveryOwner1.getAddress(),
-            await recoveryOwner2.getAddress()
+            await recoveryOwner2.getAddress(),
         ];
         guardians = [
             await _guardian1.getAddress(),
-            await _guardian2.getAddress()
+            await _guardian2.getAddress(),
         ];
     });
 
-    describe("Basic init", () => {
-        it("correct setup", async () => {
-        });
-    });
-
-    describe("lock()", () => {
-        it("should not allow to call the function directly", async () => {
-            const { address, wallet } = await walletSetup(
-                ownerAddress,
-                recoveryOwners,
-                guardians
-            );
-            await expect(wallet.lock()).to.be.revertedWith(
-                "SelfAuthorized__notWallet()"
-            );
-        });
+    describe("Recovery Owners", () => {
+        it("should fail by providing one recovery owner", async () => {});
 
         it("guardian should be able to lock the wallet ", async () => {});
 

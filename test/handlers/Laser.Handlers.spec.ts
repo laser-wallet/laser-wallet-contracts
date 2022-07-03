@@ -6,7 +6,7 @@ import { Address } from "../types";
 
 const mock = Wallet.createRandom().address;
 const {
-    abi
+    abi,
 } = require("../../artifacts/contracts/LaserWallet.sol/LaserWallet.json");
 
 describe("Handlers", () => {
@@ -28,16 +28,16 @@ describe("Handlers", () => {
             recoveryOwner2,
             _guardian1,
             _guardian2,
-            relayer
+            relayer,
         ] = await ethers.getSigners();
         ownerAddress = await owner.getAddress();
         recoveryOwners = [
             await recoveryOwner1.getAddress(),
-            await recoveryOwner2.getAddress()
+            await recoveryOwner2.getAddress(),
         ];
         guardians = [
             await _guardian1.getAddress(),
-            await _guardian2.getAddress()
+            await _guardian2.getAddress(),
         ];
 
         const tokenCallerFactory = await ethers.getContractFactory(

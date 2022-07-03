@@ -27,7 +27,9 @@ export async function factorySetup(
 ): Promise<ReturnFactorySetup> {
     const ProxyFactory = await ethers.getContractFactory("LaserProxyFactory");
 
-    const proxyFactory = (await ProxyFactory.deploy(_singleton)) as LaserProxyFactory;
+    const proxyFactory = (await ProxyFactory.deploy(
+        _singleton
+    )) as LaserProxyFactory;
 
     return {
         address: proxyFactory.address,
@@ -52,7 +54,10 @@ export async function walletSetup(
     const transaction = await factory.createProxy(initializer);
     const receipt = await transaction.wait();
     const proxyAddress = receipt.events[1].args.proxy;
-    const wallet = (await ethers.getContractAt(abi, proxyAddress)) as LaserWallet;
+    const wallet = (await ethers.getContractAt(
+        abi,
+        proxyAddress
+    )) as LaserWallet;
     return {
         address: proxyAddress,
         wallet: wallet,

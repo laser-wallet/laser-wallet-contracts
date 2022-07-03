@@ -34,37 +34,39 @@ export async function getHash(
 
 export async function sendTx(
     wallet: Contract,
-    transaction: Transaction, 
+    transaction: Transaction,
     signer?: Signer
 ): Promise<void> {
     if (signer) {
-        await wallet.connect(signer).exec(
-        transaction.to,
-        transaction.value,
-        transaction.callData,
-        transaction.nonce,
-        transaction.maxFeePerGas,
-        transaction.maxPriorityFeePerGas,
-        transaction.gasLimit,
-        transaction.signatures
-        , {
-            gasLimit: transaction.gasLimit
-        }
-    );
+        await wallet
+            .connect(signer)
+            .exec(
+                transaction.to,
+                transaction.value,
+                transaction.callData,
+                transaction.nonce,
+                transaction.maxFeePerGas,
+                transaction.maxPriorityFeePerGas,
+                transaction.gasLimit,
+                transaction.signatures,
+                {
+                    gasLimit: transaction.gasLimit,
+                }
+            );
     } else {
         await wallet.exec(
-        transaction.to,
-        transaction.value,
-        transaction.callData,
-        transaction.nonce,
-        transaction.maxFeePerGas,
-        transaction.maxPriorityFeePerGas,
-        transaction.gasLimit,
-        transaction.signatures
-        , {
-            gasLimit: transaction.gasLimit
-        }
-    );
+            transaction.to,
+            transaction.value,
+            transaction.callData,
+            transaction.nonce,
+            transaction.maxFeePerGas,
+            transaction.maxPriorityFeePerGas,
+            transaction.gasLimit,
+            transaction.signatures,
+            {
+                gasLimit: transaction.gasLimit,
+            }
+        );
     }
 }
 
@@ -82,7 +84,7 @@ export async function generateTransaction(): Promise<Transaction> {
         maxFeePerGas: _maxFeePerGas,
         maxPriorityFeePerGas: _maxPriorityFeePerGas,
         gasLimit: 100000,
-        signatures: "0x"
+        signatures: "0x",
     };
 }
 
@@ -93,7 +95,7 @@ export async function fundWallet(
     const oneEth = ethers.utils.parseEther("1");
     await sender.sendTransaction({
         to: address,
-        value: oneEth
+        value: oneEth,
     });
 }
 

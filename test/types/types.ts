@@ -6,14 +6,35 @@ export type Numberish = BigNumber | number | string;
 
 export const types = {
     LaserOperation: [
-        { type: "address", name: "to" },
-        { type: "uint256", name: "value" },
-        { type: "bytes", name: "callData" },
-        { type: "uint256", name: "nonce" },
-        { type: "uint256", name: "maxFeePerGas" },
-        { type: "uint256", name: "maxPriorityFeePerGas" },
-        { type: "uint256", name: "gasLimit" }
-    ]
+        {
+            type: "address",
+            name: "to",
+        },
+        {
+            type: "uint256",
+            name: "value",
+        },
+        {
+            type: "bytes",
+            name: "callData",
+        },
+        {
+            type: "uint256",
+            name: "nonce",
+        },
+        {
+            type: "uint256",
+            name: "maxFeePerGas",
+        },
+        {
+            type: "uint256",
+            name: "maxPriorityFeePerGas",
+        },
+        {
+            type: "uint256",
+            name: "gasLimit",
+        },
+    ],
 };
 
 export type Domain = {

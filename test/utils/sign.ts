@@ -7,15 +7,14 @@ export async function signTypedData(
     domain: Domain,
     transaction: Transaction
 ): Promise<string> {
-
     const laserTypes: LaserTypes = {
-        to: transaction.to, 
-        value: transaction.value, 
-        callData: transaction.callData, 
-        nonce: transaction.nonce, 
-        maxFeePerGas: transaction.maxFeePerGas, 
-        maxPriorityFeePerGas: transaction.maxPriorityFeePerGas, 
-        gasLimit: transaction.gasLimit
+        to: transaction.to,
+        value: transaction.value,
+        callData: transaction.callData,
+        nonce: transaction.nonce,
+        maxFeePerGas: transaction.maxFeePerGas,
+        maxPriorityFeePerGas: transaction.maxPriorityFeePerGas,
+        gasLimit: transaction.gasLimit,
     };
     const signature = await signer._signTypedData(domain, types, laserTypes);
     return signature;
