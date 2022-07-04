@@ -22,6 +22,9 @@ interface ILaserWallet {
     error LW__exec__invalidNonce();
     error LW__exec__refundFailure();
 
+    ///@dev multiCall() custom error.
+    error LW__multiCall__notOwner();
+
     ///@dev simulateTransaction() custom errors.
     error LW__simulateTransaction__invalidNonce();
     error LW__simulateTransaction__mainCallError();

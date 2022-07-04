@@ -27,16 +27,17 @@ contract Utils is IUtils {
 
             // The actual signature.
             bytes memory contractSignature;
+            
             assembly {
                 contractSignature := add(add(signatures, s), 0x20)
             }
-            require(
+
+            if (
                 IEIP1271(signer).isValidSignature(
                     dataHash,
                     contractSignature
-                ) == 0x1626ba7e,
-                "incorrect contract signature"
-            );
+                ) != 0x1626ba7e
+            ) revert Utils__returnSigner__invalidContractSignature();
         } else if (v > 30) {
             signer = ecrecover(
                 keccak256(
