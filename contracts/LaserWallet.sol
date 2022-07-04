@@ -136,13 +136,27 @@ contract LaserWallet is Singleton, SSR, Handler, ILaserWallet {
         uint256 transactionsLength = transactions.length;
         for (uint256 i = 0; i < transactionsLength; ) {
             Transaction calldata transaction = transactions[i];
+
+            // We get the actual function selector to determine access ...
+            bytes4 funcSelector = bytes4(transaction.callData);
+
+            // access() checks if the wallet is locked for the owner or guardians and returns who has access ...
+            Access access = access(funcSelector);
+
+            // Only the owner is allowed to trigger a multiCall.
+            // The signatures were already verified in 'exec', here we just need to make sure that access == owner.
+            if (access != Access.Owner) revert LW__multiCall__notOwner();
+
             bool success = _call(
                 transaction.to,
                 transaction.value,
                 transaction.callData,
                 gasleft()
             );
+
+            // We do not revert the call if it fails, because the wallet needs to pay the relayer even in case of failure.
             (success);
+
             unchecked {
                 // Won't overflow .... You would need way more gas usage than current available block gas (30m) to overflow it.
                 ++i;
@@ -290,10 +304,10 @@ contract LaserWallet is Singleton, SSR, Handler, ILaserWallet {
         bytes4 funcSelector = bytes4(callData);
 
         // access() checks if the wallet is locked for the owner or guardians and returns who has access ...
-        Access _access = access(funcSelector);
+        Access access = access(funcSelector);
 
         // We verify that the signatures are correct depending on the transaction type ...
-        verifySignatures(_access, dataHash, signatures);
+        verifySignatures(access, dataHash, signatures);
     }
 
     /**

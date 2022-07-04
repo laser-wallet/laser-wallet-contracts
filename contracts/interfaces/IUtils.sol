@@ -8,6 +8,7 @@ pragma solidity 0.8.15;
 interface IUtils {
     ///@dev returnSigner() custom error.
     error Utils__returnSigner__invalidSignature();
+    error Utils__returnSigner__invalidContractSignature();
 
     /**
      * @dev Returns the signer of the hash.
