@@ -15,6 +15,7 @@ contract LaserWallet is Singleton, SSR, Handler, ILaserWallet {
 
     bytes32 private constant DOMAIN_SEPARATOR_TYPEHASH =
         keccak256("EIP712Domain(uint256 chainId,address verifyingContract)");
+
     bytes32 private constant LASER_TYPE_STRUCTURE =
         keccak256(
             "LaserOperation(address to,uint256 value,bytes callData,uint256 nonce,uint256 maxFeePerGas,uint256 maxPriorityFeePerGas,uint256 gasLimit)"
@@ -49,8 +50,8 @@ contract LaserWallet is Singleton, SSR, Handler, ILaserWallet {
         // initOwner() requires that the current owner is address 0.
         // This is enough to protect init() from being called after initialization.
         initOwner(_owner);
-        initRecoveryOwners(_recoveryOwners);
         initGuardians(_guardians);
+        initRecoveryOwners(_recoveryOwners);
         emit Setup(owner, _recoveryOwners, _guardians);
     }
 
@@ -251,9 +252,9 @@ contract LaserWallet is Singleton, SSR, Handler, ILaserWallet {
         address recovered = returnSigner(hash, r, s, v, signature);
 
         // The guardians and recovery owners should not be able to sign transactions that are out of scope from this wallet.
-        // Only the owner should be able to sign external bytes.
+        // Only the owner should be able to sign external data.
         if (recovered != owner) revert LaserWallet__invalidSignature();
-        else return EIP1271_MAGIC_VALUE;
+        return EIP1271_MAGIC_VALUE;
     }
 
     /**

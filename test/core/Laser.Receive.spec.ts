@@ -6,11 +6,6 @@ import { Address } from "../types";
 
 const oneEth = ethers.utils.parseEther("1");
 
-const mock = Wallet.createRandom().address;
-const {
-    abi,
-} = require("../../artifacts/contracts/LaserWallet.sol/LaserWallet.json");
-
 describe("Receive", () => {
     let owner: Signer;
     let ownerAddress: Address;

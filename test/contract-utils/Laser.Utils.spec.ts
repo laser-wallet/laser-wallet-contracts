@@ -1,21 +1,14 @@
 import { expect } from "chai";
 import { ethers } from "hardhat";
-import { Contract, providers, Signer, Wallet } from "ethers";
+import { Contract, Signer, Wallet } from "ethers";
 import {
     walletSetup,
-    factorySetup,
-    encodeFunctionData,
     sign,
     signTypedData,
     generateTransaction,
 } from "../utils";
-import { Transaction, Address, Domain } from "../types";
+import { Address, Domain } from "../types";
 import { ownerWallet } from "../constants/constants";
-
-const mock = ethers.Wallet.createRandom().address;
-const {
-    abi,
-} = require("../../artifacts/contracts/LaserWallet.sol/LaserWallet.json");
 
 describe("Setup", () => {
     let owner: Signer;

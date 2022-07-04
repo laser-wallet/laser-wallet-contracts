@@ -16,8 +16,4 @@ const guardianPrivateKey =
 
 export const guardianWallet = new ethers.Wallet(guardianPrivateKey);
 
-export const twoEth = ethers.utils.parseEther("2");
-
-export const tenEth = ethers.utils.parseEther("10");
-
 export const addrZero = ethers.constants.AddressZero;

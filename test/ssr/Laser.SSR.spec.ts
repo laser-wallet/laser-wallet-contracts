@@ -1,35 +1,8 @@
 import { expect } from "chai";
 import { ethers } from "hardhat";
 import { Contract, Signer, Wallet } from "ethers";
-import {
-    walletSetup,
-    factorySetup,
-    encodeFunctionData,
-    sign,
-    signTypedData,
-} from "../utils";
-import { types, Address, Numberish } from "../types";
-import {
-    ownerWallet,
-    recoveryOwnerWallet,
-    guardianWallet,
-    tenEth,
-    twoEth,
-} from "../constants/constants";
-
-const mock = ethers.Wallet.createRandom().address;
-const {
-    abi,
-} = require("../../artifacts/contracts/LaserWallet.sol/LaserWallet.json");
-
-// Sends 10 eth...
-async function fund(to: Address, from: Signer): Promise<void> {
-    const amount = tenEth;
-    await from.sendTransaction({
-        to: to,
-        value: amount,
-    });
-}
+import { walletSetup, encodeFunctionData, sign, signTypedData } from "../utils";
+import { types, Address } from "../types";
 
 describe("Sovereign Social Recovery", () => {
     let owner: Signer;
@@ -71,4 +44,6 @@ describe("Sovereign Social Recovery", () => {
 
         it("recovery owner should not be able to lock the wallet 'handleOps' ", async () => {});
     });
+
+    describe("Guardians", () => {});
 });
