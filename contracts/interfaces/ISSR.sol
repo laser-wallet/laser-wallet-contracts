@@ -28,6 +28,7 @@ interface ISSR {
     event NewGuardian(address newGuardian);
     event GuardianRemoved(address removedGuardian);
     event WalletRecovered(address newOwner, address newRecoveryOwner);
+    event NewRecoveryOwner(address newRecoveryOwner);
 
     ///@dev addGuardian() custom errors.
     error SSR__addGuardian__invalidAddress();
@@ -37,12 +38,18 @@ interface ISSR {
     error SSR__removeGuardian__incorrectPreviousGuardian();
     error SSR__removeGuardian__underflow();
 
+    ///@dev addRecoveryOwner() custom error.
+    error SSR__addRecoveryOwner__invalidAddress();
+
+    ///@dev removeRecoveryOwner() custom error.
+    error SSR__removeRecoveryOwner__incorrectIndex();
+
     ///@dev initRecoveryOwners() custom error.
     error SSR__initRecoveryOwners__underflow();
     error SSR__initRecoveryOwners__invalidAddress();
 
     ///@dev initGuardians() custom errors.
-    error SSR__initGuardians__zeroGuardians();
+    error SSR__initGuardians__underflow();
     error SSR__initGuardians__invalidAddress();
 
     ///@dev access() custom errors.
@@ -98,6 +105,31 @@ interface ISSR {
      */
     function removeGuardian(address prevGuardian, address guardianToRemove)
         external;
+
+    /**
+     * @dev Adds a new recovery owner to the chain list.
+     * @param newRecoveryOwner The address of the new recovery owner.
+     * @notice The new recovery owner will be added at the end of the chain.
+     */
+    function addRecoveryOwner(address newRecoveryOwner) external;
+
+    /**
+     * @dev Removes a recovery owner.
+     * @param recoveryOwner The address to be removed as recovery owner.
+     * @param index The position of the recovery owner in the chain list.
+     * @notice The recovery owners that are positioned after the deleted recovery owner will be forward 1 position in the chain list.
+     */
+    function removeRecoveryOwner(address recoveryOwner, uint256 index) external;
+
+    /**
+     * @dev Swaps a recovery owner for a new address.
+     * @param newRecoveryOwner The address of the new recovery owner.
+     * @param oldRecoveryOwner The address of the current recovery owner to be swapped by the new one.
+     */
+    function swapRecoveryOwner(
+        address newRecoveryOwner,
+        address oldRecoveryOwner
+    ) external;
 
     /**
      * @param guardian Requested address.

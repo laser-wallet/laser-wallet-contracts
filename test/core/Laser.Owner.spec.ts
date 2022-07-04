@@ -1,6 +1,6 @@
 import { expect } from "chai";
 import { ethers } from "hardhat";
-import { Contract, Signer, Wallet } from "ethers";
+import { Signer } from "ethers";
 import {
     walletSetup,
     encodeFunctionData,
@@ -14,7 +14,6 @@ import { addrZero } from "../constants/constants";
 import { fundWallet } from "../utils";
 import { sign } from "../utils/sign";
 
-const mock = ethers.Wallet.createRandom().address;
 const {
     abi,
 } = require("../../artifacts/contracts/LaserWallet.sol/LaserWallet.json");

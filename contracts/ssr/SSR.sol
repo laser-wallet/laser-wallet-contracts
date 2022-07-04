@@ -145,6 +145,63 @@ contract SSR is ISSR, SelfAuthorized, Owner, Utils {
     }
 
     /**
+     * @dev Adds a new recovery owner to the chain list.
+     * @param newRecoveryOwner The address of the new recovery owner.
+     * @notice The new recovery owner will be added at the end of the chain.
+     */
+    function addRecoveryOwner(address newRecoveryOwner) external authorized {
+        if (newRecoveryOwner.code.length > 0) {
+            // If the recovery owner is a smart contract wallet, it needs to support EIP1271.
+            if (!IERC165(newRecoveryOwner).supportsInterface(0x1626ba7e)) {
+                revert SSR__initRecoveryOwners__invalidAddress();
+            }
+        }
+
+        if (
+            newRecoveryOwner == address(0) ||
+            newRecoveryOwner == owner ||
+            guardians[newRecoveryOwner] != address(0)
+        ) revert SSR__addRecoveryOwner__invalidAddress();
+
+        uint256 _recoveryOwnersCount = recoveryOwnersCount;
+
+        recoveryOwners[_recoveryOwnersCount] = RecoverySettings({
+            recoveryOwner: newRecoveryOwner,
+            ownerIndex: _recoveryOwnersCount,
+            time: _recoveryOwnersCount * 1 weeks
+        });
+
+        emit NewRecoveryOwner(newRecoveryOwner);
+    }
+
+    /**
+     * @dev Removes a recovery owner.
+     * @param recoveryOwner The address to be removed as recovery owner.
+     * @param index The position of the recovery owner in the chain list.
+     * @notice The recovery owners that are positioned after the deleted recovery owner will be forward 1 position in the chain list.
+     */
+    function removeRecoveryOwner(address recoveryOwner, uint256 index)
+        external
+        authorized
+    {
+        uint256 _recoveryOwnersCount = recoveryOwnersCount;
+
+        if (_recoveryOwnersCount - 1 > index) {
+            revert SSR__removeRecoveryOwner__incorrectIndex();
+        }
+    }
+
+    /**
+     * @dev Swaps a recovery owner for a new address.
+     * @param newRecoveryOwner The address of the new recovery owner.
+     * @param oldRecoveryOwner The address of the current recovery owner to be swapped by the new one.
+     */
+    function swapRecoveryOwner(
+        address newRecoveryOwner,
+        address oldRecoveryOwner
+    ) external authorized {}
+
+    /**
      * @param guardian Requested address.
      * @return Boolean if the address is a guardian of the current wallet.
      */
@@ -208,9 +265,11 @@ contract SSR is ISSR, SelfAuthorized, Owner, Utils {
                 }
             }
 
-            if (recoveryOwner == address(0) || recoveryOwner == owner) {
-                revert SSR__initRecoveryOwners__invalidAddress();
-            }
+            if (
+                recoveryOwner == address(0) ||
+                recoveryOwner == owner ||
+                guardians[recoveryOwner] != address(0)
+            ) revert SSR__initRecoveryOwners__invalidAddress();
 
             recoveryOwners[i] = RecoverySettings({
                 recoveryOwner: recoveryOwner,
@@ -230,7 +289,8 @@ contract SSR is ISSR, SelfAuthorized, Owner, Utils {
      */
     function initGuardians(address[] calldata _guardians) internal {
         uint256 guardiansLength = _guardians.length;
-        if (guardiansLength < 1) revert SSR__initGuardians__zeroGuardians();
+        // There needs to be at least 2 guardians.
+        if (guardiansLength < 2) revert SSR__initGuardians__underflow();
 
         address currentGuardian = pointer;
 

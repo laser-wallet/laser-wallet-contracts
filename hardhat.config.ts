@@ -6,7 +6,10 @@ import "@typechain/hardhat";
 import "hardhat-gas-reporter";
 import "hardhat-storage-layout";
 import "hardhat-deploy";
+import "solidity-coverage";
+
 import dotenv from "dotenv";
+
 dotenv.config();
 
 const INFURA_KEY = process.env.INFURA_KEY;
@@ -57,7 +60,6 @@ const config: HardhatUserConfig = {
             },
         },
     },
-
     gasReporter: {
         enabled: process.env.REPORT_GAS === "true",
     },

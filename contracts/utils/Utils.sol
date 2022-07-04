@@ -27,7 +27,7 @@ contract Utils is IUtils {
 
             // The actual signature.
             bytes memory contractSignature;
-            
+
             assembly {
                 contractSignature := add(add(signatures, s), 0x20)
             }
