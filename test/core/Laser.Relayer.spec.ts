@@ -1,111 +1,29 @@
 import { expect } from "chai";
-import { ethers } from "hardhat";
-import { Signer, Wallet } from "ethers";
+import { deployments, ethers } from "hardhat";
+import { Contract, Signer, Wallet } from "ethers";
 import {
     walletSetup,
-    encodeFunctionData,
-    factorySetup,
-    getHash,
+    sign,
+    signTypedData,
     generateTransaction,
-    sendTx,
+    addressesForTest,
+    signersForTest,
+    AddressesForTest,
 } from "../utils";
-import { Address } from "../types";
-import { addrZero } from "../constants/constants";
-import { fundWallet } from "../utils";
-import { sign } from "../utils/sign";
+import { Address, Domain } from "../types";
+import { ownerWallet } from "../constants/constants";
 
-describe("Setup", () => {
-    let owner: Signer;
-    let ownerAddress: Address;
-    let recoveryOwner1: Signer;
-    let recoveryOwner2: Signer;
-    let guardians: Address[];
-    let _guardian1: Signer;
-    let _guardian2: Signer;
-    let relayer: Signer;
-    let recoveryOwners: Address[];
+describe("Relayer", () => {
+    let addresses: AddressesForTest;
 
     beforeEach(async () => {
-        [
-            owner,
-            recoveryOwner1,
-            recoveryOwner2,
-            _guardian1,
-            _guardian2,
-            relayer,
-        ] = await ethers.getSigners();
-        ownerAddress = await owner.getAddress();
-        recoveryOwners = [
-            await recoveryOwner1.getAddress(),
-            await recoveryOwner2.getAddress(),
-        ];
-        guardians = [
-            await _guardian1.getAddress(),
-            await _guardian2.getAddress(),
-        ];
-    });
-
-    describe("Relayer", () => {
-        it("should refund the relayer", async () => {});
+        await deployments.fixture();
+        addresses = await addressesForTest();
     });
 
     describe("Gas costs", () => {
-        it("should refund the exact amount", async () => {
-            const { address, wallet } = await walletSetup(
-                ownerAddress,
-                recoveryOwners,
-                guardians
-            );
+        it("should refund the exact amount", async () => {});
 
-            await owner.sendTransaction({
-                to: address,
-                value: ethers.utils.parseEther("1000"),
-            });
-            const relayerAddress = await relayer.getAddress();
-
-            for (let i = 0; i < 5; i++) {
-                const tx = await generateTransaction();
-                tx.maxPriorityFeePerGas = tx.maxFeePerGas;
-                tx.to = address;
-                tx.callData = "0x";
-                tx.value = 10000;
-                tx.gasLimit = 100000;
-                tx.nonce = i;
-                const hash = await getHash(wallet, tx);
-                tx.signatures = await sign(owner, hash);
-                const initialBalance = await ethers.provider.getBalance(
-                    relayerAddress
-                );
-                const transaction = await wallet
-                    .connect(relayer)
-                    .exec(
-                        tx.to,
-                        tx.value,
-                        tx.callData,
-                        tx.nonce,
-                        tx.maxFeePerGas,
-                        tx.maxPriorityFeePerGas,
-                        tx.gasLimit,
-                        tx.signatures,
-                        {
-                            gasLimit: 100000,
-                            gasPrice: tx.maxFeePerGas,
-                        }
-                    );
-                const receipt = await transaction.wait();
-                const postBalance = await ethers.provider.getBalance(
-                    relayerAddress
-                );
-                const total = initialBalance.sub(postBalance);
-            }
-        });
-
-        it("relayer should not overpay", async () => {
-            const { address, wallet } = await walletSetup(
-                ownerAddress,
-                recoveryOwners,
-                guardians
-            );
-        });
+        it("relayer should not overpay", async () => {});
     });
 });

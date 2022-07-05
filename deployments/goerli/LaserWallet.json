@@ -1,0 +1,1595 @@
+{
+  "address": "0xabC9345D6b5d4314023d2ac52D149A3b82550b8C",
+  "abi": [
+    {
+      "inputs": [],
+      "stateMutability": "nonpayable",
+      "type": "constructor"
+    },
+    {
+      "inputs": [],
+      "name": "LW__exec__invalidNonce",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "LW__exec__refundFailure",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "LW__multiCall__notOwner",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "LW__simulateTransaction__invalidNonce",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "LW__simulateTransaction__mainCallError",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "LW__simulateTransaction__refundFailure",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "LW__verifySignatures__invalidSignatureLength",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "LW__verifySignatures__notGuardian",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "LW__verifySignatures__notOwner",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "LaserWallet__invalidSignature",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "Owner__changeOwner__invalidOwnerAddress",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "Owner__initOwner__invalidOwnerAddress",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "Owner__initOwner__walletInitialized",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "SSR__access__guardiansBlocked",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "SSR__access__walletLocked",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "SSR__addGuardian__invalidAddress",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "SSR__addRecoveryOwner__invalidAddress",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "SSR__initGuardians__invalidAddress",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "SSR__initGuardians__underflow",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "SSR__initRecoveryOwners__invalidAddress",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "SSR__initRecoveryOwners__underflow",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "SSR__removeGuardian__incorrectPreviousGuardian",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "SSR__removeGuardian__invalidAddress",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "SSR__removeGuardian__underflow",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "SSR__removeRecoveryOwner__incorrectIndex",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "SSR__validateRecoveryOwner__notAuthorized",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "SelfAuthorized__notWallet",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "Singleton__upgradeSingleton__incorrectAddress",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "Singleton__upgradeSingleton__notLaser",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "Utils__returnSigner__invalidContractSignature",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "Utils__returnSigner__invalidSignature",
+      "type": "error"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "to",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "value",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "nonce",
+          "type": "uint256"
+        }
+      ],
+      "name": "ExecFailure",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "to",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "value",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "nonce",
+          "type": "uint256"
+        }
+      ],
+      "name": "ExecSuccess",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "removedGuardian",
+          "type": "address"
+        }
+      ],
+      "name": "GuardianRemoved",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "newGuardian",
+          "type": "address"
+        }
+      ],
+      "name": "NewGuardian",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "newRecoveryOwner",
+          "type": "address"
+        }
+      ],
+      "name": "NewRecoveryOwner",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "newOwner",
+          "type": "address"
+        }
+      ],
+      "name": "OwnerChanged",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "sender",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        }
+      ],
+      "name": "Received",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [],
+      "name": "RecoveryUnlocked",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "owner",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "address[]",
+          "name": "recoveryOwners",
+          "type": "address[]"
+        },
+        {
+          "indexed": false,
+          "internalType": "address[]",
+          "name": "guardians",
+          "type": "address[]"
+        }
+      ],
+      "name": "Setup",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "newSingleton",
+          "type": "address"
+        }
+      ],
+      "name": "SingletonChanged",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [],
+      "name": "WalletLocked",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "newOwner",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "newRecoveryOwner",
+          "type": "address"
+        }
+      ],
+      "name": "WalletRecovered",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [],
+      "name": "WalletUnlocked",
+      "type": "event"
+    },
+    {
+      "inputs": [],
+      "name": "VERSION",
+      "outputs": [
+        {
+          "internalType": "string",
+          "name": "",
+          "type": "string"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "newGuardian",
+          "type": "address"
+        }
+      ],
+      "name": "addGuardian",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "newRecoveryOwner",
+          "type": "address"
+        }
+      ],
+      "name": "addRecoveryOwner",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "newOwner",
+          "type": "address"
+        }
+      ],
+      "name": "changeOwner",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "domainSeparator",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "to",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "value",
+          "type": "uint256"
+        },
+        {
+          "internalType": "bytes",
+          "name": "callData",
+          "type": "bytes"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_nonce",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "maxFeePerGas",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "maxPriorityFeePerGas",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "gasLimit",
+          "type": "uint256"
+        },
+        {
+          "internalType": "bytes",
+          "name": "signatures",
+          "type": "bytes"
+        }
+      ],
+      "name": "exec",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "getChainId",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "chainId",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "getGuardians",
+      "outputs": [
+        {
+          "internalType": "address[]",
+          "name": "",
+          "type": "address[]"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "getRecoveryOwners",
+      "outputs": [
+        {
+          "components": [
+            {
+              "internalType": "address",
+              "name": "recoveryOwner",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "ownerIndex",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "time",
+              "type": "uint256"
+            }
+          ],
+          "internalType": "struct ISSR.RecoverySettings[]",
+          "name": "",
+          "type": "tuple[]"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "guardiansLocked",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_owner",
+          "type": "address"
+        },
+        {
+          "internalType": "address[]",
+          "name": "_recoveryOwners",
+          "type": "address[]"
+        },
+        {
+          "internalType": "address[]",
+          "name": "_guardians",
+          "type": "address[]"
+        }
+      ],
+      "name": "init",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "guardian",
+          "type": "address"
+        }
+      ],
+      "name": "isGuardian",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "isLocked",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "hash",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "bytes",
+          "name": "signature",
+          "type": "bytes"
+        }
+      ],
+      "name": "isValidSignature",
+      "outputs": [
+        {
+          "internalType": "bytes4",
+          "name": "",
+          "type": "bytes4"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "lock",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "components": [
+            {
+              "internalType": "address",
+              "name": "to",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "value",
+              "type": "uint256"
+            },
+            {
+              "internalType": "bytes",
+              "name": "callData",
+              "type": "bytes"
+            }
+          ],
+          "internalType": "struct ILaserWallet.Transaction[]",
+          "name": "transactions",
+          "type": "tuple[]"
+        }
+      ],
+      "name": "multiCall",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "nonce",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256[]",
+          "name": "",
+          "type": "uint256[]"
+        },
+        {
+          "internalType": "uint256[]",
+          "name": "",
+          "type": "uint256[]"
+        },
+        {
+          "internalType": "bytes",
+          "name": "",
+          "type": "bytes"
+        }
+      ],
+      "name": "onERC1155BatchReceived",
+      "outputs": [
+        {
+          "internalType": "bytes4",
+          "name": "result",
+          "type": "bytes4"
+        }
+      ],
+      "stateMutability": "pure",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        },
+        {
+          "internalType": "bytes",
+          "name": "",
+          "type": "bytes"
+        }
+      ],
+      "name": "onERC1155Received",
+      "outputs": [
+        {
+          "internalType": "bytes4",
+          "name": "",
+          "type": "bytes4"
+        }
+      ],
+      "stateMutability": "pure",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        },
+        {
+          "internalType": "bytes",
+          "name": "",
+          "type": "bytes"
+        }
+      ],
+      "name": "onERC721Received",
+      "outputs": [
+        {
+          "internalType": "bytes4",
+          "name": "",
+          "type": "bytes4"
+        }
+      ],
+      "stateMutability": "pure",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "to",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "value",
+          "type": "uint256"
+        },
+        {
+          "internalType": "bytes",
+          "name": "callData",
+          "type": "bytes"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_nonce",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "maxFeePerGas",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "maxPriorityFeePerGas",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "gasLimit",
+          "type": "uint256"
+        }
+      ],
+      "name": "operationHash",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "owner",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "newOwner",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "newRecoveryOwner",
+          "type": "address"
+        }
+      ],
+      "name": "recover",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "recoveryUnlock",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "prevGuardian",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "guardianToRemove",
+          "type": "address"
+        }
+      ],
+      "name": "removeGuardian",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "recoveryOwner",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "index",
+          "type": "uint256"
+        }
+      ],
+      "name": "removeRecoveryOwner",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "dataHash",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "r",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "s",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "uint8",
+          "name": "v",
+          "type": "uint8"
+        },
+        {
+          "internalType": "bytes",
+          "name": "signatures",
+          "type": "bytes"
+        }
+      ],
+      "name": "returnSigner",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "signer",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "to",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "value",
+          "type": "uint256"
+        },
+        {
+          "internalType": "bytes",
+          "name": "callData",
+          "type": "bytes"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_nonce",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "maxFeePerGas",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "maxPriorityFeePerGas",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "gasLimit",
+          "type": "uint256"
+        },
+        {
+          "internalType": "bytes",
+          "name": "signatures",
+          "type": "bytes"
+        }
+      ],
+      "name": "simulateTransaction",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "totalGas",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "singleton",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes",
+          "name": "signatures",
+          "type": "bytes"
+        },
+        {
+          "internalType": "uint256",
+          "name": "pos",
+          "type": "uint256"
+        }
+      ],
+      "name": "splitSigs",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "r",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "s",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "uint8",
+          "name": "v",
+          "type": "uint8"
+        }
+      ],
+      "stateMutability": "pure",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes4",
+          "name": "_interfaceId",
+          "type": "bytes4"
+        }
+      ],
+      "name": "supportsInterface",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "pure",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "newRecoveryOwner",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "oldRecoveryOwner",
+          "type": "address"
+        }
+      ],
+      "name": "swapRecoveryOwner",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        },
+        {
+          "internalType": "bytes",
+          "name": "",
+          "type": "bytes"
+        },
+        {
+          "internalType": "bytes",
+          "name": "",
+          "type": "bytes"
+        }
+      ],
+      "name": "tokensReceived",
+      "outputs": [],
+      "stateMutability": "pure",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "unlock",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "unlockGuardians",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_singleton",
+          "type": "address"
+        }
+      ],
+      "name": "upgradeSingleton",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "stateMutability": "payable",
+      "type": "receive"
+    }
+  ],
+  "transactionHash": "0x28a337c3531da4e435b986892c9f12f5e5e49c8c15699fe0bb67b59802bf5cd5",
+  "receipt": {
+    "to": null,
+    "from": "0x0cf5C6d3c1122504091EAd6a3Dc5BD31f7BbeDE3",
+    "contractAddress": "0xabC9345D6b5d4314023d2ac52D149A3b82550b8C",
+    "transactionIndex": 0,
+    "gasUsed": "2766755",
+    "logsBloom": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+    "blockHash": "0xb35e2b039a77f90bf244abc15b1551fa65ea6239dea43e7080a1a357cda8de61",
+    "transactionHash": "0x28a337c3531da4e435b986892c9f12f5e5e49c8c15699fe0bb67b59802bf5cd5",
+    "logs": [],
+    "blockNumber": 7176052,
+    "cumulativeGasUsed": "2766755",
+    "status": 1,
+    "byzantium": true
+  },
+  "args": [],
+  "numDeployments": 1,
+  "solcInputHash": "2d6487914289d8d0b4144ebf1095c0e0",
+  "metadata": "{\"compiler\":{\"version\":\"0.8.15+commit.e14f2714\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"inputs\":[],\"name\":\"LW__exec__invalidNonce\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"LW__exec__refundFailure\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"LW__multiCall__notOwner\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"LW__simulateTransaction__invalidNonce\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"LW__simulateTransaction__mainCallError\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"LW__simulateTransaction__refundFailure\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"LW__verifySignatures__invalidSignatureLength\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"LW__verifySignatures__notGuardian\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"LW__verifySignatures__notOwner\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"LaserWallet__invalidSignature\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"Owner__changeOwner__invalidOwnerAddress\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"Owner__initOwner__invalidOwnerAddress\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"Owner__initOwner__walletInitialized\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"SSR__access__guardiansBlocked\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"SSR__access__walletLocked\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"SSR__addGuardian__invalidAddress\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"SSR__addRecoveryOwner__invalidAddress\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"SSR__initGuardians__invalidAddress\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"SSR__initGuardians__underflow\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"SSR__initRecoveryOwners__invalidAddress\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"SSR__initRecoveryOwners__underflow\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"SSR__removeGuardian__incorrectPreviousGuardian\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"SSR__removeGuardian__invalidAddress\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"SSR__removeGuardian__underflow\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"SSR__removeRecoveryOwner__incorrectIndex\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"SSR__validateRecoveryOwner__notAuthorized\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"SelfAuthorized__notWallet\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"Singleton__upgradeSingleton__incorrectAddress\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"Singleton__upgradeSingleton__notLaser\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"Utils__returnSigner__invalidContractSignature\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"Utils__returnSigner__invalidSignature\",\"type\":\"error\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"to\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"value\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"nonce\",\"type\":\"uint256\"}],\"name\":\"ExecFailure\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"to\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"value\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"nonce\",\"type\":\"uint256\"}],\"name\":\"ExecSuccess\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"removedGuardian\",\"type\":\"address\"}],\"name\":\"GuardianRemoved\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"newGuardian\",\"type\":\"address\"}],\"name\":\"NewGuardian\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"newRecoveryOwner\",\"type\":\"address\"}],\"name\":\"NewRecoveryOwner\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"OwnerChanged\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"Received\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[],\"name\":\"RecoveryUnlocked\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"owner\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"address[]\",\"name\":\"recoveryOwners\",\"type\":\"address[]\"},{\"indexed\":false,\"internalType\":\"address[]\",\"name\":\"guardians\",\"type\":\"address[]\"}],\"name\":\"Setup\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"newSingleton\",\"type\":\"address\"}],\"name\":\"SingletonChanged\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[],\"name\":\"WalletLocked\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"newOwner\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"newRecoveryOwner\",\"type\":\"address\"}],\"name\":\"WalletRecovered\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[],\"name\":\"WalletUnlocked\",\"type\":\"event\"},{\"inputs\":[],\"name\":\"VERSION\",\"outputs\":[{\"internalType\":\"string\",\"name\":\"\",\"type\":\"string\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"newGuardian\",\"type\":\"address\"}],\"name\":\"addGuardian\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"newRecoveryOwner\",\"type\":\"address\"}],\"name\":\"addRecoveryOwner\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"changeOwner\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"domainSeparator\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"to\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"value\",\"type\":\"uint256\"},{\"internalType\":\"bytes\",\"name\":\"callData\",\"type\":\"bytes\"},{\"internalType\":\"uint256\",\"name\":\"_nonce\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"maxFeePerGas\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"maxPriorityFeePerGas\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"gasLimit\",\"type\":\"uint256\"},{\"internalType\":\"bytes\",\"name\":\"signatures\",\"type\":\"bytes\"}],\"name\":\"exec\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getChainId\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"chainId\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getGuardians\",\"outputs\":[{\"internalType\":\"address[]\",\"name\":\"\",\"type\":\"address[]\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getRecoveryOwners\",\"outputs\":[{\"components\":[{\"internalType\":\"address\",\"name\":\"recoveryOwner\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"ownerIndex\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"time\",\"type\":\"uint256\"}],\"internalType\":\"struct ISSR.RecoverySettings[]\",\"name\":\"\",\"type\":\"tuple[]\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"guardiansLocked\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_owner\",\"type\":\"address\"},{\"internalType\":\"address[]\",\"name\":\"_recoveryOwners\",\"type\":\"address[]\"},{\"internalType\":\"address[]\",\"name\":\"_guardians\",\"type\":\"address[]\"}],\"name\":\"init\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"guardian\",\"type\":\"address\"}],\"name\":\"isGuardian\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"isLocked\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"hash\",\"type\":\"bytes32\"},{\"internalType\":\"bytes\",\"name\":\"signature\",\"type\":\"bytes\"}],\"name\":\"isValidSignature\",\"outputs\":[{\"internalType\":\"bytes4\",\"name\":\"\",\"type\":\"bytes4\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"lock\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"components\":[{\"internalType\":\"address\",\"name\":\"to\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"value\",\"type\":\"uint256\"},{\"internalType\":\"bytes\",\"name\":\"callData\",\"type\":\"bytes\"}],\"internalType\":\"struct ILaserWallet.Transaction[]\",\"name\":\"transactions\",\"type\":\"tuple[]\"}],\"name\":\"multiCall\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"nonce\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"},{\"internalType\":\"uint256[]\",\"name\":\"\",\"type\":\"uint256[]\"},{\"internalType\":\"uint256[]\",\"name\":\"\",\"type\":\"uint256[]\"},{\"internalType\":\"bytes\",\"name\":\"\",\"type\":\"bytes\"}],\"name\":\"onERC1155BatchReceived\",\"outputs\":[{\"internalType\":\"bytes4\",\"name\":\"result\",\"type\":\"bytes4\"}],\"stateMutability\":\"pure\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"},{\"internalType\":\"bytes\",\"name\":\"\",\"type\":\"bytes\"}],\"name\":\"onERC1155Received\",\"outputs\":[{\"internalType\":\"bytes4\",\"name\":\"\",\"type\":\"bytes4\"}],\"stateMutability\":\"pure\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"},{\"internalType\":\"bytes\",\"name\":\"\",\"type\":\"bytes\"}],\"name\":\"onERC721Received\",\"outputs\":[{\"internalType\":\"bytes4\",\"name\":\"\",\"type\":\"bytes4\"}],\"stateMutability\":\"pure\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"to\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"value\",\"type\":\"uint256\"},{\"internalType\":\"bytes\",\"name\":\"callData\",\"type\":\"bytes\"},{\"internalType\":\"uint256\",\"name\":\"_nonce\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"maxFeePerGas\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"maxPriorityFeePerGas\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"gasLimit\",\"type\":\"uint256\"}],\"name\":\"operationHash\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"owner\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"newOwner\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"newRecoveryOwner\",\"type\":\"address\"}],\"name\":\"recover\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"recoveryUnlock\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"prevGuardian\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"guardianToRemove\",\"type\":\"address\"}],\"name\":\"removeGuardian\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"recoveryOwner\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"index\",\"type\":\"uint256\"}],\"name\":\"removeRecoveryOwner\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"dataHash\",\"type\":\"bytes32\"},{\"internalType\":\"bytes32\",\"name\":\"r\",\"type\":\"bytes32\"},{\"internalType\":\"bytes32\",\"name\":\"s\",\"type\":\"bytes32\"},{\"internalType\":\"uint8\",\"name\":\"v\",\"type\":\"uint8\"},{\"internalType\":\"bytes\",\"name\":\"signatures\",\"type\":\"bytes\"}],\"name\":\"returnSigner\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"signer\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"to\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"value\",\"type\":\"uint256\"},{\"internalType\":\"bytes\",\"name\":\"callData\",\"type\":\"bytes\"},{\"internalType\":\"uint256\",\"name\":\"_nonce\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"maxFeePerGas\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"maxPriorityFeePerGas\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"gasLimit\",\"type\":\"uint256\"},{\"internalType\":\"bytes\",\"name\":\"signatures\",\"type\":\"bytes\"}],\"name\":\"simulateTransaction\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"totalGas\",\"type\":\"uint256\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"singleton\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes\",\"name\":\"signatures\",\"type\":\"bytes\"},{\"internalType\":\"uint256\",\"name\":\"pos\",\"type\":\"uint256\"}],\"name\":\"splitSigs\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"r\",\"type\":\"bytes32\"},{\"internalType\":\"bytes32\",\"name\":\"s\",\"type\":\"bytes32\"},{\"internalType\":\"uint8\",\"name\":\"v\",\"type\":\"uint8\"}],\"stateMutability\":\"pure\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes4\",\"name\":\"_interfaceId\",\"type\":\"bytes4\"}],\"name\":\"supportsInterface\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"pure\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"newRecoveryOwner\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"oldRecoveryOwner\",\"type\":\"address\"}],\"name\":\"swapRecoveryOwner\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"},{\"internalType\":\"bytes\",\"name\":\"\",\"type\":\"bytes\"},{\"internalType\":\"bytes\",\"name\":\"\",\"type\":\"bytes\"}],\"name\":\"tokensReceived\",\"outputs\":[],\"stateMutability\":\"pure\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"unlock\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"unlockGuardians\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_singleton\",\"type\":\"address\"}],\"name\":\"upgradeSingleton\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"stateMutability\":\"payable\",\"type\":\"receive\"}],\"devdoc\":{\"author\":\"Rodrigo Herrera I.\",\"errors\":{\"LW__exec__invalidNonce()\":[{\"details\":\"exec() custom errors.\"}],\"LW__multiCall__notOwner()\":[{\"details\":\"multiCall() custom error.\"}],\"LW__simulateTransaction__invalidNonce()\":[{\"details\":\"simulateTransaction() custom errors.\"}],\"LW__verifySignatures__invalidSignatureLength()\":[{\"details\":\"verifySignatures() custom errors.\"}],\"LaserWallet__invalidSignature()\":[{\"details\":\"isValidSignature() Laser custom error.\"}],\"Owner__changeOwner__invalidOwnerAddress()\":[{\"details\":\"changeOwner() custom error.\"}],\"Owner__initOwner__walletInitialized()\":[{\"details\":\"initOwner() custom errors.\"}],\"SSR__access__guardiansBlocked()\":[{\"details\":\"access() custom errors.\"}],\"SSR__addGuardian__invalidAddress()\":[{\"details\":\"addGuardian() custom errors.\"}],\"SSR__addRecoveryOwner__invalidAddress()\":[{\"details\":\"addRecoveryOwner() custom error.\"}],\"SSR__initGuardians__underflow()\":[{\"details\":\"initGuardians() custom errors.\"}],\"SSR__initRecoveryOwners__underflow()\":[{\"details\":\"initRecoveryOwners() custom error.\"}],\"SSR__removeGuardian__invalidAddress()\":[{\"details\":\"removeGuardian() custom errors.\"}],\"SSR__removeRecoveryOwner__incorrectIndex()\":[{\"details\":\"removeRecoveryOwner() custom error.\"}],\"SSR__validateRecoveryOwner__notAuthorized()\":[{\"details\":\"validateRecoveryOwner() custom error.\"}],\"Singleton__upgradeSingleton__incorrectAddress()\":[{\"details\":\"upgradeSingleton() custom errors.\"}],\"Utils__returnSigner__invalidSignature()\":[{\"details\":\"returnSigner() custom error.\"}]},\"kind\":\"dev\",\"methods\":{\"addGuardian(address)\":{\"details\":\"Adds a guardian to the wallet.\",\"params\":{\"newGuardian\":\"Address of the new guardian.\"}},\"addRecoveryOwner(address)\":{\"details\":\"Adds a new recovery owner to the chain list.\",\"params\":{\"newRecoveryOwner\":\"The address of the new recovery owner.\"}},\"changeOwner(address)\":{\"details\":\"Changes the owner of the wallet.\",\"params\":{\"newOwner\":\"The address of the new owner.\"}},\"domainSeparator()\":{\"details\":\"Returns the domain separator of this.\"},\"exec(address,uint256,bytes,uint256,uint256,uint256,uint256,bytes)\":{\"details\":\"Executes a generic transaction. It does not support 'delegatecall' for security reasons.\",\"params\":{\"_nonce\":\"Unsigned integer to avoid replay attacks. It needs to match the current wallet's nonce.\",\"callData\":\"Data payload for the transaction.\",\"gasLimit\":\"The transaction's gas limit. It needs to be the same as the actual transaction gas limit.\",\"maxFeePerGas\":\"Maximum amount that the user is willing to pay for a unit of gas.\",\"maxPriorityFeePerGas\":\"Miner's tip.\",\"signatures\":\"The signatures of the transaction.\",\"to\":\"Destination address.\",\"value\":\"Amount to send.\"}},\"getChainId()\":{\"returns\":{\"chainId\":\"The chain id of this.\"}},\"getGuardians()\":{\"returns\":{\"_0\":\"Array of guardians of this.\"}},\"getRecoveryOwners()\":{\"returns\":{\"_0\":\"Array of the recovery owners in struct format 'RecoverySettings'.\"}},\"init(address,address[],address[])\":{\"details\":\"Setup function, sets initial storage of contract.\",\"params\":{\"_guardians\":\"Addresses that can activate the social recovery mechanism.\",\"_owner\":\"The owner of the wallet.\",\"_recoveryOwners\":\"Array of recovery owners. Implementation of Sovereign Social Recovery.\"}},\"isGuardian(address)\":{\"params\":{\"guardian\":\"Requested address.\"},\"returns\":{\"_0\":\"Boolean if the address is a guardian of the current wallet.\"}},\"isValidSignature(bytes32,bytes)\":{\"details\":\"Implementation of EIP 1271: https://eips.ethereum.org/EIPS/eip-1271.\",\"params\":{\"hash\":\"Hash of a message signed on behalf of address(this).\",\"signature\":\"Signature byte array associated with _msgHash.\"},\"returns\":{\"_0\":\"Magic value  or reverts with an error message.\"}},\"lock()\":{\"details\":\"Locks the wallet. Can only be called by a guardian.\"},\"multiCall((address,uint256,bytes)[])\":{\"details\":\"Executes a series of generic transactions. It can only be called from exec.\",\"params\":{\"transactions\":\"Basic transactions array (to, value, calldata).\"}},\"operationHash(address,uint256,bytes,uint256,uint256,uint256,uint256)\":{\"details\":\"The transaction's hash. This is necessary to check that the signatures are correct and to avoid replay attacks.\"},\"recover(address,address)\":{\"details\":\"Can only recover with the signature of 1 guardian and the recovery owner.\",\"params\":{\"newOwner\":\"The new owner address. This is generated instantaneously.\",\"newRecoveryOwner\":\"The new recovery owner address. This is generated instantaneously.\"}},\"recoveryUnlock()\":{\"details\":\"Unlocks the wallet. Can only be called by the recovery owner + the owner. This is to avoid the wallet being locked forever if a guardian misbehaves. The guardians will be locked until the owner decides otherwise.\"},\"removeGuardian(address,address)\":{\"details\":\"Removes a guardian to the wallet.\",\"params\":{\"guardianToRemove\":\"Address of the guardian to be removed.\",\"prevGuardian\":\"Address of the previous guardian in the linked list.\"}},\"removeRecoveryOwner(address,uint256)\":{\"details\":\"Removes a recovery owner.\",\"params\":{\"index\":\"The position of the recovery owner in the chain list.\",\"recoveryOwner\":\"The address to be removed as recovery owner.\"}},\"returnSigner(bytes32,bytes32,bytes32,uint8,bytes)\":{\"details\":\"Returns the signer of the hash.\",\"params\":{\"dataHash\":\"The hash that was signed.\"}},\"simulateTransaction(address,uint256,bytes,uint256,uint256,uint256,uint256,bytes)\":{\"details\":\"Simulates a transaction. This should be called from the relayer, to verify that the transaction will not revert. This does not guarantees 100% that the transaction will succeed, the state will be different next block.\"},\"splitSigs(bytes,uint256)\":{\"details\":\"Returns the r, s and v of the signature.\",\"params\":{\"pos\":\"Which signature to read.\",\"signatures\":\"Signature.\"}},\"swapRecoveryOwner(address,address)\":{\"details\":\"Swaps a recovery owner for a new address.\",\"params\":{\"newRecoveryOwner\":\"The address of the new recovery owner.\",\"oldRecoveryOwner\":\"The address of the current recovery owner to be swapped by the new one.\"}},\"unlock()\":{\"details\":\"Unlocks the wallet. Can only be called by a guardian + the owner.\"},\"unlockGuardians()\":{\"details\":\"Unlocks the guardians. This can only be called by the owner.\"},\"upgradeSingleton(address)\":{\"details\":\"Migrates to a new singleton (implementation).\",\"params\":{\"_singleton\":\"New implementation address.\"}}},\"title\":\"LaserWallet - EVM based smart contract wallet. Implementes smart social recovery mechanism.\",\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{\"addGuardian(address)\":{\"notice\":\"Can only be called by the owner.\"},\"addRecoveryOwner(address)\":{\"notice\":\"The new recovery owner will be added at the end of the chain.\"},\"domainSeparator()\":{\"notice\":\"This is done to avoid replay attacks.\"},\"exec(address,uint256,bytes,uint256,uint256,uint256,uint256,bytes)\":{\"notice\":\"If 'gasLimit' does not match the actual gas limit of the transaction, the relayer can incur losses. It is the relayer's responsability to make sure that they are the same, the user does not get affected if a mistake is made. We prefer to prioritize the user's safety (not overpay) over the relayer.\"},\"init(address,address[],address[])\":{\"notice\":\"It can't be called after initialization.\"},\"recover(address,address)\":{\"notice\":\"The newOwner and newRecoveryOwner key pair should be generated from the mobile device. The main reason of this is to restart the generation process in case an attacker has the current recoveryOwner.\"},\"removeGuardian(address,address)\":{\"notice\":\"Can only be called by the owner.\"},\"removeRecoveryOwner(address,uint256)\":{\"notice\":\"The recovery owners that are positioned after the deleted recovery owner will be forward 1 position in the chain list.\"},\"simulateTransaction(address,uint256,bytes,uint256,uint256,uint256,uint256,bytes)\":{\"notice\":\"Needs to be called off-chain from  address zero.\"}},\"version\":1}},\"settings\":{\"compilationTarget\":{\"contracts/LaserWallet.sol\":\"LaserWallet\"},\"evmVersion\":\"london\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\",\"useLiteralContent\":true},\"optimizer\":{\"enabled\":true,\"runs\":800},\"remappings\":[]},\"sources\":{\"contracts/LaserWallet.sol\":{\"content\":\"// SPDX-License-Identifier: LGPL-3.0-only\\npragma solidity 0.8.15;\\n\\nimport \\\"./core/Singleton.sol\\\";\\nimport \\\"./handlers/Handler.sol\\\";\\nimport \\\"./interfaces/ILaserWallet.sol\\\";\\nimport \\\"./ssr/SSR.sol\\\";\\n\\n/**\\n * @title LaserWallet - EVM based smart contract wallet. Implementes smart social recovery mechanism.\\n * @author Rodrigo Herrera I.\\n */\\ncontract LaserWallet is Singleton, SSR, Handler, ILaserWallet {\\n    string public constant VERSION = \\\"1.0.0\\\";\\n\\n    bytes32 private constant DOMAIN_SEPARATOR_TYPEHASH =\\n        keccak256(\\\"EIP712Domain(uint256 chainId,address verifyingContract)\\\");\\n\\n    bytes32 private constant LASER_TYPE_STRUCTURE =\\n        keccak256(\\n            \\\"LaserOperation(address to,uint256 value,bytes callData,uint256 nonce,uint256 maxFeePerGas,uint256 maxPriorityFeePerGas,uint256 gasLimit)\\\"\\n        );\\n\\n    bytes4 private constant EIP1271_MAGIC_VALUE =\\n        bytes4(keccak256(\\\"isValidSignature(bytes32,bytes)\\\"));\\n\\n    uint256 public nonce;\\n\\n    constructor() {\\n        // This makes the singleton unusable. e.g. (parity wallet hack).\\n        owner = address(this);\\n    }\\n\\n    receive() external payable {\\n        emit Received(msg.sender, msg.value);\\n    }\\n\\n    /**\\n     * @dev Setup function, sets initial storage of contract.\\n     * @param _owner The owner of the wallet.\\n     * @param _recoveryOwners Array of recovery owners. Implementation of Sovereign Social Recovery.\\n     * @param _guardians Addresses that can activate the social recovery mechanism.\\n     * @notice It can't be called after initialization.\\n     */\\n    function init(\\n        address _owner,\\n        address[] calldata _recoveryOwners,\\n        address[] calldata _guardians\\n    ) external {\\n        // initOwner() requires that the current owner is address 0.\\n        // This is enough to protect init() from being called after initialization.\\n        initOwner(_owner);\\n        initGuardians(_guardians);\\n        initRecoveryOwners(_recoveryOwners);\\n        emit Setup(owner, _recoveryOwners, _guardians);\\n    }\\n\\n    /**\\n     * @dev Executes a generic transaction. It does not support 'delegatecall' for security reasons.\\n     * @param to Destination address.\\n     * @param value Amount to send.\\n     * @param callData Data payload for the transaction.\\n     * @param _nonce Unsigned integer to avoid replay attacks. It needs to match the current wallet's nonce.\\n     * @param maxFeePerGas Maximum amount that the user is willing to pay for a unit of gas.\\n     * @param maxPriorityFeePerGas Miner's tip.\\n     * @param gasLimit The transaction's gas limit. It needs to be the same as the actual transaction gas limit.\\n     * @param signatures The signatures of the transaction.\\n     * @notice If 'gasLimit' does not match the actual gas limit of the transaction, the relayer can incur losses.\\n     * It is the relayer's responsability to make sure that they are the same, the user does not get affected if a mistake is made.\\n     * We prefer to prioritize the user's safety (not overpay) over the relayer.\\n     */\\n    function exec(\\n        address to,\\n        uint256 value,\\n        bytes calldata callData,\\n        uint256 _nonce,\\n        uint256 maxFeePerGas,\\n        uint256 maxPriorityFeePerGas,\\n        uint256 gasLimit,\\n        bytes calldata signatures\\n    ) external {\\n        // We immediately increase the nonce to avoid replay attacks.\\n        unchecked {\\n            // Won't overflow ...\\n            if (nonce++ != _nonce) revert LW__exec__invalidNonce();\\n        }\\n\\n        // Verifies the correctness of the transaction. It checks that the signatures are\\n        // correct and that the signer has access for the transaction.\\n        verifyTransaction(\\n            to,\\n            value,\\n            callData,\\n            _nonce,\\n            maxFeePerGas,\\n            maxPriorityFeePerGas,\\n            gasLimit,\\n            signatures\\n        );\\n\\n        // Once we verified that the transaction is correct, we execute the main call.\\n        // We subtract 10_000 to have enough gas to complete the function.\\n        bool success = _call(to, value, callData, gasleft() - 10000);\\n\\n        // We do not revert the call if it fails, because the wallet needs to pay the relayer even in case of failure.\\n        if (success) emit ExecSuccess(to, value, nonce);\\n        else emit ExecFailure(to, value, nonce);\\n\\n        // We calculate the gas price, as per the user's request ...\\n        uint256 gasPrice = calculateGasPrice(\\n            maxFeePerGas,\\n            maxPriorityFeePerGas\\n        );\\n\\n        // gasUsed is the total amount of gas consumed for this transaction.\\n        // This is contemplating the initial callData cost, the main transaction,\\n        // and we add the surplus for what is left (refund the relayer).\\n        uint256 gasUsed = gasLimit - gasleft() + 7000;\\n\\n        uint256 refundAmount = gasUsed * gasPrice;\\n\\n        // We refund the relayer ...\\n        success = _call(msg.sender, refundAmount, new bytes(0), gasleft());\\n\\n        // If the transaction returns false, we revert ..\\n        if (!success) revert LW__exec__refundFailure();\\n    }\\n\\n    /**\\n     * @dev Executes a series of generic transactions. It can only be called from exec.\\n     * @param transactions Basic transactions array (to, value, calldata).\\n     */\\n    function multiCall(Transaction[] calldata transactions)\\n        external\\n        authorized\\n    {\\n        uint256 transactionsLength = transactions.length;\\n        for (uint256 i = 0; i < transactionsLength; ) {\\n            Transaction calldata transaction = transactions[i];\\n\\n            // We get the actual function selector to determine access ...\\n            bytes4 funcSelector = bytes4(transaction.callData);\\n\\n            // access() checks if the wallet is locked for the owner or guardians and returns who has access ...\\n            Access access = access(funcSelector);\\n\\n            // Only the owner is allowed to trigger a multiCall.\\n            // The signatures were already verified in 'exec', here we just need to make sure that access == owner.\\n            if (access != Access.Owner) revert LW__multiCall__notOwner();\\n\\n            bool success = _call(\\n                transaction.to,\\n                transaction.value,\\n                transaction.callData,\\n                gasleft()\\n            );\\n\\n            // We do not revert the call if it fails, because the wallet needs to pay the relayer even in case of failure.\\n            (success);\\n\\n            unchecked {\\n                // Won't overflow .... You would need way more gas usage than current available block gas (30m) to overflow it.\\n                ++i;\\n            }\\n        }\\n    }\\n\\n    /**\\n     * @dev Simulates a transaction. This should be called from the relayer, to verify that the transaction will not revert.\\n     * This does not guarantees 100% that the transaction will succeed, the state will be different next block.\\n     * @notice Needs to be called off-chain from  address zero.\\n     */\\n    function simulateTransaction(\\n        address to,\\n        uint256 value,\\n        bytes calldata callData,\\n        uint256 _nonce,\\n        uint256 maxFeePerGas,\\n        uint256 maxPriorityFeePerGas,\\n        uint256 gasLimit,\\n        bytes calldata signatures\\n    ) external returns (uint256 totalGas) {\\n        if (nonce++ != _nonce) revert LW__simulateTransaction__invalidNonce();\\n        verifyTransaction(\\n            to,\\n            value,\\n            callData,\\n            _nonce,\\n            maxFeePerGas,\\n            maxPriorityFeePerGas,\\n            gasLimit,\\n            signatures\\n        );\\n        bool success = _call(to, value, callData, gasleft());\\n        if (!success) revert LW__simulateTransaction__mainCallError();\\n        uint256 gasPrice = calculateGasPrice(\\n            maxFeePerGas,\\n            maxPriorityFeePerGas\\n        );\\n        uint256 gasUsed = gasLimit - gasleft() + 7000;\\n        uint256 refundAmount = gasUsed * gasPrice;\\n        success = _call(msg.sender, refundAmount, new bytes(0), gasleft());\\n        if (!success) revert LW__simulateTransaction__refundFailure();\\n        totalGas = gasLimit - gasleft();\\n        require(\\n            msg.sender == address(0),\\n            \\\"Must be called off-chain from address zero.\\\"\\n        );\\n    }\\n\\n    /**\\n     * @dev The transaction's hash. This is necessary to check that the signatures are correct and to avoid replay attacks.\\n     */\\n    function operationHash(\\n        address to,\\n        uint256 value,\\n        bytes calldata callData,\\n        uint256 _nonce,\\n        uint256 maxFeePerGas,\\n        uint256 maxPriorityFeePerGas,\\n        uint256 gasLimit\\n    ) external view returns (bytes32) {\\n        return\\n            keccak256(\\n                encodeOperation(\\n                    to,\\n                    value,\\n                    callData,\\n                    _nonce,\\n                    maxFeePerGas,\\n                    maxPriorityFeePerGas,\\n                    gasLimit\\n                )\\n            );\\n    }\\n\\n    /**\\n     * @dev Implementation of EIP 1271: https://eips.ethereum.org/EIPS/eip-1271.\\n     * @param hash Hash of a message signed on behalf of address(this).\\n     * @param signature Signature byte array associated with _msgHash.\\n     * @return Magic value  or reverts with an error message.\\n     */\\n    function isValidSignature(bytes32 hash, bytes memory signature)\\n        external\\n        view\\n        returns (bytes4)\\n    {\\n        bytes32 r;\\n        bytes32 s;\\n        uint8 v;\\n        (r, s, v) = splitSigs(signature, 0);\\n        address recovered = returnSigner(hash, r, s, v, signature);\\n\\n        // The guardians and recovery owners should not be able to sign transactions that are out of scope from this wallet.\\n        // Only the owner should be able to sign external data.\\n        if (recovered != owner) revert LaserWallet__invalidSignature();\\n        return EIP1271_MAGIC_VALUE;\\n    }\\n\\n    /**\\n     * @return chainId The chain id of this.\\n     */\\n    function getChainId() public view returns (uint256 chainId) {\\n        assembly {\\n            chainId := chainid()\\n        }\\n    }\\n\\n    function domainSeparator() public view returns (bytes32) {\\n        return\\n            keccak256(\\n                abi.encode(\\n                    DOMAIN_SEPARATOR_TYPEHASH,\\n                    getChainId(),\\n                    address(this)\\n                )\\n            );\\n    }\\n\\n    function verifyTransaction(\\n        address to,\\n        uint256 value,\\n        bytes calldata callData,\\n        uint256 _nonce,\\n        uint256 maxFeePerGas,\\n        uint256 maxPriorityFeePerGas,\\n        uint256 gasLimit,\\n        bytes calldata signatures\\n    ) internal view {\\n        // We encode the transaction data.\\n        bytes memory encodedData = encodeOperation(\\n            to,\\n            value,\\n            callData,\\n            _nonce,\\n            maxFeePerGas,\\n            maxPriorityFeePerGas,\\n            gasLimit\\n        );\\n\\n        // Now we hash it ...\\n        bytes32 dataHash = keccak256(encodedData);\\n\\n        // We get the actual function selector to determine access ...\\n        bytes4 funcSelector = bytes4(callData);\\n\\n        // access() checks if the wallet is locked for the owner or guardians and returns who has access ...\\n        Access access = access(funcSelector);\\n\\n        // We verify that the signatures are correct depending on the transaction type ...\\n        verifySignatures(access, dataHash, signatures);\\n    }\\n\\n    /**\\n     * @dev Verifies that the signature(s) match the transaction type and sender.\\n     * @param _access Who has permission to invoke this transaction.\\n     * @param dataHash The keccak256 has of the transaction's data playload.\\n     * @param signatures The signatures sent by the UserOp.\\n     */\\n    function verifySignatures(\\n        Access _access,\\n        bytes32 dataHash,\\n        bytes calldata signatures\\n    ) internal view {\\n        // If it is the owner or guardian, then only 1 signature is required.\\n        // For all other operations, 2 signatures are required.\\n        uint256 requiredSignatures = _access == Access.Owner ||\\n            _access == Access.Guardian\\n            ? 1\\n            : 2;\\n\\n        if (signatures.length < requiredSignatures * 65) {\\n            revert LW__verifySignatures__invalidSignatureLength();\\n        }\\n\\n        address signer;\\n        bytes32 r;\\n        bytes32 s;\\n        uint8 v;\\n\\n        for (uint256 i = 0; i < requiredSignatures; ) {\\n            (r, s, v) = splitSigs(signatures, i);\\n\\n            signer = returnSigner(dataHash, r, s, v, signatures);\\n\\n            if (_access == Access.Owner) {\\n                // If access == owner, the signer needs to be the owner.\\n\\n                // We do not need further checks e.g 'is the wallet locked', they were done in 'access'.\\n                if (owner != signer) revert LW__verifySignatures__notOwner();\\n            } else if (_access == Access.Guardian) {\\n                // If access == guardian, the signer needs to be a guardian.\\n\\n                // The guardian by itself can only lock the wallet, additional checks were done in 'access'.\\n                if (guardians[signer] == address(0)) {\\n                    revert LW__verifySignatures__notGuardian();\\n                }\\n            } else if (_access == Access.OwnerAndGuardian) {\\n                // If access == owner and guardian, the first signer needs to be the owner.\\n\\n                if (i == 0) {\\n                    // The first signer needs to be the owner.\\n                    if (owner != signer) {\\n                        revert LW__verifySignatures__notOwner();\\n                    }\\n                } else {\\n                    // The second signer needs to be a guardian.\\n                    if (guardians[signer] == address(0)) {\\n                        revert LW__verifySignatures__notGuardian();\\n                    }\\n                }\\n            } else if (_access == Access.RecoveryOwnerAndGuardian) {\\n                // If access == recovery owner and guardian, the first signer needs to be the recovery owner.\\n\\n                // We do not need further checks, they were done in 'access'.\\n                if (i == 0) {\\n                    // The first signer needs to be a recovery owner.\\n\\n                    // validateRecoveryOwner() handles all the necessary checks.\\n                    validateRecoveryOwner(signer);\\n                } else {\\n                    // The second signer needs to be a guardian.\\n                    if (guardians[signer] == address(0)) {\\n                        revert LW__verifySignatures__notGuardian();\\n                    }\\n                }\\n            } else if (_access == Access.OwnerAndRecoveryOwner) {\\n                // If access == owner and recovery owner, the first signer needs to be the owner.\\n\\n                if (i == 0) {\\n                    if (owner != signer) {\\n                        revert LW__verifySignatures__notOwner();\\n                    }\\n                } else {\\n                    // The second signer needs to be the recovery owner.\\n\\n                    // validateRecoveryOwner() handles all the necessary checks.\\n                    validateRecoveryOwner(signer);\\n                }\\n            } else {\\n                // This else statement should never reach.\\n                revert();\\n            }\\n\\n            unchecked {\\n                // Won't overflow ...\\n                ++i;\\n            }\\n        }\\n    }\\n\\n    function encodeOperation(\\n        address to,\\n        uint256 value,\\n        bytes calldata callData,\\n        uint256 _nonce,\\n        uint256 maxFeePerGas,\\n        uint256 maxPriorityFeePerGas,\\n        uint256 gasLimit\\n    ) internal view returns (bytes memory) {\\n        bytes32 userOperationHash = keccak256(\\n            abi.encode(\\n                LASER_TYPE_STRUCTURE,\\n                to,\\n                value,\\n                keccak256(callData),\\n                _nonce,\\n                maxFeePerGas,\\n                maxPriorityFeePerGas,\\n                gasLimit\\n            )\\n        );\\n\\n        return\\n            abi.encodePacked(\\n                bytes1(0x19),\\n                bytes1(0x01),\\n                domainSeparator(),\\n                userOperationHash\\n            );\\n    }\\n}\\n\",\"keccak256\":\"0x31fa9f56cd747142c4033082e0b33a6795464cc61317f54f038392fa3d258ccc\",\"license\":\"LGPL-3.0-only\"},\"contracts/core/Owner.sol\":{\"content\":\"// SPDX-License-Identifier: LGPL-3.0-only\\npragma solidity 0.8.15;\\n\\nimport \\\"../interfaces/IOwner.sol\\\";\\nimport \\\"./SelfAuthorized.sol\\\";\\n\\n/**\\n * @title Owner\\n * @notice Handles the owners addresses.\\n */\\ncontract Owner is IOwner, SelfAuthorized {\\n    ///@dev owner should always bet at storage slot 2.\\n    address public owner;\\n\\n    /**\\n     * @dev Changes the owner of the wallet.\\n     * @param newOwner The address of the new owner.\\n     */\\n    function changeOwner(address newOwner) external authorized {\\n        if (\\n            newOwner.code.length != 0 ||\\n            newOwner == address(0) ||\\n            newOwner == owner\\n        ) {\\n            revert Owner__changeOwner__invalidOwnerAddress();\\n        }\\n        owner = newOwner;\\n        emit OwnerChanged(newOwner);\\n    }\\n\\n    /**\\n     * @dev Inits the owner. This can only be called at creation.\\n     * @param _owner The owner of the wallet.\\n     */\\n    function initOwner(address _owner) internal {\\n        // If owner is not address 0, the wallet was already initialized...\\n        if (owner != address(0)) revert Owner__initOwner__walletInitialized();\\n        if (_owner.code.length != 0 || _owner == address(0)) {\\n            revert Owner__initOwner__invalidOwnerAddress();\\n        }\\n        owner = _owner;\\n    }\\n}\\n\",\"keccak256\":\"0xb04152cdaf3b67e00d93d2cccaf1dfbfb2a0917fc764d435c9ec666a19595b45\",\"license\":\"LGPL-3.0-only\"},\"contracts/core/SelfAuthorized.sol\":{\"content\":\"// SPDX-License-Identifier: LGPL-3.0-only\\npragma solidity 0.8.15;\\n\\n/**\\n * @title SelfAuthorized - authorizes current contract to perform actions.\\n */\\ncontract SelfAuthorized {\\n    error SelfAuthorized__notWallet();\\n\\n    modifier authorized() {\\n        if (msg.sender != address(this)) revert SelfAuthorized__notWallet();\\n\\n        _;\\n    }\\n}\\n\",\"keccak256\":\"0xc15db41ac0b6900c616a2e23758ebd45b230c3a89cbbe2afdbba74767bef12cf\",\"license\":\"LGPL-3.0-only\"},\"contracts/core/Singleton.sol\":{\"content\":\"// SPDX-License-Identifier: LGPL-3.0-only\\npragma solidity 0.8.15;\\n\\nimport \\\"../interfaces/IERC165.sol\\\";\\nimport \\\"../interfaces/ISingleton.sol\\\";\\nimport \\\"./SelfAuthorized.sol\\\";\\n\\n/**\\n * @title Singleton - Base for singleton contracts (should always be first super contract).\\n * This contract is tightly coupled to our proxy contract (see `proxies/LaserProxy.sol`).\\n */\\ncontract Singleton is SelfAuthorized, ISingleton {\\n    // Singleton always needs to be first declared variable, to ensure that it is at the same location as in the Proxy contract.\\n    // It should also always be ensured that the address is stored alone (uses a full word)\\n    address public singleton;\\n\\n    /**\\n     * @dev Migrates to a new singleton (implementation).\\n     * @param _singleton New implementation address.\\n     */\\n    function upgradeSingleton(address _singleton) external authorized {\\n        if (_singleton == address(this)) {\\n            revert Singleton__upgradeSingleton__incorrectAddress();\\n        }\\n\\n        if (!IERC165(_singleton).supportsInterface(0xae029e0b)) {\\n            //bytes4(keccak256(\\\"I_AM_LASER\\\")))\\n            revert Singleton__upgradeSingleton__notLaser();\\n        } else {\\n            singleton = _singleton;\\n            emit SingletonChanged(_singleton);\\n        }\\n    }\\n}\\n\",\"keccak256\":\"0xd7636c844082170cadde7a27aee66babee261b63c54ff86bed58c6a3cf1cf2f0\",\"license\":\"LGPL-3.0-only\"},\"contracts/handlers/Handler.sol\":{\"content\":\"// SPDX-License-Identifier: GPL-3.0\\npragma solidity 0.8.15;\\n\\nimport \\\"../interfaces/IHandler.sol\\\";\\nimport \\\"../interfaces/IERC165.sol\\\";\\n\\n/**\\n * @title TokenHandler - Supports token callbacks.\\n */\\ncontract Handler is IHandler, IERC165 {\\n    function onERC721Received(\\n        address,\\n        address,\\n        uint256,\\n        bytes calldata\\n    ) external pure returns (bytes4) {\\n        return 0x150b7a02;\\n    }\\n\\n    function onERC1155Received(\\n        address,\\n        address,\\n        uint256,\\n        uint256,\\n        bytes calldata\\n    ) external pure returns (bytes4) {\\n        return 0xf23a6e61;\\n    }\\n\\n    function onERC1155BatchReceived(\\n        address,\\n        address,\\n        uint256[] calldata,\\n        uint256[] calldata,\\n        bytes calldata\\n    ) external pure returns (bytes4 result) {\\n        return 0xbc197c81;\\n    }\\n\\n    function tokensReceived(\\n        address,\\n        address,\\n        address,\\n        uint256,\\n        bytes calldata,\\n        bytes calldata\\n    ) external pure {}\\n\\n    function supportsInterface(bytes4 _interfaceId)\\n        external\\n        pure\\n        returns (bool)\\n    {\\n        return\\n            _interfaceId == 0x01ffc9a7 || // ERC165 interface ID for ERC165\\n            _interfaceId == 0x1626ba7e || // EIP 1271\\n            _interfaceId == 0xd9b67a26 || // ERC165 interface ID for ERC1155\\n            _interfaceId == 0x4e2312e0 || // ERC-1155 `ERC1155TokenReceiver` support (i.e. `bytes4(keccak256(\\\"onERC1155Received(address,address,uint256,uint256,bytes)\\\")) ^bytes4(keccak256(\\\"onERC1155BatchReceived(address,address,uint256[],uint256[],bytes)\\\"))`).\\n            _interfaceId == 0xae029e0b || // Laser Wallet contract: bytes4(keccak256(\\\"I_AM_LASER\\\"))\\n            _interfaceId == 0x150b7a02; // ERC721 onErc721Received\\n    }\\n}\\n\",\"keccak256\":\"0xa39d32c1c1e6982c8a8bc7d6444a08bf300fd457182d02ec75884e057ee74c50\",\"license\":\"GPL-3.0\"},\"contracts/interfaces/IEIP1271.sol\":{\"content\":\"// SPDX-License-Identifier: LGPL-3.0-only\\npragma solidity 0.8.15;\\n\\n/**\\n * @title IEIP1271\\n * @notice Interface to call external contracts to validate signature.\\n */\\ninterface IEIP1271 {\\n    /**\\n     * @dev Implementation of EIP 1271: https://eips.ethereum.org/EIPS/eip-1271.\\n     * @param hash Hash of a message signed on behalf of address(this).\\n     * @param signature Signature byte array associated with _msgHash.\\n     * @return Magic value  or reverts with an error message.\\n     */\\n    function isValidSignature(bytes32 hash, bytes memory signature)\\n        external\\n        view\\n        returns (bytes4);\\n}\\n\",\"keccak256\":\"0x45d27e7e20c819c2e61b389c6109918565196cd1fb1e92571a457e959575e8c4\",\"license\":\"LGPL-3.0-only\"},\"contracts/interfaces/IERC165.sol\":{\"content\":\"// SPDX-License-Identifier: GPL-3.0\\npragma solidity 0.8.15;\\n\\n/**\\n * @title IERC165\\n * @notice Support of ERC165.\\n */\\ninterface IERC165 {\\n    /**\\n     * @notice Query if a contract implements an interface\\n     * @param interfaceID The interface identifier, as specified in ERC-165\\n     * @dev Interface identification is specified in ERC-165. This function\\n     * uses less than 30,000 gas.\\n     * @return `true` if the contract implements `interfaceID` and\\n     * interfaceID` is not 0xffffffff, `false` otherwise\\n     */\\n    function supportsInterface(bytes4 interfaceID) external view returns (bool);\\n}\\n\",\"keccak256\":\"0xdf3ddac29884e2c1f2d2fd322bacd6a6907721d3e0909af74cdedeac5c38a9f4\",\"license\":\"GPL-3.0\"},\"contracts/interfaces/IHandler.sol\":{\"content\":\"// SPDX-License-Identifier: LGPL-3.0-only\\npragma solidity 0.8.15;\\n\\n/**\\n * @title IHandler\\n * @notice Has all the external functions for Handler.sol.\\n */\\ninterface IHandler {\\n    function onERC721Received(\\n        address,\\n        address,\\n        uint256,\\n        bytes calldata\\n    ) external pure returns (bytes4);\\n\\n    function onERC1155Received(\\n        address,\\n        address,\\n        uint256,\\n        uint256,\\n        bytes calldata\\n    ) external pure returns (bytes4 result);\\n\\n    function onERC1155BatchReceived(\\n        address,\\n        address,\\n        uint256[] calldata,\\n        uint256[] calldata,\\n        bytes calldata\\n    ) external pure returns (bytes4 result);\\n\\n    function tokensReceived(\\n        address,\\n        address,\\n        address,\\n        uint256,\\n        bytes calldata,\\n        bytes calldata\\n    ) external pure;\\n}\\n\",\"keccak256\":\"0x894c6f39829580da16da3714121ce8913d6fce78dfee658c546eef14850e37fc\",\"license\":\"LGPL-3.0-only\"},\"contracts/interfaces/ILaserWallet.sol\":{\"content\":\"// SPDX-License-Identifier: GPL-3.0\\npragma solidity 0.8.15;\\n\\n/**\\n * @title ILaserWallet\\n * @author Rodrigo Herrera I.\\n * @notice Has all the external functions, structs, events and errors for LaserWallet.sol.\\n */\\ninterface ILaserWallet {\\n    struct Transaction {\\n        address to;\\n        uint256 value;\\n        bytes callData;\\n    }\\n\\n    event Received(address indexed sender, uint256 amount);\\n    event Setup(address owner, address[] recoveryOwners, address[] guardians);\\n    event ExecSuccess(address to, uint256 value, uint256 nonce);\\n    event ExecFailure(address to, uint256 value, uint256 nonce);\\n\\n    ///@dev exec() custom errors.\\n    error LW__exec__invalidNonce();\\n    error LW__exec__refundFailure();\\n\\n    ///@dev multiCall() custom error.\\n    error LW__multiCall__notOwner();\\n\\n    ///@dev simulateTransaction() custom errors.\\n    error LW__simulateTransaction__invalidNonce();\\n    error LW__simulateTransaction__mainCallError();\\n    error LW__simulateTransaction__refundFailure();\\n\\n    ///@dev isValidSignature() Laser custom error.\\n    error LaserWallet__invalidSignature();\\n\\n    ///@dev verifySignatures() custom errors.\\n    error LW__verifySignatures__invalidSignatureLength();\\n    error LW__verifySignatures__notOwner();\\n    error LW__verifySignatures__notGuardian();\\n\\n    /**\\n     * @dev Setup function, sets initial storage of contract.\\n     * @param owner The owner of the wallet.\\n     * @param recoveryOwners Array of recovery owners. Implementation of Sovereign Social Recovery.\\n     * @param guardians Addresses that can activate the social recovery mechanism.\\n     * @notice It can't be called after initialization.\\n     */\\n    function init(\\n        address owner,\\n        address[] calldata recoveryOwners,\\n        address[] calldata guardians\\n        // ropsten, kovan, sepoia.\\n    ) external;\\n\\n    /**\\n     * @dev Executes a generic transaction. It does not support 'delegatecall' for security reasons.\\n     * @param to Destination address.\\n     * @param value Amount to send.\\n     * @param callData Data payload for the transaction.\\n     * @param _nonce Unsigned integer to avoid replay attacks. It needs to match the current wallet's nonce.\\n     * @param maxFeePerGas Maximum amount that the user is willing to pay for a unit of gas.\\n     * @param maxPriorityFeePerGas Miner's tip.\\n     * @param gasLimit The transaction's gas limit. It needs to be the same as the actual transaction gas limit.\\n     * @param signatures The signatures of the transaction.\\n     * @notice If 'gasLimit' does not match the actual gas limit of the transaction, the relayer can incur losses.\\n     * It is the relayer's responsability to make sure that they are the same, the user does not get affected if a mistake is made.\\n     * We prefer to prioritize the user's safety (not overpay) over the relayer.\\n     */\\n    function exec(\\n        address to,\\n        uint256 value,\\n        bytes calldata callData,\\n        uint256 _nonce,\\n        uint256 maxFeePerGas,\\n        uint256 maxPriorityFeePerGas,\\n        uint256 gasLimit,\\n        bytes calldata signatures\\n    ) external;\\n\\n    /**\\n     * @dev Executes a series of generic transactions. It can only be called from exec.\\n     * @param transactions Basic transactions array (to, value, calldata).\\n     */\\n    function multiCall(Transaction[] calldata transactions) external;\\n\\n    /**\\n     * @dev Simulates a transaction. This should be called from the relayer, to verify that the transaction will not revert.\\n     * This does not guarantees 100% that the transaction will succeed, the state will be different next block.\\n     * @notice Needs to be called off-chain from  address zero.\\n     */\\n    function simulateTransaction(\\n        address to,\\n        uint256 value,\\n        bytes calldata callData,\\n        uint256 _nonce,\\n        uint256 maxFeePerGas,\\n        uint256 maxPriorityFeePerGas,\\n        uint256 gasLimit,\\n        bytes calldata signatures\\n    ) external returns (uint256 totalGas);\\n\\n    /**\\n     * @dev The transaction's hash. This is necessary to check that the signatures are correct and to avoid replay attacks.\\n     */\\n    function operationHash(\\n        address to,\\n        uint256 value,\\n        bytes calldata callData,\\n        uint256 _nonce,\\n        uint256 maxFeePerGas,\\n        uint256 maxPriorityFeePerGas,\\n        uint256 gasLimit\\n    ) external view returns (bytes32);\\n\\n    /**\\n     * @dev Implementation of EIP 1271: https://eips.ethereum.org/EIPS/eip-1271.\\n     * @param hash Hash of a message signed on behalf of address(this).\\n     * @param signature Signature byte array associated with _msgHash.\\n     * @return Magic value  or reverts with an error message.\\n     */\\n    function isValidSignature(bytes32 hash, bytes memory signature)\\n        external\\n        returns (bytes4);\\n\\n    /**\\n     * @dev Returns the chain id of this.\\n     */\\n    function getChainId() external view returns (uint256);\\n\\n    /**\\n     * @dev Returns the domain separator of this.\\n     * @notice This is done to avoid replay attacks.\\n     */\\n    function domainSeparator() external view returns (bytes32);\\n}\\n\",\"keccak256\":\"0xecaf27cfdb1870eeee25721d6e120bc22909c516dcead69569d030ada6f0d102\",\"license\":\"GPL-3.0\"},\"contracts/interfaces/IOwner.sol\":{\"content\":\"// SPDX-License-Identifier: LGPL-3.0-only\\npragma solidity 0.8.15;\\n\\n/**\\n * @title IOwner\\n * @notice Has all the external functions, events and errors for Owner.sol.\\n */\\ninterface IOwner {\\n    event OwnerChanged(address newOwner);\\n\\n    ///@dev changeOwner() custom error.\\n    error Owner__changeOwner__invalidOwnerAddress();\\n\\n    ///@dev initOwner() custom errors.\\n    error Owner__initOwner__walletInitialized();\\n    error Owner__initOwner__invalidOwnerAddress();\\n\\n    /**\\n     * @dev Changes the owner of the wallet.\\n     * @param newOwner The address of the new owner.\\n     */\\n    function changeOwner(address newOwner) external;\\n}\\n\",\"keccak256\":\"0x9c3c9df58c6ee966305dd5a18ca54a3e9a9dc0a06db6abba0f7b1be40ddfc7e3\",\"license\":\"LGPL-3.0-only\"},\"contracts/interfaces/ISSR.sol\":{\"content\":\"// SPDX-License-Identifier: LGPL-3.0-only\\npragma solidity 0.8.15;\\n\\n/**\\n * @title ISSR\\n * @notice Has all the external functions, structs, events and errors for SSR.sol.\\n */\\ninterface ISSR {\\n    ///@dev Struct for the recovery owner's chain.\\n    struct RecoverySettings {\\n        address recoveryOwner;\\n        uint256 ownerIndex;\\n        uint256 time;\\n    }\\n\\n    ///@dev Determines who has access to call a specific function.\\n    enum Access {\\n        Owner,\\n        Guardian,\\n        OwnerAndGuardian,\\n        RecoveryOwnerAndGuardian,\\n        OwnerAndRecoveryOwner\\n    }\\n\\n    event WalletLocked();\\n    event WalletUnlocked();\\n    event RecoveryUnlocked();\\n    event NewGuardian(address newGuardian);\\n    event GuardianRemoved(address removedGuardian);\\n    event WalletRecovered(address newOwner, address newRecoveryOwner);\\n    event NewRecoveryOwner(address newRecoveryOwner);\\n\\n    ///@dev addGuardian() custom errors.\\n    error SSR__addGuardian__invalidAddress();\\n\\n    ///@dev removeGuardian() custom errors.\\n    error SSR__removeGuardian__invalidAddress();\\n    error SSR__removeGuardian__incorrectPreviousGuardian();\\n    error SSR__removeGuardian__underflow();\\n\\n    ///@dev addRecoveryOwner() custom error.\\n    error SSR__addRecoveryOwner__invalidAddress();\\n\\n    ///@dev removeRecoveryOwner() custom error.\\n    error SSR__removeRecoveryOwner__incorrectIndex();\\n\\n    ///@dev initRecoveryOwners() custom error.\\n    error SSR__initRecoveryOwners__underflow();\\n    error SSR__initRecoveryOwners__invalidAddress();\\n\\n    ///@dev initGuardians() custom errors.\\n    error SSR__initGuardians__underflow();\\n    error SSR__initGuardians__invalidAddress();\\n\\n    ///@dev access() custom errors.\\n    error SSR__access__guardiansBlocked();\\n    error SSR__access__walletLocked();\\n\\n    ///@dev validateRecoveryOwner() custom error.\\n    error SSR__validateRecoveryOwner__notAuthorized();\\n\\n    /**\\n     *\\u00a0@dev Locks the wallet. Can only be called by a guardian.\\n     */\\n    function lock() external;\\n\\n    /**\\n     * @dev Unlocks the wallet. Can only be called by a guardian + the owner.\\n     */\\n    function unlock() external;\\n\\n    /**\\n     * @dev Unlocks the wallet. Can only be called by the recovery owner + the owner.\\n     * This is to avoid the wallet being locked forever if a guardian misbehaves.\\n     * The guardians will be locked until the owner decides otherwise.\\n     */\\n    function recoveryUnlock() external;\\n\\n    /**\\n     * @dev Unlocks the guardians. This can only be called by the owner.\\n     */\\n    function unlockGuardians() external;\\n\\n    /**\\n     * @dev Can only recover with the signature of the recovery owner and guardian.\\n     * @param newOwner The new owner address. This is generated instantaneously.\\n     * @param newRecoveryOwner The new recovery owner address. This is generated instantaneously.\\n     * @notice The newOwner and newRecoveryOwner key pair should be generated from the mobile device.\\n     * The main reason of this is to restart the generation process in case an attacker has the current recoveryOwner.\\n     */\\n    function recover(address newOwner, address newRecoveryOwner) external;\\n\\n    /**\\n     * @dev Adds a guardian to the wallet.\\n     * @param newGuardian Address of the new guardian.\\n     * @notice Can only be called by the owner.\\n     */\\n    function addGuardian(address newGuardian) external;\\n\\n    /**\\n     * @dev Removes a guardian to the wallet.\\n     * @param prevGuardian Address of the previous guardian in the linked list.\\n     * @param guardianToRemove Address of the guardian to be removed.\\n     * @notice Can only be called by the owner.\\n     */\\n    function removeGuardian(address prevGuardian, address guardianToRemove)\\n        external;\\n\\n    /**\\n     * @dev Adds a new recovery owner to the chain list.\\n     * @param newRecoveryOwner The address of the new recovery owner.\\n     * @notice The new recovery owner will be added at the end of the chain.\\n     */\\n    function addRecoveryOwner(address newRecoveryOwner) external;\\n\\n    /**\\n     * @dev Removes a recovery owner.\\n     * @param recoveryOwner The address to be removed as recovery owner.\\n     * @param index The position of the recovery owner in the chain list.\\n     * @notice The recovery owners that are positioned after the deleted recovery owner will be forward 1 position in the chain list.\\n     */\\n    function removeRecoveryOwner(address recoveryOwner, uint256 index) external;\\n\\n    /**\\n     * @dev Swaps a recovery owner for a new address.\\n     * @param newRecoveryOwner The address of the new recovery owner.\\n     * @param oldRecoveryOwner The address of the current recovery owner to be swapped by the new one.\\n     */\\n    function swapRecoveryOwner(\\n        address newRecoveryOwner,\\n        address oldRecoveryOwner\\n    ) external;\\n\\n    /**\\n     * @param guardian Requested address.\\n     * @return Boolean if the address is a guardian of the current wallet.\\n     */\\n    function isGuardian(address guardian) external view returns (bool);\\n\\n    /**\\n     * @return Array of the recovery owners in struct format 'RecoverySettings'.\\n     */\\n    function getRecoveryOwners()\\n        external\\n        view\\n        returns (RecoverySettings[] memory);\\n\\n    /**\\n     * @return Array of guardians of this.\\n     */\\n    function getGuardians() external view returns (address[] memory);\\n}\\n\",\"keccak256\":\"0xc0a416a6e1f24fa68da5f83b597a9e49814eb5f2fc398e6d7bfa76f2ef728c11\",\"license\":\"LGPL-3.0-only\"},\"contracts/interfaces/ISingleton.sol\":{\"content\":\"// SPDX-License-Identifier: LGPL-3.0-only\\npragma solidity 0.8.15;\\n\\n/**\\n * @title ISingleton\\n * @notice Has all the external functions, events and errors for Singleton.sol.\\n */\\n\\ninterface ISingleton {\\n    event SingletonChanged(address indexed newSingleton);\\n\\n    ///@dev upgradeSingleton() custom errors.\\n    error Singleton__upgradeSingleton__incorrectAddress();\\n    error Singleton__upgradeSingleton__notLaser();\\n\\n    /**\\n     * @dev Migrates to a new singleton (implementation).\\n     * @param singleton New implementation address.\\n     */\\n    function upgradeSingleton(address singleton) external;\\n}\\n\",\"keccak256\":\"0x9dc655cd1bdbf3a0ae04234e6e8d4cf90cc7c295eb3ee2474febd9709b90a73f\",\"license\":\"LGPL-3.0-only\"},\"contracts/interfaces/IUtils.sol\":{\"content\":\"// SPDX-License-Identifier: LGPL-3.0-only\\npragma solidity 0.8.15;\\n\\n/**\\n * @title IUtils\\n * @notice Has all the external functions and errors for Utils.sol.\\n */\\ninterface IUtils {\\n    ///@dev returnSigner() custom error.\\n    error Utils__returnSigner__invalidSignature();\\n    error Utils__returnSigner__invalidContractSignature();\\n\\n    /**\\n     * @dev Returns the signer of the hash.\\n     * @param dataHash The hash that was signed.\\n     */\\n    function returnSigner(\\n        bytes32 dataHash,\\n        bytes32 r,\\n        bytes32 s,\\n        uint8 v,\\n        bytes memory signatures\\n    ) external view returns (address signer);\\n\\n    /**\\n     * @dev Returns the r, s and v of the signature.\\n     * @param signatures Signature.\\n     * @param pos Which signature to read.\\n     */\\n    function splitSigs(bytes memory signatures, uint256 pos)\\n        external\\n        pure\\n        returns (\\n            bytes32 r,\\n            bytes32 s,\\n            uint8 v\\n        );\\n}\\n\",\"keccak256\":\"0x375054f71f454e8a13d55649851c6e8d65a92972526cdafff24421c7864489db\",\"license\":\"LGPL-3.0-only\"},\"contracts/ssr/SSR.sol\":{\"content\":\"// SPDX-License-Identifier: LGPL-3.0-only\\npragma solidity 0.8.15;\\n\\nimport \\\"../core/SelfAuthorized.sol\\\";\\nimport \\\"../core/Owner.sol\\\";\\nimport \\\"../interfaces/IEIP1271.sol\\\";\\nimport \\\"../interfaces/IERC165.sol\\\";\\nimport \\\"../interfaces/ISSR.sol\\\";\\nimport \\\"../utils/Utils.sol\\\";\\n\\n/**\\n * @title SSR - Smart Social Recovery\\n * @notice New wallet recovery mechanism.\\n * @author Rodrigo Herrera I.\\n */\\ncontract SSR is ISSR, SelfAuthorized, Owner, Utils {\\n    ///@dev pointer address for the nested mapping.\\n    address internal constant pointer = address(0x1);\\n\\n    uint256 internal recoveryOwnersCount;\\n\\n    uint256 internal guardianCount;\\n\\n    uint256 internal timeLock;\\n\\n    bool public isLocked;\\n\\n    ///@dev If guardians are locked, they cannot do any transaction.\\n    ///This is to completely prevent from guardians misbehaving.\\n    bool public guardiansLocked;\\n\\n    mapping(uint256 => RecoverySettings) internal recoveryOwners;\\n\\n    mapping(address => address) internal guardians;\\n\\n    /**\\n     *\\u00a0@dev Locks the wallet. Can only be called by a guardian.\\n     */\\n    function lock() external authorized {\\n        timeLock = block.timestamp;\\n        isLocked = true;\\n        emit WalletLocked();\\n    }\\n\\n    /**\\n     * @dev Unlocks the wallet. Can only be called by a guardian + the owner.\\n     */\\n    function unlock() external authorized {\\n        timeLock = 0;\\n        isLocked = false;\\n        emit WalletUnlocked();\\n    }\\n\\n    /**\\n     * @dev Unlocks the wallet. Can only be called by the recovery owner + the owner.\\n     * This is to avoid the wallet being locked forever if a guardian misbehaves.\\n     * The guardians will be locked until the owner decides otherwise.\\n     */\\n    function recoveryUnlock() external authorized {\\n        isLocked = false;\\n        guardiansLocked = true;\\n        emit RecoveryUnlocked();\\n    }\\n\\n    /**\\n     * @dev Unlocks the guardians. This can only be called by the owner.\\n     */\\n    function unlockGuardians() external authorized {\\n        guardiansLocked = false;\\n    }\\n\\n    /**\\n     * @dev Can only recover with the signature of 1 guardian and the recovery owner.\\n     * @param newOwner The new owner address. This is generated instantaneously.\\n     * @param newRecoveryOwner The new recovery owner address. This is generated instantaneously.\\n     * @notice The newOwner and newRecoveryOwner key pair should be generated from the mobile device.\\n     * The main reason of this is to restart the generation process in case an attacker has the current recoveryOwner.\\n     */\\n    function recover(address newOwner, address newRecoveryOwner)\\n        external\\n        authorized\\n    {\\n        timeLock = 0;\\n        owner = newOwner;\\n        // recoveryOwner = newRecoveryOwner;\\n        emit WalletRecovered(newOwner, newRecoveryOwner);\\n    }\\n\\n    /**\\n     * @dev Adds a guardian to the wallet.\\n     * @param newGuardian Address of the new guardian.\\n     * @notice Can only be called by the owner.\\n     */\\n    function addGuardian(address newGuardian) external authorized {\\n        if (\\n            newGuardian == address(0) ||\\n            newGuardian == owner ||\\n            guardians[newGuardian] != address(0)\\n        ) revert SSR__addGuardian__invalidAddress();\\n\\n        if (!IERC165(newGuardian).supportsInterface(0x1626ba7e)) {\\n            revert SSR__addGuardian__invalidAddress();\\n        }\\n\\n        guardians[newGuardian] = guardians[pointer];\\n        guardians[pointer] = newGuardian;\\n\\n        unchecked {\\n            // Won't overflow...\\n            ++guardianCount;\\n        }\\n        emit NewGuardian(newGuardian);\\n    }\\n\\n    /**\\n     * @dev Removes a guardian to the wallet.\\n     * @param prevGuardian Address of the previous guardian in the linked list.\\n     * @param guardianToRemove Address of the guardian to be removed.\\n     * @notice Can only be called by the owner.\\n     */\\n    function removeGuardian(address prevGuardian, address guardianToRemove)\\n        external\\n        authorized\\n    {\\n        if (guardianToRemove == pointer) {\\n            revert SSR__removeGuardian__invalidAddress();\\n        }\\n\\n        if (guardians[prevGuardian] != guardianToRemove) {\\n            revert SSR__removeGuardian__incorrectPreviousGuardian();\\n        }\\n\\n        // There needs to be at least 1 guardian ..\\n        if (guardianCount - 1 < 1) revert SSR__removeGuardian__underflow();\\n\\n        guardians[prevGuardian] = guardians[guardianToRemove];\\n        guardians[guardianToRemove] = address(0);\\n        unchecked {\\n            //Won't underflow...\\n            --guardianCount;\\n        }\\n        emit GuardianRemoved(guardianToRemove);\\n    }\\n\\n    /**\\n     * @dev Adds a new recovery owner to the chain list.\\n     * @param newRecoveryOwner The address of the new recovery owner.\\n     * @notice The new recovery owner will be added at the end of the chain.\\n     */\\n    function addRecoveryOwner(address newRecoveryOwner) external authorized {\\n        if (newRecoveryOwner.code.length > 0) {\\n            // If the recovery owner is a smart contract wallet, it needs to support EIP1271.\\n            if (!IERC165(newRecoveryOwner).supportsInterface(0x1626ba7e)) {\\n                revert SSR__initRecoveryOwners__invalidAddress();\\n            }\\n        }\\n\\n        if (\\n            newRecoveryOwner == address(0) ||\\n            newRecoveryOwner == owner ||\\n            guardians[newRecoveryOwner] != address(0)\\n        ) revert SSR__addRecoveryOwner__invalidAddress();\\n\\n        uint256 _recoveryOwnersCount = recoveryOwnersCount;\\n\\n        recoveryOwners[_recoveryOwnersCount] = RecoverySettings({\\n            recoveryOwner: newRecoveryOwner,\\n            ownerIndex: _recoveryOwnersCount,\\n            time: _recoveryOwnersCount * 1 weeks\\n        });\\n\\n        emit NewRecoveryOwner(newRecoveryOwner);\\n    }\\n\\n    /**\\n     * @dev Removes a recovery owner.\\n     * @param recoveryOwner The address to be removed as recovery owner.\\n     * @param index The position of the recovery owner in the chain list.\\n     * @notice The recovery owners that are positioned after the deleted recovery owner will be forward 1 position in the chain list.\\n     */\\n    function removeRecoveryOwner(address recoveryOwner, uint256 index)\\n        external\\n        authorized\\n    {\\n        uint256 _recoveryOwnersCount = recoveryOwnersCount;\\n\\n        if (_recoveryOwnersCount - 1 > index) {\\n            revert SSR__removeRecoveryOwner__incorrectIndex();\\n        }\\n    }\\n\\n    /**\\n     * @dev Swaps a recovery owner for a new address.\\n     * @param newRecoveryOwner The address of the new recovery owner.\\n     * @param oldRecoveryOwner The address of the current recovery owner to be swapped by the new one.\\n     */\\n    function swapRecoveryOwner(\\n        address newRecoveryOwner,\\n        address oldRecoveryOwner\\n    ) external authorized {}\\n\\n    /**\\n     * @param guardian Requested address.\\n     * @return Boolean if the address is a guardian of the current wallet.\\n     */\\n    function isGuardian(address guardian) external view returns (bool) {\\n        return guardian != pointer && guardians[guardian] != address(0);\\n    }\\n\\n    /**\\n     * @return Array of the recovery owners in struct format 'RecoverySettings'.\\n     */\\n    function getRecoveryOwners()\\n        external\\n        view\\n        returns (RecoverySettings[] memory)\\n    {\\n        RecoverySettings[] memory recoveryOwnersArray = new RecoverySettings[](\\n            recoveryOwnersCount\\n        );\\n\\n        for (uint256 i = 0; i < recoveryOwnersCount; i++) {\\n            recoveryOwnersArray[i] = recoveryOwners[i];\\n        }\\n        return recoveryOwnersArray;\\n    }\\n\\n    /**\\n     * @return Array of guardians of this.\\n     */\\n    function getGuardians() external view returns (address[] memory) {\\n        address[] memory guardiansArray = new address[](guardianCount);\\n        address currentGuardian = guardians[pointer];\\n\\n        uint256 index = 0;\\n        while (currentGuardian != pointer) {\\n            guardiansArray[index] = currentGuardian;\\n            currentGuardian = guardians[currentGuardian];\\n            index++;\\n        }\\n        return guardiansArray;\\n    }\\n\\n    /**\\n     * @dev Inits the recovery owners.\\n     * @param _recoveryOwners Array of ricovery owners.\\n     * @notice There needs to be at least 2 recovery owners.\\n     */\\n    function initRecoveryOwners(address[] calldata _recoveryOwners) internal {\\n        uint256 recoveryOwnersLength = _recoveryOwners.length;\\n        // There needs to be at least 2 recovery owners.\\n        if (recoveryOwnersLength < 2) {\\n            revert SSR__initRecoveryOwners__underflow();\\n        }\\n\\n        for (uint256 i = 0; i < recoveryOwnersLength; ) {\\n            address recoveryOwner = _recoveryOwners[i];\\n\\n            if (recoveryOwner.code.length > 0) {\\n                // If the recovery owner is a smart contract wallet, it needs to support EIP1271.\\n                if (!IERC165(recoveryOwner).supportsInterface(0x1626ba7e)) {\\n                    revert SSR__initRecoveryOwners__invalidAddress();\\n                }\\n            }\\n\\n            if (\\n                recoveryOwner == address(0) ||\\n                recoveryOwner == owner ||\\n                guardians[recoveryOwner] != address(0)\\n            ) revert SSR__initRecoveryOwners__invalidAddress();\\n\\n            recoveryOwners[i] = RecoverySettings({\\n                recoveryOwner: recoveryOwner,\\n                ownerIndex: i,\\n                time: i * 1 weeks\\n            });\\n            unchecked {\\n                ++i;\\n            }\\n        }\\n        recoveryOwnersCount = recoveryOwnersLength;\\n    }\\n\\n    /**\\n     * @dev Sets up the initial guardian configuration. Can only be called from the init function.\\n     * @param _guardians Array of guardians.\\n     */\\n    function initGuardians(address[] calldata _guardians) internal {\\n        uint256 guardiansLength = _guardians.length;\\n        // There needs to be at least 2 guardians.\\n        if (guardiansLength < 2) revert SSR__initGuardians__underflow();\\n\\n        address currentGuardian = pointer;\\n\\n        for (uint256 i = 0; i < guardiansLength; ) {\\n            address guardian = _guardians[i];\\n            if (\\n                guardian == owner ||\\n                guardian == address(0) ||\\n                guardian == pointer ||\\n                guardian == currentGuardian ||\\n                guardians[guardian] != address(0)\\n            ) revert SSR__initGuardians__invalidAddress();\\n\\n            if (guardian.code.length > 0) {\\n                // If the guardian is a smart contract wallet, it needs to support EIP1271.\\n                if (!IERC165(guardian).supportsInterface(0x1626ba7e)) {\\n                    revert SSR__initGuardians__invalidAddress();\\n                }\\n            }\\n\\n            unchecked {\\n                // Won't overflow...\\n                ++i;\\n            }\\n            guardians[currentGuardian] = guardian;\\n            currentGuardian = guardian;\\n        }\\n\\n        guardians[currentGuardian] = pointer;\\n        guardianCount = guardiansLength;\\n    }\\n\\n    /**\\n     * @dev Returns who has access to call a specific function.\\n     * @param funcSelector The function selector: bytes4(keccak256(...)).\\n     */\\n    function access(bytes4 funcSelector) internal view returns (Access) {\\n        if (funcSelector == this.lock.selector) {\\n            // Only a guardian can lock the wallet ...\\n\\n            // If  guardians are locked, we revert ...\\n            if (guardiansLocked) revert SSR__access__guardiansBlocked();\\n            else return Access.Guardian;\\n        } else if (funcSelector == this.unlock.selector) {\\n            // Only a guardian + the owner can unlock the wallet ...\\n\\n            return Access.OwnerAndGuardian;\\n        } else if (funcSelector == this.recoveryUnlock.selector) {\\n            // This is in case a guardian is misbehaving ...\\n\\n            return Access.OwnerAndRecoveryOwner;\\n        } else if (funcSelector == this.recover.selector) {\\n            // Only the recovery owner + the guardian can recover the wallet (change the owner keys) ...\\n\\n            return Access.RecoveryOwnerAndGuardian;\\n        } else {\\n            // Else is the owner ... If the the wallet is locked, we revert ...\\n\\n            if (isLocked) revert SSR__access__walletLocked();\\n            else return Access.Owner;\\n        }\\n    }\\n\\n    /**\\n     * @dev Validates that a recovery owner can execute an operation 'now'.\\n     * @param signer The returned address from the provided signature and hash.\\n     */\\n    function validateRecoveryOwner(address signer) internal view {\\n        // Time elapsed since the recovery mechanism was activated.\\n        uint256 elapsedTime = block.timestamp - timeLock;\\n\\n        bool isAuthorized;\\n\\n        for (uint256 i = 0; i < recoveryOwnersCount; ) {\\n            address recoveryOwner = recoveryOwners[i].recoveryOwner;\\n\\n            if (elapsedTime > 1 weeks * i) {\\n                // Each recovery owner (index ordered) has access to sign the transaction after 1 week.\\n                // e.g The first recovery owner (indexed 0) can sign immediately, the second recovery owner needs to wait 1 week, and so on ...\\n\\n                if (recoveryOwner == signer) isAuthorized = true;\\n            }\\n\\n            unchecked {\\n                ++i;\\n            }\\n        }\\n\\n        if (!isAuthorized) revert SSR__validateRecoveryOwner__notAuthorized();\\n    }\\n}\\n\",\"keccak256\":\"0xa05f863059d342387586c46392b33a37f1b079e19703a00dd1dc5db25544b137\",\"license\":\"LGPL-3.0-only\"},\"contracts/utils/Utils.sol\":{\"content\":\"// SPDX-License-Identifier: LGPL-3.0-only\\npragma solidity 0.8.15;\\n\\nimport \\\"../interfaces/IUtils.sol\\\";\\nimport \\\"../interfaces/IEIP1271.sol\\\";\\n\\n/**\\n * @title Utils - Helper functions for LaserWallet.\\n */\\ncontract Utils is IUtils {\\n    /**\\n     * @dev Returns the signer of the hash.\\n     * @param dataHash The hash that was signed.\\n     */\\n    function returnSigner(\\n        bytes32 dataHash,\\n        bytes32 r,\\n        bytes32 s,\\n        uint8 v,\\n        bytes memory signatures\\n    ) public view returns (address signer) {\\n        if (v == 0) {\\n            // If v is 0, then it is a contract signature.\\n\\n            // The address of the contract is encoded into r.\\n            signer = address(uint160(uint256(r)));\\n\\n            // The actual signature.\\n            bytes memory contractSignature;\\n\\n            assembly {\\n                contractSignature := add(add(signatures, s), 0x20)\\n            }\\n\\n            if (\\n                IEIP1271(signer).isValidSignature(\\n                    dataHash,\\n                    contractSignature\\n                ) != 0x1626ba7e\\n            ) revert Utils__returnSigner__invalidContractSignature();\\n        } else if (v > 30) {\\n            signer = ecrecover(\\n                keccak256(\\n                    abi.encodePacked(\\n                        \\\"\\\\x19Ethereum Signed Message:\\\\n32\\\",\\n                        dataHash\\n                    )\\n                ),\\n                v - 4,\\n                r,\\n                s\\n            );\\n        } else {\\n            signer = ecrecover(dataHash, v, r, s);\\n        }\\n        if (signer == address(0)) {\\n            revert Utils__returnSigner__invalidSignature();\\n        }\\n    }\\n\\n    /**\\n     * @dev Returns the r, s and v of the signature.\\n     * @param signatures Signature.\\n     * @param pos Which signature to read.\\n     */\\n    function splitSigs(bytes memory signatures, uint256 pos)\\n        public\\n        pure\\n        returns (\\n            bytes32 r,\\n            bytes32 s,\\n            uint8 v\\n        )\\n    {\\n        assembly {\\n            let sigPos := mul(0x41, pos)\\n            r := mload(add(signatures, add(sigPos, 0x20)))\\n            s := mload(add(signatures, add(sigPos, 0x40)))\\n            v := byte(0, mload(add(signatures, add(sigPos, 0x60))))\\n        }\\n    }\\n\\n    /**\\n     * @dev Calls a target address, sends value and / or data payload.\\n     * @param to Destination address.\\n     * @param value Amount to send in ETH.\\n     * @param data Data payload.\\n     * @param txGas Amount of gas to forward.\\n     */\\n    function _call(\\n        address to,\\n        uint256 value,\\n        bytes memory data,\\n        uint256 txGas\\n    ) internal returns (bool success) {\\n        assembly {\\n            // We execute a call to the target address and return boolean...\\n            success := call(\\n                txGas,\\n                to,\\n                value,\\n                add(data, 0x20),\\n                mload(data),\\n                0,\\n                0\\n            )\\n        }\\n    }\\n\\n    /**\\n     * @dev Calculates the gas price.\\n     */\\n    function calculateGasPrice(\\n        uint256 maxFeePerGas,\\n        uint256 maxPriorityFeePerGas\\n    ) internal view returns (uint256 gasPrice) {\\n        if (maxFeePerGas == maxPriorityFeePerGas) {\\n            // Legacy mode.\\n            gasPrice = maxFeePerGas;\\n        } else {\\n            gasPrice = min(maxFeePerGas, maxPriorityFeePerGas + block.basefee);\\n        }\\n    }\\n\\n    function min(uint256 a, uint256 b) internal pure returns (uint256) {\\n        return a < b ? a : b;\\n    }\\n}\\n\",\"keccak256\":\"0x9c88442aa494a6630d2dfe1f5c5d7c1743c840016b428f94e0ebbc2de025fe14\",\"license\":\"LGPL-3.0-only\"}},\"version\":1}",
+  "bytecode": "0x608060405234801561001057600080fd5b50600180546001600160a01b031916301790556130b2806100326000396000f3fe6080604052600436106102525760003560e01c8063956ccd7611610138578063c194a046116100b0578063ecdcba771161007f578063f698da2511610064578063f698da2514610727578063f83d08ba1461078e578063ffa1ad74146107a357600080fd5b8063ecdcba77146106da578063f23a6e61146106fa57600080fd5b8063c194a04614610664578063c692272314610686578063c8a725361461069b578063e98a801d146106bb57600080fd5b8063a69df4b511610107578063affed0e0116100ec578063affed0e0146105ff578063b62654fb14610615578063bc197c811461063557600080fd5b8063a69df4b5146105ca578063a6f9dae1146105df57600080fd5b8063956ccd76146105185780639b27a90e14610570578063a4e2d63414610590578063a526d83b146105aa57600080fd5b8063263a2d1c116101cb578063670d046e1161019a57806384ec720c1161017f57806384ec720c146104c35780638da5cb5b146104e35780639466df011461050357600080fd5b8063670d046e146104835780637d689a1f146104a357600080fd5b8063263a2d1c146103ea57806333987ac0146104225780633408e47014610450578063648bf7741461046357600080fd5b80630c68ba2111610222578063150b7a0211610207578063150b7a02146103715780631626ba7e146103aa578063248b1701146103ca57600080fd5b80630c68ba211461033157806310e888921461035157600080fd5b806223de291461029357806301ffc9a7146102ba5780630665f04b146102ef5780630bf52f9c1461031157600080fd5b3661028e5760405134815233907f88a5966d370b9919b20f3e2c13ff65706f196a4e32cc2c12bf57088f885258749060200160405180910390a2005b600080fd5b34801561029f57600080fd5b506102b86102ae366004612670565b5050505050505050565b005b3480156102c657600080fd5b506102da6102d5366004612731565b6107f9565b60405190151581526020015b60405180910390f35b3480156102fb57600080fd5b5061030461089c565b6040516102e6919061274e565b34801561031d57600080fd5b506102b861032c3660046127e0565b610992565b34801561033d57600080fd5b506102da61034c366004612861565b610a03565b34801561035d57600080fd5b506102b861036c366004612861565b610a3b565b34801561037d57600080fd5b5061039161038c36600461287c565b610b59565b6040516001600160e01b031990911681526020016102e6565b3480156103b657600080fd5b506103916103c536600461297d565b610b6b565b3480156103d657600080fd5b506102b86103e53660046129c4565b610bec565b3480156103f657600080fd5b5061040a610405366004612a06565b610d0d565b6040516001600160a01b0390911681526020016102e6565b34801561042e57600080fd5b5061044261043d366004612a79565b610f2a565b6040519081526020016102e6565b34801561045c57600080fd5b5046610442565b34801561046f57600080fd5b506102b861047e366004612b2d565b6110fc565b34801561048f57600080fd5b5061044261049e366004612b60565b61117f565b3480156104af57600080fd5b506102b86104be366004612bdd565b6111a6565b3480156104cf57600080fd5b506102b86104de366004612861565b6111f9565b3480156104ef57600080fd5b5060015461040a906001600160a01b031681565b34801561050f57600080fd5b506102b86113bc565b34801561052457600080fd5b50610552610533366004612c07565b6041020160208101516040820151606090920151909260009190911a90565b60408051938452602084019290925260ff16908201526060016102e6565b34801561057c57600080fd5b506102b861058b366004612b2d565b611416565b34801561059c57600080fd5b506005546102da9060ff1681565b3480156105b657600080fd5b506102b86105c5366004612861565b61154c565b3480156105d657600080fd5b506102b86116fe565b3480156105eb57600080fd5b506102b86105fa366004612861565b611758565b34801561060b57600080fd5b5061044260085481565b34801561062157600080fd5b5060005461040a906001600160a01b031681565b34801561064157600080fd5b50610391610650366004612c4c565b63bc197c8160e01b98975050505050505050565b34801561067057600080fd5b5061067961181b565b6040516102e69190612ce6565b34801561069257600080fd5b506102b861191e565b3480156106a757600080fd5b506102b86106b6366004612a79565b61194b565b3480156106c757600080fd5b506005546102da90610100900460ff1681565b3480156106e657600080fd5b506102b86106f5366004612b2d565b611af1565b34801561070657600080fd5b50610391610715366004612d48565b63f23a6e6160e01b9695505050505050565b34801561073357600080fd5b5061044260007f47e79534a245952e8b16893a336b85a3d9ea9fa8c573f3d803afb92a794692184660408051602081019390935282015230606082015260800160405160208183030381529060405280519060200120905090565b34801561079a57600080fd5b506102b8611b15565b3480156107af57600080fd5b506107ec6040518060400160405280600581526020017f312e302e3000000000000000000000000000000000000000000000000000000081525081565b6040516102e69190612e0d565b60006301ffc9a760e01b6001600160e01b03198316148061082a5750630b135d3f60e11b6001600160e01b03198316145b806108455750636cdb3d1360e11b6001600160e01b03198316145b806108605750630271189760e51b6001600160e01b03198316145b8061087b575063ae029e0b60e01b6001600160e01b03198316145b806108965750630a85bd0160e11b6001600160e01b03198316145b92915050565b6060600060035467ffffffffffffffff8111156108bb576108bb6128da565b6040519080825280602002602001820160405280156108e4578160200160208202803683370190505b506001600090815260076020527fb39221ace053465ec3453ce2b36430bd138b997ecea25c1043da0c366812b828549192506001600160a01b03909116905b6001600160a01b03821660011461098a578183828151811061094757610947612e20565b6001600160a01b0392831660209182029290920181019190915292811660009081526007909352604090922054909116908061098281612e4c565b915050610923565b509092915050565b61099b85611b71565b6109a58282611bfa565b6109af8484611dee565b6001546040517f4698fea98f8afb603e7929dfbf88d053ad782cf694c6b9fe88c5ab90be0f9e2f916109f4916001600160a01b03909116908790879087908790612eac565b60405180910390a15050505050565b60006001600160a01b0382166001148015906108965750506001600160a01b0390811660009081526007602052604090205416151590565b333014610a5b576040516307583a2960e41b815260040160405180910390fd5b306001600160a01b03821603610a84576040516332125e8360e11b815260040160405180910390fd5b6040516301ffc9a760e01b815263ae029e0b60e01b60048201526001600160a01b038216906301ffc9a790602401602060405180830381865afa158015610acf573d6000803e3d6000fd5b505050506040513d601f19601f82011682018060405250810190610af39190612eee565b610b1057604051637b66762360e11b815260040160405180910390fd5b600080546001600160a01b0319166001600160a01b038316908117825560405190917fad04cda32d7774350bace4bdca605ed7431195e8c78235e484626b2785de816d91a25b50565b630a85bd0160e11b5b95945050505050565b6020810151604082015160608301516000929190831a83610b8f878585858a610d0d565b6001549091506001600160a01b03808316911614610bc0576040516325dc3e7760e21b815260040160405180910390fd5b507f1626ba7e356f5979dd355a3d2bfb43e80420a480c3b854edce286a82d74968699695505050505050565b333014610c0c576040516307583a2960e41b815260040160405180910390fd5b8060005b81811015610d075736848483818110610c2b57610c2b612e20565b9050602002810190610c3d9190612f10565b90506000610c4e6040830183612f30565b610c5791612f77565b90506000610c6482611fd1565b90506000816004811115610c7a57610c7a612fa7565b14610c9857604051631312e2e760e01b815260040160405180910390fd5b6000610cf6610caa6020860186612861565b6020860135610cbc6040880188612f30565b8080601f0160208091040260200160405190810160405280939291908181526020018383808284376000920191909152505050505a6120ad565b905084600101945050505050610c10565b50505050565b60008260ff16600003610dde5750604051630b135d3f60e11b81528490828501602001906001600160a01b03831690631626ba7e90610d52908a908590600401612fbd565b602060405180830381865afa158015610d6f573d6000803e3d6000fd5b505050506040513d601f19601f82011682018060405250810190610d939190612fde565b7bffffffffffffffffffffffffffffffffffffffffffffffffffffffff1916631626ba7e60e01b14610dd8576040516340aec60f60e11b815260040160405180910390fd5b50610f03565b601e8360ff161115610ea3576040517f19457468657265756d205369676e6564204d6573736167653a0a3332000000006020820152603c8101879052600190605c0160405160208183030381529060405280519060200120600485610e439190612ffb565b6040805160008152602081018083529390935260ff90911690820152606081018790526080810186905260a0016020604051602081039080840390855afa158015610e92573d6000803e3d6000fd5b505050602060405103519050610f03565b60408051600081526020810180835288905260ff851691810191909152606081018690526080810185905260019060a0016020604051602081039080840390855afa158015610ef6573d6000803e3d6000fd5b5050506020604051035190505b6001600160a01b038116610b625760405163b9bf1d7d60e01b815260040160405180910390fd5b6008805460009188919083610f3e83612e4c565b9190505514610f605760405163222d101560e11b815260040160405180910390fd5b610f728b8b8b8b8b8b8b8b8b8b6120c5565b6000610fb58c8c8c8c8080601f0160208091040260200160405190810160405280939291908181526020018383808284376000920191909152505050505a6120ad565b905080610fd55760405163b773a2b560e01b815260040160405180910390fd5b6000610fe18888612108565b905060005a610ff0908861301e565b610ffc90611b58613035565b9050600061100a838361304d565b9050611045338260005b6040519080825280601f01601f19166020018201604052801561103e576020820181803683370190505b505a6120ad565b9350836110655760405163755d1e2d60e11b815260040160405180910390fd5b5a611070908961301e565b945033156110ea5760405162461bcd60e51b815260206004820152602b60248201527f4d7573742062652063616c6c6564206f66662d636861696e2066726f6d20616460448201527f6472657373207a65726f2e000000000000000000000000000000000000000000606482015260840160405180910390fd5b505050509a9950505050505050505050565b33301461111c576040516307583a2960e41b815260040160405180910390fd5b6000600455600180546001600160a01b0319166001600160a01b038481169182179092556040805191825291831660208201527fced95d270303f50b4373064f4148282a32dd521235b73c351f0955a594941a3091015b60405180910390a15050565b60006111918989898989898989612132565b80519060200120905098975050505050505050565b3330146111c6576040516307583a2960e41b815260040160405180910390fd5b600254816111d560018361301e565b11156111f457604051630ba7020160e21b815260040160405180910390fd5b505050565b333014611219576040516307583a2960e41b815260040160405180910390fd5b6001600160a01b0381163b156112b5576040516301ffc9a760e01b8152630b135d3f60e11b60048201526001600160a01b038216906301ffc9a790602401602060405180830381865afa158015611274573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906112989190612eee565b6112b5576040516371c693ad60e01b815260040160405180910390fd5b6001600160a01b03811615806112d857506001546001600160a01b038281169116145b806112fc57506001600160a01b038181166000908152600760205260409020541615155b1561131a576040516354a4bf1360e11b815260040160405180910390fd5b600254604080516060810182526001600160a01b03841681526020810183905290810161134a8362093a8061304d565b9052600082815260066020908152604091829020835181546001600160a01b0319166001600160a01b0391821617825584830151600183015593830151600290910155905191841682527f24b755696b711f89e9f520613bc428ad6a76ea9e0ea8ce1bcbc4a49d7117e7d49101611173565b3330146113dc576040516307583a2960e41b815260040160405180910390fd5b6005805461ffff19166101001790556040517f0d581a543b8a5c64309ffed1e0e9a522b78d6c160dc57cc4cb7f78f9a14d5e3490600090a1565b333014611436576040516307583a2960e41b815260040160405180910390fd5b6000196001600160a01b03821601611461576040516302f412b360e21b815260040160405180910390fd5b6001600160a01b0382811660009081526007602052604090205481169082161461149e5760405163475347b160e11b815260040160405180910390fd5b6001806003546114ae919061301e565b10156114cd5760405163342a2dc560e21b815260040160405180910390fd5b6001600160a01b038181166000818152600760209081526040808320805488871685528285208054919097166001600160a01b0319918216179096559284905282549094169091556003805460001901905591519081527fb8107d0c6b40be480ce3172ee66ba6d64b71f6b1685a851340036e6e2e3e3c529101611173565b33301461156c576040516307583a2960e41b815260040160405180910390fd5b6001600160a01b038116158061158f57506001546001600160a01b038281169116145b806115b357506001600160a01b038181166000908152600760205260409020541615155b156115d157604051632ce028d960e21b815260040160405180910390fd5b6040516301ffc9a760e01b8152630b135d3f60e11b60048201526001600160a01b038216906301ffc9a790602401602060405180830381865afa15801561161c573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906116409190612eee565b61165d57604051632ce028d960e21b815260040160405180910390fd5b600760209081527fb39221ace053465ec3453ce2b36430bd138b997ecea25c1043da0c366812b82880546001600160a01b03848116600081815260408082208054949095166001600160a01b03199485161790945560019081905284549092168117909355600380549091019055519081527fb6182387b7ea948602a7e04e662a27ce251dc3dd014eacaed10dce36b41bf1a591015b60405180910390a150565b33301461171e576040516307583a2960e41b815260040160405180910390fd5b600060048190556005805460ff191690556040517f63fc9aecb05834d2330c4dad03b320242fa9e8a10eb80cd31518efa9ed781b869190a1565b333014611778576040516307583a2960e41b815260040160405180910390fd5b6001600160a01b0381163b15158061179757506001600160a01b038116155b806117af57506001546001600160a01b038281169116145b156117cd57604051633927dba760e01b815260040160405180910390fd5b600180546001600160a01b0319166001600160a01b0383169081179091556040519081527fa2ea9883a321a3e97b8266c2b078bfeec6d50c711ed71f874a90d500ae2eaf36906020016116f3565b6060600060025467ffffffffffffffff81111561183a5761183a6128da565b60405190808252806020026020018201604052801561189857816020015b611885604051806060016040528060006001600160a01b0316815260200160008152602001600081525090565b8152602001906001900390816118585790505b50905060005b60025481101561191857600081815260066020908152604091829020825160608101845281546001600160a01b03168152600182015492810192909252600201549181019190915282518390839081106118fa576118fa612e20565b6020026020010181905250808061191090612e4c565b91505061189e565b50919050565b33301461193e576040516307583a2960e41b815260040160405180910390fd5b6005805461ff0019169055565b6008805460018101909155861461197557604051636f4f3db760e11b815260040160405180910390fd5b6119878a8a8a8a8a8a8a8a8a8a6120c5565b60006119d88b8b8b8b8080601f016020809104026020016040519081016040528093929190818152602001838380828437600092019190915250612710925050505a6119d3919061301e565b6120ad565b90508015611a3157600854604080516001600160a01b038e168152602081018d905280820192909252517f1575d4076918636381fe626ba9076459080815fb43c05c127c6e6b0370d62f4a9181900360600190a1611a7e565b600854604080516001600160a01b038e168152602081018d905280820192909252517f84a65ac305e8f45f7974e75262e5da051587352d6dcb4719702dd02a8b5038309181900360600190a15b6000611a8a8787612108565b905060005a611a99908761301e565b611aa590611b58613035565b90506000611ab3838361304d565b9050611ac133826000611014565b935083611ae1576040516303c62d8160e41b815260040160405180910390fd5b5050505050505050505050505050565b333014611b11576040516307583a2960e41b815260040160405180910390fd5b5050565b333014611b35576040516307583a2960e41b815260040160405180910390fd5b426004556005805460ff191660011790556040517fd550ed24c5d3906c5831b36940c8eb789771469024f7963da735aaf15c59b9a290600090a1565b6001546001600160a01b031615611b9b57604051632dfc004f60e21b815260040160405180910390fd5b6001600160a01b0381163b151580611bba57506001600160a01b038116155b15611bd85760405163087099bd60e01b815260040160405180910390fd5b600180546001600160a01b0319166001600160a01b0392909216919091179055565b806002811015611c1d57604051630d2aa0bf60e11b815260040160405180910390fd5b600160005b82811015611dbe576000858583818110611c3e57611c3e612e20565b9050602002016020810190611c539190612861565b6001549091506001600160a01b0380831691161480611c7957506001600160a01b038116155b80611c8d57506001600160a01b0381166001145b80611ca95750826001600160a01b0316816001600160a01b0316145b80611ccd57506001600160a01b038181166000908152600760205260409020541615155b15611ceb57604051630d34ec4760e31b815260040160405180910390fd5b6001600160a01b0381163b15611d87576040516301ffc9a760e01b8152630b135d3f60e11b60048201526001600160a01b038216906301ffc9a790602401602060405180830381865afa158015611d46573d6000803e3d6000fd5b505050506040513d601f19601f82011682018060405250810190611d6a9190612eee565b611d8757604051630d34ec4760e31b815260040160405180910390fd5b6001600160a01b03928316600090815260076020526040902080546001600160a01b03191693821693909317909255600101611c22565b506001600160a01b0316600090815260076020526040902080546001600160a01b03191660011790556003555050565b806002811015611e11576040516354f4eccd60e11b815260040160405180910390fd5b60005b81811015611fc9576000848483818110611e3057611e30612e20565b9050602002016020810190611e459190612861565b90506001600160a01b0381163b15611ee3576040516301ffc9a760e01b8152630b135d3f60e11b60048201526001600160a01b038216906301ffc9a790602401602060405180830381865afa158015611ea2573d6000803e3d6000fd5b505050506040513d601f19601f82011682018060405250810190611ec69190612eee565b611ee3576040516371c693ad60e01b815260040160405180910390fd5b6001600160a01b0381161580611f0657506001546001600160a01b038281169116145b80611f2a57506001600160a01b038181166000908152600760205260409020541615155b15611f48576040516371c693ad60e01b815260040160405180910390fd5b6040518060600160405280826001600160a01b031681526020018381526020018362093a80611f77919061304d565b9052600083815260066020908152604091829020835181546001600160a01b0319166001600160a01b039091161781559083015160018083019190915592909101516002909101559091019050611e14565b506002555050565b60006303e17ba360e11b6001600160e01b031983160161201c57600554610100900460ff16156120145760405163c525f01160e01b815260040160405180910390fd5b506001919050565b6359620b4b60e01b6001600160e01b031983160161203c57506002919050565b636b9920ff60e01b6001600160e01b031983160161205c57506004919050565b6326dd022360e21b6001600160e01b031983160161207c57506003919050565b60055460ff16156120a0576040516319786ced60e01b815260040160405180910390fd5b506000919050565b919050565b6000806000845160208601878987f195945050505050565b60006120d78b8b8b8b8b8b8b8b612132565b8051602082012090915060006120ed8a8c612f77565b905060006120fa82611fd1565b9050611ae18184888861229b565b6000818303612118575081610896565b61212b836121264885613035565b612568565b9392505050565b606060007f4c23aa2497696888af245e4eb8d524e7d4cc862b760e1c988678274066ffff8b8a8a8a8a60405161216992919061306c565b6040805191829003822060208301959095526001600160a01b03909316928101929092526060820152608081019190915260a0810187905260c0810186905260e0810185905261010081018490526101200160408051601f1981840301815291905280516020909101209050601960f81b600160f81b61223960007f47e79534a245952e8b16893a336b85a3d9ea9fa8c573f3d803afb92a794692184660408051602081019390935282015230606082015260800160405160208183030381529060405280519060200120905090565b6040517fff00000000000000000000000000000000000000000000000000000000000000938416602082015292909116602183015260228201526042810182905260620160405160208183030381529060405291505098975050505050505050565b6000808560048111156122b0576122b0612fa7565b14806122cd575060018560048111156122cb576122cb612fa7565b145b6122d85760026122db565b60015b60ff1690506122eb81604161304d565b82101561230b57604051630a71486160e21b815260040160405180910390fd5b60008060008060005b8581101561255c5761235d88888080601f016020809104026020016040519081016040528093929190818152602001838380828437600092019190915250859250610533915050565b8094508195508296505050506123ac898585858c8c8080601f016020809104026020016040519081016040528093929190818152602001838380828437600092019190915250610d0d92505050565b945060008a60048111156123c2576123c2612fa7565b036123fa576001546001600160a01b038681169116146123f5576040516389c3438560e01b815260040160405180910390fd5b612554565b60018a600481111561240e5761240e612fa7565b0361244b576001600160a01b03858116600090815260076020526040902054166123f557604051631134d27b60e31b815260040160405180910390fd5b60028a600481111561245f5761245f612fa7565b036124d2578060000361249a576001546001600160a01b038681169116146123f5576040516389c3438560e01b815260040160405180910390fd5b6001600160a01b03858116600090815260076020526040902054166123f557604051631134d27b60e31b815260040160405180910390fd5b60038a60048111156124e6576124e6612fa7565b036124fc578060000361249a576123f58561257e565b60048a600481111561251057612510612fa7565b0361028e578060000361254b576001546001600160a01b038681169116146123f5576040516389c3438560e01b815260040160405180910390fd5b6123f58561257e565b600101612314565b50505050505050505050565b6000818310612577578161212b565b5090919050565b60006004544261258e919061301e565b90506000805b6002548110156125f1576000818152600660205260409020546001600160a01b03166125c38262093a8061304d565b8411156125e857846001600160a01b0316816001600160a01b0316036125e857600192505b50600101612594565b50806111f4576040516322523a6360e11b815260040160405180910390fd5b80356001600160a01b03811681146120a857600080fd5b60008083601f84011261263957600080fd5b50813567ffffffffffffffff81111561265157600080fd5b60208301915083602082850101111561266957600080fd5b9250929050565b60008060008060008060008060c0898b03121561268c57600080fd5b61269589612610565b97506126a360208a01612610565b96506126b160408a01612610565b955060608901359450608089013567ffffffffffffffff808211156126d557600080fd5b6126e18c838d01612627565b909650945060a08b01359150808211156126fa57600080fd5b506127078b828c01612627565b999c989b5096995094979396929594505050565b6001600160e01b031981168114610b5657600080fd5b60006020828403121561274357600080fd5b813561212b8161271b565b6020808252825182820181905260009190848201906040850190845b8181101561278f5783516001600160a01b03168352928401929184019160010161276a565b50909695505050505050565b60008083601f8401126127ad57600080fd5b50813567ffffffffffffffff8111156127c557600080fd5b6020830191508360208260051b850101111561266957600080fd5b6000806000806000606086880312156127f857600080fd5b61280186612610565b9450602086013567ffffffffffffffff8082111561281e57600080fd5b61282a89838a0161279b565b9096509450604088013591508082111561284357600080fd5b506128508882890161279b565b969995985093965092949392505050565b60006020828403121561287357600080fd5b61212b82612610565b60008060008060006080868803121561289457600080fd5b61289d86612610565b94506128ab60208701612610565b935060408601359250606086013567ffffffffffffffff8111156128ce57600080fd5b61285088828901612627565b634e487b7160e01b600052604160045260246000fd5b600082601f83011261290157600080fd5b813567ffffffffffffffff8082111561291c5761291c6128da565b604051601f8301601f19908116603f01168101908282118183101715612944576129446128da565b8160405283815286602085880101111561295d57600080fd5b836020870160208301376000602085830101528094505050505092915050565b6000806040838503121561299057600080fd5b82359150602083013567ffffffffffffffff8111156129ae57600080fd5b6129ba858286016128f0565b9150509250929050565b600080602083850312156129d757600080fd5b823567ffffffffffffffff8111156129ee57600080fd5b6129fa8582860161279b565b90969095509350505050565b600080600080600060a08688031215612a1e57600080fd5b853594506020860135935060408601359250606086013560ff81168114612a4457600080fd5b9150608086013567ffffffffffffffff811115612a6057600080fd5b612a6c888289016128f0565b9150509295509295909350565b6000806000806000806000806000806101008b8d031215612a9957600080fd5b612aa28b612610565b995060208b0135985060408b013567ffffffffffffffff80821115612ac657600080fd5b612ad28e838f01612627565b909a50985060608d0135975060808d0135965060a08d0135955060c08d0135945060e08d0135915080821115612b0757600080fd5b50612b148d828e01612627565b915080935050809150509295989b9194979a5092959850565b60008060408385031215612b4057600080fd5b612b4983612610565b9150612b5760208401612610565b90509250929050565b60008060008060008060008060e0898b031215612b7c57600080fd5b612b8589612610565b975060208901359650604089013567ffffffffffffffff811115612ba857600080fd5b612bb48b828c01612627565b999c989b50996060810135986080820135985060a0820135975060c09091013595509350505050565b60008060408385031215612bf057600080fd5b612bf983612610565b946020939093013593505050565b60008060408385031215612c1a57600080fd5b823567ffffffffffffffff811115612c3157600080fd5b612c3d858286016128f0565b95602094909401359450505050565b60008060008060008060008060a0898b031215612c6857600080fd5b612c7189612610565b9750612c7f60208a01612610565b9650604089013567ffffffffffffffff80821115612c9c57600080fd5b612ca88c838d0161279b565b909850965060608b0135915080821115612cc157600080fd5b612ccd8c838d0161279b565b909650945060808b01359150808211156126fa57600080fd5b602080825282518282018190526000919060409081850190868401855b82811015612d3b57815180516001600160a01b0316855286810151878601528501518585015260609093019290850190600101612d03565b5091979650505050505050565b60008060008060008060a08789031215612d6157600080fd5b612d6a87612610565b9550612d7860208801612610565b94506040870135935060608701359250608087013567ffffffffffffffff811115612da257600080fd5b612dae89828a01612627565b979a9699509497509295939492505050565b6000815180845260005b81811015612de657602081850181015186830182015201612dca565b81811115612df8576000602083870101525b50601f01601f19169290920160200192915050565b60208152600061212b6020830184612dc0565b634e487b7160e01b600052603260045260246000fd5b634e487b7160e01b600052601160045260246000fd5b600060018201612e5e57612e5e612e36565b5060010190565b8183526000602080850194508260005b85811015612ea1576001600160a01b03612e8e83612610565b1687529582019590820190600101612e75565b509495945050505050565b6001600160a01b0386168152606060208201526000612ecf606083018688612e65565b8281036040840152612ee2818587612e65565b98975050505050505050565b600060208284031215612f0057600080fd5b8151801515811461212b57600080fd5b60008235605e19833603018112612f2657600080fd5b9190910192915050565b6000808335601e19843603018112612f4757600080fd5b83018035915067ffffffffffffffff821115612f6257600080fd5b60200191503681900382131561266957600080fd5b6001600160e01b03198135818116916004851015612f9f5780818660040360031b1b83161692505b505092915050565b634e487b7160e01b600052602160045260246000fd5b828152604060208201526000612fd66040830184612dc0565b949350505050565b600060208284031215612ff057600080fd5b815161212b8161271b565b600060ff821660ff84168082101561301557613015612e36565b90039392505050565b60008282101561303057613030612e36565b500390565b6000821982111561304857613048612e36565b500190565b600081600019048311821515161561306757613067612e36565b500290565b818382376000910190815291905056fea2646970667358221220952867301d901d3a73ac64b6671a3316864867bd48cfca6a1a614f8025f5d40464736f6c634300080f0033",
+  "deployedBytecode": "0x6080604052600436106102525760003560e01c8063956ccd7611610138578063c194a046116100b0578063ecdcba771161007f578063f698da2511610064578063f698da2514610727578063f83d08ba1461078e578063ffa1ad74146107a357600080fd5b8063ecdcba77146106da578063f23a6e61146106fa57600080fd5b8063c194a04614610664578063c692272314610686578063c8a725361461069b578063e98a801d146106bb57600080fd5b8063a69df4b511610107578063affed0e0116100ec578063affed0e0146105ff578063b62654fb14610615578063bc197c811461063557600080fd5b8063a69df4b5146105ca578063a6f9dae1146105df57600080fd5b8063956ccd76146105185780639b27a90e14610570578063a4e2d63414610590578063a526d83b146105aa57600080fd5b8063263a2d1c116101cb578063670d046e1161019a57806384ec720c1161017f57806384ec720c146104c35780638da5cb5b146104e35780639466df011461050357600080fd5b8063670d046e146104835780637d689a1f146104a357600080fd5b8063263a2d1c146103ea57806333987ac0146104225780633408e47014610450578063648bf7741461046357600080fd5b80630c68ba2111610222578063150b7a0211610207578063150b7a02146103715780631626ba7e146103aa578063248b1701146103ca57600080fd5b80630c68ba211461033157806310e888921461035157600080fd5b806223de291461029357806301ffc9a7146102ba5780630665f04b146102ef5780630bf52f9c1461031157600080fd5b3661028e5760405134815233907f88a5966d370b9919b20f3e2c13ff65706f196a4e32cc2c12bf57088f885258749060200160405180910390a2005b600080fd5b34801561029f57600080fd5b506102b86102ae366004612670565b5050505050505050565b005b3480156102c657600080fd5b506102da6102d5366004612731565b6107f9565b60405190151581526020015b60405180910390f35b3480156102fb57600080fd5b5061030461089c565b6040516102e6919061274e565b34801561031d57600080fd5b506102b861032c3660046127e0565b610992565b34801561033d57600080fd5b506102da61034c366004612861565b610a03565b34801561035d57600080fd5b506102b861036c366004612861565b610a3b565b34801561037d57600080fd5b5061039161038c36600461287c565b610b59565b6040516001600160e01b031990911681526020016102e6565b3480156103b657600080fd5b506103916103c536600461297d565b610b6b565b3480156103d657600080fd5b506102b86103e53660046129c4565b610bec565b3480156103f657600080fd5b5061040a610405366004612a06565b610d0d565b6040516001600160a01b0390911681526020016102e6565b34801561042e57600080fd5b5061044261043d366004612a79565b610f2a565b6040519081526020016102e6565b34801561045c57600080fd5b5046610442565b34801561046f57600080fd5b506102b861047e366004612b2d565b6110fc565b34801561048f57600080fd5b5061044261049e366004612b60565b61117f565b3480156104af57600080fd5b506102b86104be366004612bdd565b6111a6565b3480156104cf57600080fd5b506102b86104de366004612861565b6111f9565b3480156104ef57600080fd5b5060015461040a906001600160a01b031681565b34801561050f57600080fd5b506102b86113bc565b34801561052457600080fd5b50610552610533366004612c07565b6041020160208101516040820151606090920151909260009190911a90565b60408051938452602084019290925260ff16908201526060016102e6565b34801561057c57600080fd5b506102b861058b366004612b2d565b611416565b34801561059c57600080fd5b506005546102da9060ff1681565b3480156105b657600080fd5b506102b86105c5366004612861565b61154c565b3480156105d657600080fd5b506102b86116fe565b3480156105eb57600080fd5b506102b86105fa366004612861565b611758565b34801561060b57600080fd5b5061044260085481565b34801561062157600080fd5b5060005461040a906001600160a01b031681565b34801561064157600080fd5b50610391610650366004612c4c565b63bc197c8160e01b98975050505050505050565b34801561067057600080fd5b5061067961181b565b6040516102e69190612ce6565b34801561069257600080fd5b506102b861191e565b3480156106a757600080fd5b506102b86106b6366004612a79565b61194b565b3480156106c757600080fd5b506005546102da90610100900460ff1681565b3480156106e657600080fd5b506102b86106f5366004612b2d565b611af1565b34801561070657600080fd5b50610391610715366004612d48565b63f23a6e6160e01b9695505050505050565b34801561073357600080fd5b5061044260007f47e79534a245952e8b16893a336b85a3d9ea9fa8c573f3d803afb92a794692184660408051602081019390935282015230606082015260800160405160208183030381529060405280519060200120905090565b34801561079a57600080fd5b506102b8611b15565b3480156107af57600080fd5b506107ec6040518060400160405280600581526020017f312e302e3000000000000000000000000000000000000000000000000000000081525081565b6040516102e69190612e0d565b60006301ffc9a760e01b6001600160e01b03198316148061082a5750630b135d3f60e11b6001600160e01b03198316145b806108455750636cdb3d1360e11b6001600160e01b03198316145b806108605750630271189760e51b6001600160e01b03198316145b8061087b575063ae029e0b60e01b6001600160e01b03198316145b806108965750630a85bd0160e11b6001600160e01b03198316145b92915050565b6060600060035467ffffffffffffffff8111156108bb576108bb6128da565b6040519080825280602002602001820160405280156108e4578160200160208202803683370190505b506001600090815260076020527fb39221ace053465ec3453ce2b36430bd138b997ecea25c1043da0c366812b828549192506001600160a01b03909116905b6001600160a01b03821660011461098a578183828151811061094757610947612e20565b6001600160a01b0392831660209182029290920181019190915292811660009081526007909352604090922054909116908061098281612e4c565b915050610923565b509092915050565b61099b85611b71565b6109a58282611bfa565b6109af8484611dee565b6001546040517f4698fea98f8afb603e7929dfbf88d053ad782cf694c6b9fe88c5ab90be0f9e2f916109f4916001600160a01b03909116908790879087908790612eac565b60405180910390a15050505050565b60006001600160a01b0382166001148015906108965750506001600160a01b0390811660009081526007602052604090205416151590565b333014610a5b576040516307583a2960e41b815260040160405180910390fd5b306001600160a01b03821603610a84576040516332125e8360e11b815260040160405180910390fd5b6040516301ffc9a760e01b815263ae029e0b60e01b60048201526001600160a01b038216906301ffc9a790602401602060405180830381865afa158015610acf573d6000803e3d6000fd5b505050506040513d601f19601f82011682018060405250810190610af39190612eee565b610b1057604051637b66762360e11b815260040160405180910390fd5b600080546001600160a01b0319166001600160a01b038316908117825560405190917fad04cda32d7774350bace4bdca605ed7431195e8c78235e484626b2785de816d91a25b50565b630a85bd0160e11b5b95945050505050565b6020810151604082015160608301516000929190831a83610b8f878585858a610d0d565b6001549091506001600160a01b03808316911614610bc0576040516325dc3e7760e21b815260040160405180910390fd5b507f1626ba7e356f5979dd355a3d2bfb43e80420a480c3b854edce286a82d74968699695505050505050565b333014610c0c576040516307583a2960e41b815260040160405180910390fd5b8060005b81811015610d075736848483818110610c2b57610c2b612e20565b9050602002810190610c3d9190612f10565b90506000610c4e6040830183612f30565b610c5791612f77565b90506000610c6482611fd1565b90506000816004811115610c7a57610c7a612fa7565b14610c9857604051631312e2e760e01b815260040160405180910390fd5b6000610cf6610caa6020860186612861565b6020860135610cbc6040880188612f30565b8080601f0160208091040260200160405190810160405280939291908181526020018383808284376000920191909152505050505a6120ad565b905084600101945050505050610c10565b50505050565b60008260ff16600003610dde5750604051630b135d3f60e11b81528490828501602001906001600160a01b03831690631626ba7e90610d52908a908590600401612fbd565b602060405180830381865afa158015610d6f573d6000803e3d6000fd5b505050506040513d601f19601f82011682018060405250810190610d939190612fde565b7bffffffffffffffffffffffffffffffffffffffffffffffffffffffff1916631626ba7e60e01b14610dd8576040516340aec60f60e11b815260040160405180910390fd5b50610f03565b601e8360ff161115610ea3576040517f19457468657265756d205369676e6564204d6573736167653a0a3332000000006020820152603c8101879052600190605c0160405160208183030381529060405280519060200120600485610e439190612ffb565b6040805160008152602081018083529390935260ff90911690820152606081018790526080810186905260a0016020604051602081039080840390855afa158015610e92573d6000803e3d6000fd5b505050602060405103519050610f03565b60408051600081526020810180835288905260ff851691810191909152606081018690526080810185905260019060a0016020604051602081039080840390855afa158015610ef6573d6000803e3d6000fd5b5050506020604051035190505b6001600160a01b038116610b625760405163b9bf1d7d60e01b815260040160405180910390fd5b6008805460009188919083610f3e83612e4c565b9190505514610f605760405163222d101560e11b815260040160405180910390fd5b610f728b8b8b8b8b8b8b8b8b8b6120c5565b6000610fb58c8c8c8c8080601f0160208091040260200160405190810160405280939291908181526020018383808284376000920191909152505050505a6120ad565b905080610fd55760405163b773a2b560e01b815260040160405180910390fd5b6000610fe18888612108565b905060005a610ff0908861301e565b610ffc90611b58613035565b9050600061100a838361304d565b9050611045338260005b6040519080825280601f01601f19166020018201604052801561103e576020820181803683370190505b505a6120ad565b9350836110655760405163755d1e2d60e11b815260040160405180910390fd5b5a611070908961301e565b945033156110ea5760405162461bcd60e51b815260206004820152602b60248201527f4d7573742062652063616c6c6564206f66662d636861696e2066726f6d20616460448201527f6472657373207a65726f2e000000000000000000000000000000000000000000606482015260840160405180910390fd5b505050509a9950505050505050505050565b33301461111c576040516307583a2960e41b815260040160405180910390fd5b6000600455600180546001600160a01b0319166001600160a01b038481169182179092556040805191825291831660208201527fced95d270303f50b4373064f4148282a32dd521235b73c351f0955a594941a3091015b60405180910390a15050565b60006111918989898989898989612132565b80519060200120905098975050505050505050565b3330146111c6576040516307583a2960e41b815260040160405180910390fd5b600254816111d560018361301e565b11156111f457604051630ba7020160e21b815260040160405180910390fd5b505050565b333014611219576040516307583a2960e41b815260040160405180910390fd5b6001600160a01b0381163b156112b5576040516301ffc9a760e01b8152630b135d3f60e11b60048201526001600160a01b038216906301ffc9a790602401602060405180830381865afa158015611274573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906112989190612eee565b6112b5576040516371c693ad60e01b815260040160405180910390fd5b6001600160a01b03811615806112d857506001546001600160a01b038281169116145b806112fc57506001600160a01b038181166000908152600760205260409020541615155b1561131a576040516354a4bf1360e11b815260040160405180910390fd5b600254604080516060810182526001600160a01b03841681526020810183905290810161134a8362093a8061304d565b9052600082815260066020908152604091829020835181546001600160a01b0319166001600160a01b0391821617825584830151600183015593830151600290910155905191841682527f24b755696b711f89e9f520613bc428ad6a76ea9e0ea8ce1bcbc4a49d7117e7d49101611173565b3330146113dc576040516307583a2960e41b815260040160405180910390fd5b6005805461ffff19166101001790556040517f0d581a543b8a5c64309ffed1e0e9a522b78d6c160dc57cc4cb7f78f9a14d5e3490600090a1565b333014611436576040516307583a2960e41b815260040160405180910390fd5b6000196001600160a01b03821601611461576040516302f412b360e21b815260040160405180910390fd5b6001600160a01b0382811660009081526007602052604090205481169082161461149e5760405163475347b160e11b815260040160405180910390fd5b6001806003546114ae919061301e565b10156114cd5760405163342a2dc560e21b815260040160405180910390fd5b6001600160a01b038181166000818152600760209081526040808320805488871685528285208054919097166001600160a01b0319918216179096559284905282549094169091556003805460001901905591519081527fb8107d0c6b40be480ce3172ee66ba6d64b71f6b1685a851340036e6e2e3e3c529101611173565b33301461156c576040516307583a2960e41b815260040160405180910390fd5b6001600160a01b038116158061158f57506001546001600160a01b038281169116145b806115b357506001600160a01b038181166000908152600760205260409020541615155b156115d157604051632ce028d960e21b815260040160405180910390fd5b6040516301ffc9a760e01b8152630b135d3f60e11b60048201526001600160a01b038216906301ffc9a790602401602060405180830381865afa15801561161c573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906116409190612eee565b61165d57604051632ce028d960e21b815260040160405180910390fd5b600760209081527fb39221ace053465ec3453ce2b36430bd138b997ecea25c1043da0c366812b82880546001600160a01b03848116600081815260408082208054949095166001600160a01b03199485161790945560019081905284549092168117909355600380549091019055519081527fb6182387b7ea948602a7e04e662a27ce251dc3dd014eacaed10dce36b41bf1a591015b60405180910390a150565b33301461171e576040516307583a2960e41b815260040160405180910390fd5b600060048190556005805460ff191690556040517f63fc9aecb05834d2330c4dad03b320242fa9e8a10eb80cd31518efa9ed781b869190a1565b333014611778576040516307583a2960e41b815260040160405180910390fd5b6001600160a01b0381163b15158061179757506001600160a01b038116155b806117af57506001546001600160a01b038281169116145b156117cd57604051633927dba760e01b815260040160405180910390fd5b600180546001600160a01b0319166001600160a01b0383169081179091556040519081527fa2ea9883a321a3e97b8266c2b078bfeec6d50c711ed71f874a90d500ae2eaf36906020016116f3565b6060600060025467ffffffffffffffff81111561183a5761183a6128da565b60405190808252806020026020018201604052801561189857816020015b611885604051806060016040528060006001600160a01b0316815260200160008152602001600081525090565b8152602001906001900390816118585790505b50905060005b60025481101561191857600081815260066020908152604091829020825160608101845281546001600160a01b03168152600182015492810192909252600201549181019190915282518390839081106118fa576118fa612e20565b6020026020010181905250808061191090612e4c565b91505061189e565b50919050565b33301461193e576040516307583a2960e41b815260040160405180910390fd5b6005805461ff0019169055565b6008805460018101909155861461197557604051636f4f3db760e11b815260040160405180910390fd5b6119878a8a8a8a8a8a8a8a8a8a6120c5565b60006119d88b8b8b8b8080601f016020809104026020016040519081016040528093929190818152602001838380828437600092019190915250612710925050505a6119d3919061301e565b6120ad565b90508015611a3157600854604080516001600160a01b038e168152602081018d905280820192909252517f1575d4076918636381fe626ba9076459080815fb43c05c127c6e6b0370d62f4a9181900360600190a1611a7e565b600854604080516001600160a01b038e168152602081018d905280820192909252517f84a65ac305e8f45f7974e75262e5da051587352d6dcb4719702dd02a8b5038309181900360600190a15b6000611a8a8787612108565b905060005a611a99908761301e565b611aa590611b58613035565b90506000611ab3838361304d565b9050611ac133826000611014565b935083611ae1576040516303c62d8160e41b815260040160405180910390fd5b5050505050505050505050505050565b333014611b11576040516307583a2960e41b815260040160405180910390fd5b5050565b333014611b35576040516307583a2960e41b815260040160405180910390fd5b426004556005805460ff191660011790556040517fd550ed24c5d3906c5831b36940c8eb789771469024f7963da735aaf15c59b9a290600090a1565b6001546001600160a01b031615611b9b57604051632dfc004f60e21b815260040160405180910390fd5b6001600160a01b0381163b151580611bba57506001600160a01b038116155b15611bd85760405163087099bd60e01b815260040160405180910390fd5b600180546001600160a01b0319166001600160a01b0392909216919091179055565b806002811015611c1d57604051630d2aa0bf60e11b815260040160405180910390fd5b600160005b82811015611dbe576000858583818110611c3e57611c3e612e20565b9050602002016020810190611c539190612861565b6001549091506001600160a01b0380831691161480611c7957506001600160a01b038116155b80611c8d57506001600160a01b0381166001145b80611ca95750826001600160a01b0316816001600160a01b0316145b80611ccd57506001600160a01b038181166000908152600760205260409020541615155b15611ceb57604051630d34ec4760e31b815260040160405180910390fd5b6001600160a01b0381163b15611d87576040516301ffc9a760e01b8152630b135d3f60e11b60048201526001600160a01b038216906301ffc9a790602401602060405180830381865afa158015611d46573d6000803e3d6000fd5b505050506040513d601f19601f82011682018060405250810190611d6a9190612eee565b611d8757604051630d34ec4760e31b815260040160405180910390fd5b6001600160a01b03928316600090815260076020526040902080546001600160a01b03191693821693909317909255600101611c22565b506001600160a01b0316600090815260076020526040902080546001600160a01b03191660011790556003555050565b806002811015611e11576040516354f4eccd60e11b815260040160405180910390fd5b60005b81811015611fc9576000848483818110611e3057611e30612e20565b9050602002016020810190611e459190612861565b90506001600160a01b0381163b15611ee3576040516301ffc9a760e01b8152630b135d3f60e11b60048201526001600160a01b038216906301ffc9a790602401602060405180830381865afa158015611ea2573d6000803e3d6000fd5b505050506040513d601f19601f82011682018060405250810190611ec69190612eee565b611ee3576040516371c693ad60e01b815260040160405180910390fd5b6001600160a01b0381161580611f0657506001546001600160a01b038281169116145b80611f2a57506001600160a01b038181166000908152600760205260409020541615155b15611f48576040516371c693ad60e01b815260040160405180910390fd5b6040518060600160405280826001600160a01b031681526020018381526020018362093a80611f77919061304d565b9052600083815260066020908152604091829020835181546001600160a01b0319166001600160a01b039091161781559083015160018083019190915592909101516002909101559091019050611e14565b506002555050565b60006303e17ba360e11b6001600160e01b031983160161201c57600554610100900460ff16156120145760405163c525f01160e01b815260040160405180910390fd5b506001919050565b6359620b4b60e01b6001600160e01b031983160161203c57506002919050565b636b9920ff60e01b6001600160e01b031983160161205c57506004919050565b6326dd022360e21b6001600160e01b031983160161207c57506003919050565b60055460ff16156120a0576040516319786ced60e01b815260040160405180910390fd5b506000919050565b919050565b6000806000845160208601878987f195945050505050565b60006120d78b8b8b8b8b8b8b8b612132565b8051602082012090915060006120ed8a8c612f77565b905060006120fa82611fd1565b9050611ae18184888861229b565b6000818303612118575081610896565b61212b836121264885613035565b612568565b9392505050565b606060007f4c23aa2497696888af245e4eb8d524e7d4cc862b760e1c988678274066ffff8b8a8a8a8a60405161216992919061306c565b6040805191829003822060208301959095526001600160a01b03909316928101929092526060820152608081019190915260a0810187905260c0810186905260e0810185905261010081018490526101200160408051601f1981840301815291905280516020909101209050601960f81b600160f81b61223960007f47e79534a245952e8b16893a336b85a3d9ea9fa8c573f3d803afb92a794692184660408051602081019390935282015230606082015260800160405160208183030381529060405280519060200120905090565b6040517fff00000000000000000000000000000000000000000000000000000000000000938416602082015292909116602183015260228201526042810182905260620160405160208183030381529060405291505098975050505050505050565b6000808560048111156122b0576122b0612fa7565b14806122cd575060018560048111156122cb576122cb612fa7565b145b6122d85760026122db565b60015b60ff1690506122eb81604161304d565b82101561230b57604051630a71486160e21b815260040160405180910390fd5b60008060008060005b8581101561255c5761235d88888080601f016020809104026020016040519081016040528093929190818152602001838380828437600092019190915250859250610533915050565b8094508195508296505050506123ac898585858c8c8080601f016020809104026020016040519081016040528093929190818152602001838380828437600092019190915250610d0d92505050565b945060008a60048111156123c2576123c2612fa7565b036123fa576001546001600160a01b038681169116146123f5576040516389c3438560e01b815260040160405180910390fd5b612554565b60018a600481111561240e5761240e612fa7565b0361244b576001600160a01b03858116600090815260076020526040902054166123f557604051631134d27b60e31b815260040160405180910390fd5b60028a600481111561245f5761245f612fa7565b036124d2578060000361249a576001546001600160a01b038681169116146123f5576040516389c3438560e01b815260040160405180910390fd5b6001600160a01b03858116600090815260076020526040902054166123f557604051631134d27b60e31b815260040160405180910390fd5b60038a60048111156124e6576124e6612fa7565b036124fc578060000361249a576123f58561257e565b60048a600481111561251057612510612fa7565b0361028e578060000361254b576001546001600160a01b038681169116146123f5576040516389c3438560e01b815260040160405180910390fd5b6123f58561257e565b600101612314565b50505050505050505050565b6000818310612577578161212b565b5090919050565b60006004544261258e919061301e565b90506000805b6002548110156125f1576000818152600660205260409020546001600160a01b03166125c38262093a8061304d565b8411156125e857846001600160a01b0316816001600160a01b0316036125e857600192505b50600101612594565b50806111f4576040516322523a6360e11b815260040160405180910390fd5b80356001600160a01b03811681146120a857600080fd5b60008083601f84011261263957600080fd5b50813567ffffffffffffffff81111561265157600080fd5b60208301915083602082850101111561266957600080fd5b9250929050565b60008060008060008060008060c0898b03121561268c57600080fd5b61269589612610565b97506126a360208a01612610565b96506126b160408a01612610565b955060608901359450608089013567ffffffffffffffff808211156126d557600080fd5b6126e18c838d01612627565b909650945060a08b01359150808211156126fa57600080fd5b506127078b828c01612627565b999c989b5096995094979396929594505050565b6001600160e01b031981168114610b5657600080fd5b60006020828403121561274357600080fd5b813561212b8161271b565b6020808252825182820181905260009190848201906040850190845b8181101561278f5783516001600160a01b03168352928401929184019160010161276a565b50909695505050505050565b60008083601f8401126127ad57600080fd5b50813567ffffffffffffffff8111156127c557600080fd5b6020830191508360208260051b850101111561266957600080fd5b6000806000806000606086880312156127f857600080fd5b61280186612610565b9450602086013567ffffffffffffffff8082111561281e57600080fd5b61282a89838a0161279b565b9096509450604088013591508082111561284357600080fd5b506128508882890161279b565b969995985093965092949392505050565b60006020828403121561287357600080fd5b61212b82612610565b60008060008060006080868803121561289457600080fd5b61289d86612610565b94506128ab60208701612610565b935060408601359250606086013567ffffffffffffffff8111156128ce57600080fd5b61285088828901612627565b634e487b7160e01b600052604160045260246000fd5b600082601f83011261290157600080fd5b813567ffffffffffffffff8082111561291c5761291c6128da565b604051601f8301601f19908116603f01168101908282118183101715612944576129446128da565b8160405283815286602085880101111561295d57600080fd5b836020870160208301376000602085830101528094505050505092915050565b6000806040838503121561299057600080fd5b82359150602083013567ffffffffffffffff8111156129ae57600080fd5b6129ba858286016128f0565b9150509250929050565b600080602083850312156129d757600080fd5b823567ffffffffffffffff8111156129ee57600080fd5b6129fa8582860161279b565b90969095509350505050565b600080600080600060a08688031215612a1e57600080fd5b853594506020860135935060408601359250606086013560ff81168114612a4457600080fd5b9150608086013567ffffffffffffffff811115612a6057600080fd5b612a6c888289016128f0565b9150509295509295909350565b6000806000806000806000806000806101008b8d031215612a9957600080fd5b612aa28b612610565b995060208b0135985060408b013567ffffffffffffffff80821115612ac657600080fd5b612ad28e838f01612627565b909a50985060608d0135975060808d0135965060a08d0135955060c08d0135945060e08d0135915080821115612b0757600080fd5b50612b148d828e01612627565b915080935050809150509295989b9194979a5092959850565b60008060408385031215612b4057600080fd5b612b4983612610565b9150612b5760208401612610565b90509250929050565b60008060008060008060008060e0898b031215612b7c57600080fd5b612b8589612610565b975060208901359650604089013567ffffffffffffffff811115612ba857600080fd5b612bb48b828c01612627565b999c989b50996060810135986080820135985060a0820135975060c09091013595509350505050565b60008060408385031215612bf057600080fd5b612bf983612610565b946020939093013593505050565b60008060408385031215612c1a57600080fd5b823567ffffffffffffffff811115612c3157600080fd5b612c3d858286016128f0565b95602094909401359450505050565b60008060008060008060008060a0898b031215612c6857600080fd5b612c7189612610565b9750612c7f60208a01612610565b9650604089013567ffffffffffffffff80821115612c9c57600080fd5b612ca88c838d0161279b565b909850965060608b0135915080821115612cc157600080fd5b612ccd8c838d0161279b565b909650945060808b01359150808211156126fa57600080fd5b602080825282518282018190526000919060409081850190868401855b82811015612d3b57815180516001600160a01b0316855286810151878601528501518585015260609093019290850190600101612d03565b5091979650505050505050565b60008060008060008060a08789031215612d6157600080fd5b612d6a87612610565b9550612d7860208801612610565b94506040870135935060608701359250608087013567ffffffffffffffff811115612da257600080fd5b612dae89828a01612627565b979a9699509497509295939492505050565b6000815180845260005b81811015612de657602081850181015186830182015201612dca565b81811115612df8576000602083870101525b50601f01601f19169290920160200192915050565b60208152600061212b6020830184612dc0565b634e487b7160e01b600052603260045260246000fd5b634e487b7160e01b600052601160045260246000fd5b600060018201612e5e57612e5e612e36565b5060010190565b8183526000602080850194508260005b85811015612ea1576001600160a01b03612e8e83612610565b1687529582019590820190600101612e75565b509495945050505050565b6001600160a01b0386168152606060208201526000612ecf606083018688612e65565b8281036040840152612ee2818587612e65565b98975050505050505050565b600060208284031215612f0057600080fd5b8151801515811461212b57600080fd5b60008235605e19833603018112612f2657600080fd5b9190910192915050565b6000808335601e19843603018112612f4757600080fd5b83018035915067ffffffffffffffff821115612f6257600080fd5b60200191503681900382131561266957600080fd5b6001600160e01b03198135818116916004851015612f9f5780818660040360031b1b83161692505b505092915050565b634e487b7160e01b600052602160045260246000fd5b828152604060208201526000612fd66040830184612dc0565b949350505050565b600060208284031215612ff057600080fd5b815161212b8161271b565b600060ff821660ff84168082101561301557613015612e36565b90039392505050565b60008282101561303057613030612e36565b500390565b6000821982111561304857613048612e36565b500190565b600081600019048311821515161561306757613067612e36565b500290565b818382376000910190815291905056fea2646970667358221220952867301d901d3a73ac64b6671a3316864867bd48cfca6a1a614f8025f5d40464736f6c634300080f0033",
+  "devdoc": {
+    "author": "Rodrigo Herrera I.",
+    "errors": {
+      "LW__exec__invalidNonce()": [
+        {
+          "details": "exec() custom errors."
+        }
+      ],
+      "LW__multiCall__notOwner()": [
+        {
+          "details": "multiCall() custom error."
+        }
+      ],
+      "LW__simulateTransaction__invalidNonce()": [
+        {
+          "details": "simulateTransaction() custom errors."
+        }
+      ],
+      "LW__verifySignatures__invalidSignatureLength()": [
+        {
+          "details": "verifySignatures() custom errors."
+        }
+      ],
+      "LaserWallet__invalidSignature()": [
+        {
+          "details": "isValidSignature() Laser custom error."
+        }
+      ],
+      "Owner__changeOwner__invalidOwnerAddress()": [
+        {
+          "details": "changeOwner() custom error."
+        }
+      ],
+      "Owner__initOwner__walletInitialized()": [
+        {
+          "details": "initOwner() custom errors."
+        }
+      ],
+      "SSR__access__guardiansBlocked()": [
+        {
+          "details": "access() custom errors."
+        }
+      ],
+      "SSR__addGuardian__invalidAddress()": [
+        {
+          "details": "addGuardian() custom errors."
+        }
+      ],
+      "SSR__addRecoveryOwner__invalidAddress()": [
+        {
+          "details": "addRecoveryOwner() custom error."
+        }
+      ],
+      "SSR__initGuardians__underflow()": [
+        {
+          "details": "initGuardians() custom errors."
+        }
+      ],
+      "SSR__initRecoveryOwners__underflow()": [
+        {
+          "details": "initRecoveryOwners() custom error."
+        }
+      ],
+      "SSR__removeGuardian__invalidAddress()": [
+        {
+          "details": "removeGuardian() custom errors."
+        }
+      ],
+      "SSR__removeRecoveryOwner__incorrectIndex()": [
+        {
+          "details": "removeRecoveryOwner() custom error."
+        }
+      ],
+      "SSR__validateRecoveryOwner__notAuthorized()": [
+        {
+          "details": "validateRecoveryOwner() custom error."
+        }
+      ],
+      "Singleton__upgradeSingleton__incorrectAddress()": [
+        {
+          "details": "upgradeSingleton() custom errors."
+        }
+      ],
+      "Utils__returnSigner__invalidSignature()": [
+        {
+          "details": "returnSigner() custom error."
+        }
+      ]
+    },
+    "kind": "dev",
+    "methods": {
+      "addGuardian(address)": {
+        "details": "Adds a guardian to the wallet.",
+        "params": {
+          "newGuardian": "Address of the new guardian."
+        }
+      },
+      "addRecoveryOwner(address)": {
+        "details": "Adds a new recovery owner to the chain list.",
+        "params": {
+          "newRecoveryOwner": "The address of the new recovery owner."
+        }
+      },
+      "changeOwner(address)": {
+        "details": "Changes the owner of the wallet.",
+        "params": {
+          "newOwner": "The address of the new owner."
+        }
+      },
+      "domainSeparator()": {
+        "details": "Returns the domain separator of this."
+      },
+      "exec(address,uint256,bytes,uint256,uint256,uint256,uint256,bytes)": {
+        "details": "Executes a generic transaction. It does not support 'delegatecall' for security reasons.",
+        "params": {
+          "_nonce": "Unsigned integer to avoid replay attacks. It needs to match the current wallet's nonce.",
+          "callData": "Data payload for the transaction.",
+          "gasLimit": "The transaction's gas limit. It needs to be the same as the actual transaction gas limit.",
+          "maxFeePerGas": "Maximum amount that the user is willing to pay for a unit of gas.",
+          "maxPriorityFeePerGas": "Miner's tip.",
+          "signatures": "The signatures of the transaction.",
+          "to": "Destination address.",
+          "value": "Amount to send."
+        }
+      },
+      "getChainId()": {
+        "returns": {
+          "chainId": "The chain id of this."
+        }
+      },
+      "getGuardians()": {
+        "returns": {
+          "_0": "Array of guardians of this."
+        }
+      },
+      "getRecoveryOwners()": {
+        "returns": {
+          "_0": "Array of the recovery owners in struct format 'RecoverySettings'."
+        }
+      },
+      "init(address,address[],address[])": {
+        "details": "Setup function, sets initial storage of contract.",
+        "params": {
+          "_guardians": "Addresses that can activate the social recovery mechanism.",
+          "_owner": "The owner of the wallet.",
+          "_recoveryOwners": "Array of recovery owners. Implementation of Sovereign Social Recovery."
+        }
+      },
+      "isGuardian(address)": {
+        "params": {
+          "guardian": "Requested address."
+        },
+        "returns": {
+          "_0": "Boolean if the address is a guardian of the current wallet."
+        }
+      },
+      "isValidSignature(bytes32,bytes)": {
+        "details": "Implementation of EIP 1271: https://eips.ethereum.org/EIPS/eip-1271.",
+        "params": {
+          "hash": "Hash of a message signed on behalf of address(this).",
+          "signature": "Signature byte array associated with _msgHash."
+        },
+        "returns": {
+          "_0": "Magic value  or reverts with an error message."
+        }
+      },
+      "lock()": {
+        "details": "Locks the wallet. Can only be called by a guardian."
+      },
+      "multiCall((address,uint256,bytes)[])": {
+        "details": "Executes a series of generic transactions. It can only be called from exec.",
+        "params": {
+          "transactions": "Basic transactions array (to, value, calldata)."
+        }
+      },
+      "operationHash(address,uint256,bytes,uint256,uint256,uint256,uint256)": {
+        "details": "The transaction's hash. This is necessary to check that the signatures are correct and to avoid replay attacks."
+      },
+      "recover(address,address)": {
+        "details": "Can only recover with the signature of 1 guardian and the recovery owner.",
+        "params": {
+          "newOwner": "The new owner address. This is generated instantaneously.",
+          "newRecoveryOwner": "The new recovery owner address. This is generated instantaneously."
+        }
+      },
+      "recoveryUnlock()": {
+        "details": "Unlocks the wallet. Can only be called by the recovery owner + the owner. This is to avoid the wallet being locked forever if a guardian misbehaves. The guardians will be locked until the owner decides otherwise."
+      },
+      "removeGuardian(address,address)": {
+        "details": "Removes a guardian to the wallet.",
+        "params": {
+          "guardianToRemove": "Address of the guardian to be removed.",
+          "prevGuardian": "Address of the previous guardian in the linked list."
+        }
+      },
+      "removeRecoveryOwner(address,uint256)": {
+        "details": "Removes a recovery owner.",
+        "params": {
+          "index": "The position of the recovery owner in the chain list.",
+          "recoveryOwner": "The address to be removed as recovery owner."
+        }
+      },
+      "returnSigner(bytes32,bytes32,bytes32,uint8,bytes)": {
+        "details": "Returns the signer of the hash.",
+        "params": {
+          "dataHash": "The hash that was signed."
+        }
+      },
+      "simulateTransaction(address,uint256,bytes,uint256,uint256,uint256,uint256,bytes)": {
+        "details": "Simulates a transaction. This should be called from the relayer, to verify that the transaction will not revert. This does not guarantees 100% that the transaction will succeed, the state will be different next block."
+      },
+      "splitSigs(bytes,uint256)": {
+        "details": "Returns the r, s and v of the signature.",
+        "params": {
+          "pos": "Which signature to read.",
+          "signatures": "Signature."
+        }
+      },
+      "swapRecoveryOwner(address,address)": {
+        "details": "Swaps a recovery owner for a new address.",
+        "params": {
+          "newRecoveryOwner": "The address of the new recovery owner.",
+          "oldRecoveryOwner": "The address of the current recovery owner to be swapped by the new one."
+        }
+      },
+      "unlock()": {
+        "details": "Unlocks the wallet. Can only be called by a guardian + the owner."
+      },
+      "unlockGuardians()": {
+        "details": "Unlocks the guardians. This can only be called by the owner."
+      },
+      "upgradeSingleton(address)": {
+        "details": "Migrates to a new singleton (implementation).",
+        "params": {
+          "_singleton": "New implementation address."
+        }
+      }
+    },
+    "title": "LaserWallet - EVM based smart contract wallet. Implementes smart social recovery mechanism.",
+    "version": 1
+  },
+  "userdoc": {
+    "kind": "user",
+    "methods": {
+      "addGuardian(address)": {
+        "notice": "Can only be called by the owner."
+      },
+      "addRecoveryOwner(address)": {
+        "notice": "The new recovery owner will be added at the end of the chain."
+      },
+      "domainSeparator()": {
+        "notice": "This is done to avoid replay attacks."
+      },
+      "exec(address,uint256,bytes,uint256,uint256,uint256,uint256,bytes)": {
+        "notice": "If 'gasLimit' does not match the actual gas limit of the transaction, the relayer can incur losses. It is the relayer's responsability to make sure that they are the same, the user does not get affected if a mistake is made. We prefer to prioritize the user's safety (not overpay) over the relayer."
+      },
+      "init(address,address[],address[])": {
+        "notice": "It can't be called after initialization."
+      },
+      "recover(address,address)": {
+        "notice": "The newOwner and newRecoveryOwner key pair should be generated from the mobile device. The main reason of this is to restart the generation process in case an attacker has the current recoveryOwner."
+      },
+      "removeGuardian(address,address)": {
+        "notice": "Can only be called by the owner."
+      },
+      "removeRecoveryOwner(address,uint256)": {
+        "notice": "The recovery owners that are positioned after the deleted recovery owner will be forward 1 position in the chain list."
+      },
+      "simulateTransaction(address,uint256,bytes,uint256,uint256,uint256,uint256,bytes)": {
+        "notice": "Needs to be called off-chain from  address zero."
+      }
+    },
+    "version": 1
+  },
+  "storageLayout": {
+    "storage": [
+      {
+        "astId": 940,
+        "contract": "contracts/LaserWallet.sol:LaserWallet",
+        "label": "singleton",
+        "offset": 0,
+        "slot": "0",
+        "type": "t_address"
+      },
+      {
+        "astId": 830,
+        "contract": "contracts/LaserWallet.sol:LaserWallet",
+        "label": "owner",
+        "offset": 0,
+        "slot": "1",
+        "type": "t_address"
+      },
+      {
+        "astId": 1952,
+        "contract": "contracts/LaserWallet.sol:LaserWallet",
+        "label": "recoveryOwnersCount",
+        "offset": 0,
+        "slot": "2",
+        "type": "t_uint256"
+      },
+      {
+        "astId": 1954,
+        "contract": "contracts/LaserWallet.sol:LaserWallet",
+        "label": "guardianCount",
+        "offset": 0,
+        "slot": "3",
+        "type": "t_uint256"
+      },
+      {
+        "astId": 1956,
+        "contract": "contracts/LaserWallet.sol:LaserWallet",
+        "label": "timeLock",
+        "offset": 0,
+        "slot": "4",
+        "type": "t_uint256"
+      },
+      {
+        "astId": 1958,
+        "contract": "contracts/LaserWallet.sol:LaserWallet",
+        "label": "isLocked",
+        "offset": 0,
+        "slot": "5",
+        "type": "t_bool"
+      },
+      {
+        "astId": 1961,
+        "contract": "contracts/LaserWallet.sol:LaserWallet",
+        "label": "guardiansLocked",
+        "offset": 1,
+        "slot": "5",
+        "type": "t_bool"
+      },
+      {
+        "astId": 1966,
+        "contract": "contracts/LaserWallet.sol:LaserWallet",
+        "label": "recoveryOwners",
+        "offset": 0,
+        "slot": "6",
+        "type": "t_mapping(t_uint256,t_struct(RecoverySettings)1444_storage)"
+      },
+      {
+        "astId": 1970,
+        "contract": "contracts/LaserWallet.sol:LaserWallet",
+        "label": "guardians",
+        "offset": 0,
+        "slot": "7",
+        "type": "t_mapping(t_address,t_address)"
+      },
+      {
+        "astId": 37,
+        "contract": "contracts/LaserWallet.sol:LaserWallet",
+        "label": "nonce",
+        "offset": 0,
+        "slot": "8",
+        "type": "t_uint256"
+      }
+    ],
+    "types": {
+      "t_address": {
+        "encoding": "inplace",
+        "label": "address",
+        "numberOfBytes": "20"
+      },
+      "t_bool": {
+        "encoding": "inplace",
+        "label": "bool",
+        "numberOfBytes": "1"
+      },
+      "t_mapping(t_address,t_address)": {
+        "encoding": "mapping",
+        "key": "t_address",
+        "label": "mapping(address => address)",
+        "numberOfBytes": "32",
+        "value": "t_address"
+      },
+      "t_mapping(t_uint256,t_struct(RecoverySettings)1444_storage)": {
+        "encoding": "mapping",
+        "key": "t_uint256",
+        "label": "mapping(uint256 => struct ISSR.RecoverySettings)",
+        "numberOfBytes": "32",
+        "value": "t_struct(RecoverySettings)1444_storage"
+      },
+      "t_struct(RecoverySettings)1444_storage": {
+        "encoding": "inplace",
+        "label": "struct ISSR.RecoverySettings",
+        "members": [
+          {
+            "astId": 1439,
+            "contract": "contracts/LaserWallet.sol:LaserWallet",
+            "label": "recoveryOwner",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_address"
+          },
+          {
+            "astId": 1441,
+            "contract": "contracts/LaserWallet.sol:LaserWallet",
+            "label": "ownerIndex",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_uint256"
+          },
+          {
+            "astId": 1443,
+            "contract": "contracts/LaserWallet.sol:LaserWallet",
+            "label": "time",
+            "offset": 0,
+            "slot": "2",
+            "type": "t_uint256"
+          }
+        ],
+        "numberOfBytes": "96"
+      },
+      "t_uint256": {
+        "encoding": "inplace",
+        "label": "uint256",
+        "numberOfBytes": "32"
+      }
+    }
+  }
+}

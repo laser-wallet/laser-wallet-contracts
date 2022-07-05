@@ -1,9 +1,6 @@
 import { Wallet, Contract, BigNumber, Signer } from "ethers";
 import { ethers } from "hardhat";
 import { Address, LaserTypes, Transaction } from "../types";
-// const {
-//     abi
-// } = require("../../artifacts/contracts/LaserWallet.sol/LaserWallet.json");
 
 export function encodeFunctionData(
     abi: any,

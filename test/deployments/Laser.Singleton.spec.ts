@@ -1,5 +1,5 @@
 import { expect } from "chai";
-import { ethers } from "hardhat";
+import { deployments, ethers } from "hardhat";
 import { Contract, Signer, Wallet } from "ethers";
 
 const mock = Wallet.createRandom().address;
@@ -7,13 +7,15 @@ const mock = Wallet.createRandom().address;
 const VERSION = "1.0.0";
 
 describe("Laser Wallet (singleton)", () => {
-    let relayer: Signer;
     let singleton: Contract;
 
     beforeEach(async () => {
-        [relayer] = await ethers.getSigners();
-        const factorySingleton = await ethers.getContractFactory("LaserWallet");
-        singleton = await factorySingleton.deploy();
+        await deployments.fixture(["LaserWallet"]);
+        const Singleton = await deployments.get("LaserWallet");
+        singleton = await ethers.getContractAt(
+            Singleton.abi,
+            Singleton.address
+        );
     });
 
     describe("singleton correct deployment", async () => {

@@ -2,8 +2,6 @@ import { BigNumber, BigNumberish } from "ethers";
 
 export type Address = string;
 
-export type Numberish = BigNumber | number | string;
-
 export const types = {
     LaserOperation: [
         {

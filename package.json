@@ -5,11 +5,12 @@
     "homepage": "https://github.com/laser-wallet/laser-wallet-contracts",
     "license": "LGPL-3.0",
     "scripts": {
-        "lint:ts": "prettier --write test/**/*.ts && npx prettier --write hardhat.config.ts && npx prettier --write src/**/*.ts",
+        "lint:ts": "prettier --write test/**/*.ts && npx prettier --write hardhat.config.ts && npx prettier --write deploy/**/*.ts",
         "lint:sol": "prettier --write 'contracts/**/*.sol'",
         "lint:all": "npm run lint:ts && npm run lint:sol",
         "test": "hardhat test",
         "compile": "hardhat compile", 
+        "deploy-and-verify": "hardhat deploy-and-verify --network",
         "coverage": "hardhat coverage"
     },
     "keywords": [

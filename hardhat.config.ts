@@ -7,14 +7,14 @@ import "hardhat-gas-reporter";
 import "hardhat-storage-layout";
 import "hardhat-deploy";
 import "solidity-coverage";
+import "./tasks/deploy_and_verify";
 
 import dotenv from "dotenv";
 
 dotenv.config();
 
-const INFURA_KEY = process.env.INFURA_KEY;
-const ALCHEMY_URL = process.env.ALCHEMY_URL;
-const DEPLOYER_PRIVATE_KEY = process.env.DEPLOYER_PRIVATE_KEY;
+const { INFURA_KEY, ALCHEMY_URL, DEPLOYER_PRIVATE_KEY, ETHERSCAN_API_KEY } =
+    process.env;
 
 const config: HardhatUserConfig = {
     solidity: {
@@ -59,6 +59,12 @@ const config: HardhatUserConfig = {
                 url: `${ALCHEMY_URL}`,
             },
         },
+    },
+    namedAccounts: {
+        deployer: 0,
+    },
+    etherscan: {
+        apiKey: ETHERSCAN_API_KEY,
     },
     gasReporter: {
         enabled: process.env.REPORT_GAS === "true",
