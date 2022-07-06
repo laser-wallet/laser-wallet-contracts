@@ -172,7 +172,32 @@ describe("Sovereign Social Recovery", () => {
                     JSON.stringify(await wallet.getRecoveryOwners())
                 );
             });
+
+            it("should fail by providing a contract without 1271 support", async () => {
+                const { address, wallet } = await walletSetup();
+                const tx = await generateTransaction();
+                const Caller = await ethers.getContractFactory("Caller");
+                const caller = await Caller.deploy();
+                tx.to = address;
+                tx.callData = encodeFunctionData(abi, "addRecoveryOwner", [
+                    caller.address,
+                ]);
+                const hash = await getHash(wallet, tx);
+                const { ownerSigner } = await signersForTest();
+                tx.signatures = await sign(ownerSigner, hash);
+                await fundWallet(ownerSigner, address);
+                const recoveryOwners = await wallet.getRecoveryOwners();
+                const transaction = await sendTx(wallet, tx);
+                expect(transaction.events[0].event).to.equal("ExecFailure");
+                expect(JSON.stringify(recoveryOwners)).to.equal(
+                    JSON.stringify(await wallet.getRecoveryOwners())
+                );
+            });
         });
+
+        describe("removeRecoveryOwner()", () => {});
+
+        describe("swapRecoveryOwner()", () => {});
     });
 
     describe("Guardians", () => {
@@ -214,5 +239,29 @@ describe("Sovereign Social Recovery", () => {
                     .be.reverted;
             });
         });
+
+        describe("addGuardian()", () => {});
+
+        describe("removeGuardian()", () => {});
+
+        describe("swapGuardian()", () => {});
+    });
+
+    describe("SSR", () => {
+        describe("access()", () => {});
+
+        describe("validateRecoveryOwner", () => {});
+
+        describe("lock()", () => {});
+
+        describe("unlock()", () => {});
+
+        describe("recoveryUnlock()", () => {});
+
+        describe("unlockGuardians()", () => {});
+
+        describe("recover()", () => {});
+
+        describe("scenarios", () => {});
     });
 });
