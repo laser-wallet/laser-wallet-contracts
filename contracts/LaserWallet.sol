@@ -315,7 +315,7 @@ contract LaserWallet is Singleton, SSR, Handler, ILaserWallet {
      * @dev Verifies that the signature(s) match the transaction type and sender.
      * @param _access Who has permission to invoke this transaction.
      * @param dataHash The keccak256 has of the transaction's data playload.
-     * @param signatures The signatures sent by the UserOp.
+     * @param signatures The signature(s) of the hash.
      */
     function verifySignatures(
         Access _access,
@@ -418,7 +418,7 @@ contract LaserWallet is Singleton, SSR, Handler, ILaserWallet {
         uint256 maxPriorityFeePerGas,
         uint256 gasLimit
     ) internal view returns (bytes memory) {
-        bytes32 userOperationHash = keccak256(
+        bytes32 operationHash = keccak256(
             abi.encode(
                 LASER_TYPE_STRUCTURE,
                 to,
@@ -436,7 +436,7 @@ contract LaserWallet is Singleton, SSR, Handler, ILaserWallet {
                 bytes1(0x19),
                 bytes1(0x01),
                 domainSeparator(),
-                userOperationHash
+                operationHash
             );
     }
 }
