@@ -8,8 +8,6 @@ import "../interfaces/IERC165.sol";
 import "../interfaces/ISSR.sol";
 import "../utils/Utils.sol";
 
-import "hardhat/console.sol";
-
 /**
  * @title SSR - Smart Social Recovery
  * @notice New wallet recovery mechanism.
@@ -159,10 +157,7 @@ contract SSR is ISSR, SelfAuthorized, Owner, Utils {
      * @notice The new recovery owner will be added at the end of the chain.
      */
     function addRecoveryOwner(address newRecoveryOwner) external authorized {
-        console.log("we are here");
         verifyNewRecoveryOwnerOrGuardian(newRecoveryOwner);
-        console.log("new recovery owner -->", newRecoveryOwner);
-        console.log("we passed to here");
         recoveryOwners[newRecoveryOwner] = recoveryOwners[pointer];
         unchecked {
             ++recoveryOwnersCount;

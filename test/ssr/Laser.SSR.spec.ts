@@ -12,6 +12,7 @@ import {
     encodeFunctionData,
     getHash,
     sendTx,
+    fundWallet,
 } from "../utils";
 import { Address, Domain } from "../types";
 import { addrZero, ownerWallet } from "../constants/constants";
@@ -22,6 +23,7 @@ const {
 
 describe("Sovereign Social Recovery", () => {
     let addresses: AddressesForTest;
+    let ownerSiger: Signer;
 
     beforeEach(async () => {
         await deployments.fixture();
@@ -103,7 +105,72 @@ describe("Sovereign Social Recovery", () => {
                 const hash = await getHash(wallet, tx);
                 const { ownerSigner } = await signersForTest();
                 tx.signatures = await sign(ownerSigner, hash);
-                await sendTx(wallet, tx);
+                await fundWallet(ownerSigner, address);
+                const recoveryOwners = await wallet.getRecoveryOwners();
+                const transaction = await sendTx(wallet, tx);
+                expect(transaction.events[0].event).to.equal("ExecFailure");
+                expect(JSON.stringify(recoveryOwners)).to.equal(
+                    JSON.stringify(await wallet.getRecoveryOwners())
+                );
+            });
+
+            it("should fail by providing a guardian", async () => {
+                const { address, wallet } = await walletSetup();
+                const tx = await generateTransaction();
+                const guardians = await wallet.getGuardians();
+                tx.to = address;
+                tx.callData = encodeFunctionData(abi, "addRecoveryOwner", [
+                    guardians[0],
+                ]);
+                const hash = await getHash(wallet, tx);
+                const { ownerSigner } = await signersForTest();
+                tx.signatures = await sign(ownerSigner, hash);
+                await fundWallet(ownerSigner, address);
+                const recoveryOwners = await wallet.getRecoveryOwners();
+                const transaction = await sendTx(wallet, tx);
+                expect(transaction.events[0].event).to.equal("ExecFailure");
+                expect(JSON.stringify(recoveryOwners)).to.equal(
+                    JSON.stringify(await wallet.getRecoveryOwners())
+                );
+            });
+
+            it("should fail by providing a duplicate recovery owner", async () => {
+                const { address, wallet } = await walletSetup();
+                const tx = await generateTransaction();
+                const recoveryOwners = await wallet.getRecoveryOwners();
+                tx.to = address;
+                tx.callData = encodeFunctionData(abi, "addRecoveryOwner", [
+                    recoveryOwners[0],
+                ]);
+                const hash = await getHash(wallet, tx);
+                const { ownerSigner } = await signersForTest();
+                tx.signatures = await sign(ownerSigner, hash);
+                await fundWallet(ownerSigner, address);
+                const transaction = await sendTx(wallet, tx);
+                expect(transaction.events[0].event).to.equal("ExecFailure");
+                expect(JSON.stringify(recoveryOwners)).to.equal(
+                    JSON.stringify(await wallet.getRecoveryOwners())
+                );
+            });
+
+            it("should fail by providing the owner", async () => {
+                const { address, wallet } = await walletSetup();
+                const tx = await generateTransaction();
+                const owner = await wallet.owner();
+                tx.to = address;
+                tx.callData = encodeFunctionData(abi, "addRecoveryOwner", [
+                    owner,
+                ]);
+                const hash = await getHash(wallet, tx);
+                const { ownerSigner } = await signersForTest();
+                tx.signatures = await sign(ownerSigner, hash);
+                await fundWallet(ownerSigner, address);
+                const recoveryOwners = await wallet.getRecoveryOwners();
+                const transaction = await sendTx(wallet, tx);
+                expect(transaction.events[0].event).to.equal("ExecFailure");
+                expect(JSON.stringify(recoveryOwners)).to.equal(
+                    JSON.stringify(await wallet.getRecoveryOwners())
+                );
             });
         });
     });
