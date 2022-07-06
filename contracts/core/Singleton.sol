@@ -10,8 +10,8 @@ import "./SelfAuthorized.sol";
  * This contract is tightly coupled to our proxy contract (see `proxies/LaserProxy.sol`).
  */
 contract Singleton is SelfAuthorized, ISingleton {
-    // Singleton always needs to be first declared variable, to ensure that it is at the same location as in the Proxy contract.
-    // It should also always be ensured that the address is stored alone (uses a full word)
+    ///@dev Singleton always needs to be first declared variable, to ensure that it is at the same location as in the Proxy contract.
+    /// It should also always be ensured that the address is stored alone (uses a full word).
     address public singleton;
 
     /**

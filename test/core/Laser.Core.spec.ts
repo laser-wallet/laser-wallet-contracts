@@ -22,6 +22,7 @@ describe("Core", () => {
             const { address, wallet } = await walletSetup();
             const random = ethers.Wallet.createRandom().address;
             const { recoveryOwners, guardians } = addresses;
+
             await expect(
                 wallet.init(random, recoveryOwners, guardians)
             ).to.be.revertedWith("Owner__initOwner__walletInitialized(");
@@ -132,7 +133,7 @@ describe("Core", () => {
             expect(await wallet.owner()).to.equal(o);
             const outputROwners = await wallet.getRecoveryOwners();
             for (let i = 0; i < outputROwners.length; i++) {
-                const recoveryOwnerA = outputROwners[i].recoveryOwner;
+                const recoveryOwnerA = outputROwners[i];
                 const recoveryOwnerB = rOwners[i];
                 expect(recoveryOwnerA).to.equal(recoveryOwnerB);
             }
@@ -161,7 +162,7 @@ describe("Core", () => {
                 const guardianA = outputGuardians[i];
                 const guardianB = gs[i];
                 expect(guardianA).to.equal(guardianB);
-                const recoveryOwnerA = outputROwners[i].recoveryOwner;
+                const recoveryOwnerA = outputROwners[i];
                 const recoveryOwnerB = rOwners[i];
                 expect(recoveryOwnerA).to.equal(recoveryOwnerB);
             }
@@ -174,6 +175,4 @@ describe("Core", () => {
                 .withArgs([owner, recoveryOwners, guardians]);
         });
     });
-
-    describe("exec()", () => {});
 });
