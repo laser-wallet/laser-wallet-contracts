@@ -49,7 +49,6 @@ interface ILaserWallet {
         address owner,
         address[] calldata recoveryOwners,
         address[] calldata guardians
-        // ropsten, kovan, sepoia.
     ) external;
 
     /**

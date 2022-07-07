@@ -1,7 +1,7 @@
 import { expect } from "chai";
 import { deployments, ethers } from "hardhat";
 import { Signer, Wallet } from "ethers";
-import { walletSetup, addressesForTest, AddressesForTest } from "../utils";
+import { walletSetup, addressesForTest, AddressesForTest, signersForTest } from "../utils";
 import { Address } from "../types";
 import { addrZero } from "../constants/constants";
 
