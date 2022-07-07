@@ -8,7 +8,6 @@ import "./interfaces/ILaserWallet.sol";
 import "./libraries/UserOperation.sol";
 import "./ssr/SSR.sol";
 
-import "hardhat/console.sol";
 
 /**
  * @title LaserWallet - EVM based smart contract wallet. Implementes "sovereign social recovery" mechanism and account abstraction.
