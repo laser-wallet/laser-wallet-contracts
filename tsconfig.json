@@ -8,6 +8,7 @@
     },
     "include": [
         "./test", 
+        "./src",
         "./typechain-types"
     ],
     "files": [

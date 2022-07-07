@@ -1,5 +1,6 @@
 .DS_Store
 .env
+coverage.json
 artifacts/
 cache/
 node_modules/

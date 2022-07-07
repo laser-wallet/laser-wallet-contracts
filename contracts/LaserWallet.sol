@@ -1,43 +1,31 @@
 // SPDX-License-Identifier: LGPL-3.0-only
-pragma solidity 0.8.14;
+pragma solidity 0.8.15;
 
-import "./core/AccountAbstraction.sol";
 import "./core/Singleton.sol";
 import "./handlers/Handler.sol";
 import "./interfaces/ILaserWallet.sol";
-import "./libraries/UserOperation.sol";
 import "./ssr/SSR.sol";
 
 import "hardhat/console.sol";
 
 /**
- * @title LaserWallet - EVM based smart contract wallet. Implementes "sovereign social recovery" mechanism and account abstraction.
+ * @title LaserWallet - EVM based smart contract wallet. Implementes smart social recovery mechanism.
  * @author Rodrigo Herrera I.
  */
-contract LaserWallet is
-    Singleton,
-    AccountAbstraction,
-    SSR,
-    Handler,
-    ILaserWallet
-{
+contract LaserWallet is Singleton, SSR, Handler, ILaserWallet {
     string public constant VERSION = "1.0.0";
 
     bytes32 private constant DOMAIN_SEPARATOR_TYPEHASH =
         keccak256("EIP712Domain(uint256 chainId,address verifyingContract)");
-    bytes32 private constant LASER_OP_TYPEHASH =
+
+    bytes32 private constant LASER_TYPE_STRUCTURE =
         keccak256(
-            "LaserOp(address sender,uint256 nonce,bytes callData,uint256 callGas,uint256 verificationGas,uint256 preVerificationGas,uint256 maxFeePerGas,uint256 maxPriorityFeePerGas,address paymaster,bytes paymasterData)"
+            "LaserOperation(address to,uint256 value,bytes callData,uint256 nonce,uint256 maxFeePerGas,uint256 maxPriorityFeePerGas,uint256 gasLimit)"
         );
-    bytes4 private constant EIP1271_MAGIC_VALUE =
-        bytes4(keccak256("isValidSignature(bytes32,bytes)"));
+
+    bytes4 private constant EIP1271_MAGIC_VALUE = bytes4(keccak256("isValidSignature(bytes32,bytes)"));
 
     uint256 public nonce;
-
-    modifier onlyEntryPoint() {
-        if (msg.sender != entryPoint) revert LW__notEntryPoint();
-        _;
-    }
 
     constructor() {
         // This makes the singleton unusable. e.g. (parity wallet hack).
@@ -51,130 +39,154 @@ contract LaserWallet is
     /**
      * @dev Setup function, sets initial storage of contract.
      * @param _owner The owner of the wallet.
-     * @param _recoveryOwner Recovery owner in case the owner looses the main device. Implementation of Sovereign Social Recovery.
+     * @param _recoveryOwners Array of recovery owners. Implementation of Sovereign Social Recovery.
      * @param _guardians Addresses that can activate the social recovery mechanism.
-     * @param _entryPoint Entry Point contract address.
      * @notice It can't be called after initialization.
      */
     function init(
         address _owner,
-        address _recoveryOwner,
-        address[] calldata _guardians,
-        address _entryPoint
+        address[] calldata _recoveryOwners,
+        address[] calldata _guardians
     ) external {
         // initOwner() requires that the current owner is address 0.
         // This is enough to protect init() from being called after initialization.
-        initOwners(_owner, _recoveryOwner);
+        initOwner(_owner);
         initGuardians(_guardians);
-        initEntryPoint(_entryPoint);
-        emit Setup(owner, _guardians, entryPoint);
+        initRecoveryOwners(_recoveryOwners);
+        emit Setup(owner, _recoveryOwners, _guardians);
     }
 
     /**
-     * @dev Validates that the exeuction from EntryPoint is correct.
-     * EIP: https://eips.ethereum.org/EIPS/eip-4337
-     * @param userOp UserOperation struct that contains the transaction information.
-     * @param _requiredPrefund amount to pay to EntryPoint to perform execution.
-     */
-    function validateUserOp(
-        UserOperation calldata userOp,
-        bytes32,
-        uint256 _requiredPrefund
-    ) external onlyEntryPoint {
-        // Increase the nonce to avoid drained funds from multiple pay prefunds.
-        if (nonce++ != userOp.nonce) revert LW__validateUserOp__invalidNonce();
-
-        // We encode the transaction data ...
-        bytes memory userOpData = encodeUserOperationData(
-            userOp.sender,
-            userOp.nonce,
-            userOp.callData,
-            userOp.callGas,
-            userOp.verificationGas,
-            userOp.preVerificationGas,
-            userOp.maxFeePerGas,
-            userOp.maxPriorityFeePerGas,
-            userOp.paymaster,
-            userOp.paymasterData
-        );
-
-        // Now we hash it ...
-        bytes32 dataHash = keccak256(userOpData);
-
-        // We get the actual function selector to determine access ...
-        bytes4 funcSelector = bytes4(userOp.callData[132:]);
-
-        // access() checks if the wallet is locked for the owner or guardians ...
-        Access _access = access(funcSelector);
-
-        // We verify that the signatures are correct depending on the transaction type ...
-        verifySignatures(_access, dataHash, userOp.signature);
-
-        // Finally... we can pay the costs to the EntryPoint ...
-        payPrefund(_requiredPrefund);
-    }
-
-    /**
-     * @dev Executes an AA transaction. The msg.sender needs to be the EntryPoint address.
-     * The signatures are verified in validateUserOp().
-     * @param to Destination address of the transaction.
-     * @param value Ether value of the transaction.
-     * @param data Data payload of the transaction.
+     * @dev Executes a generic transaction. It does not support 'delegatecall' for security reasons.
+     * @param to Destination address.
+     * @param value Amount to send.
+     * @param callData Data payload for the transaction.
+     * @param _nonce Unsigned integer to avoid replay attacks. It needs to match the current wallet's nonce.
+     * @param maxFeePerGas Maximum amount that the user is willing to pay for a unit of gas.
+     * @param maxPriorityFeePerGas Miner's tip.
+     * @param gasLimit The transaction's gas limit. It needs to be the same as the actual transaction gas limit.
+     * @param signatures The signatures of the transaction.
+     * @notice If 'gasLimit' does not match the actual gas limit of the transaction, the relayer can incur losses.
+     * It is the relayer's responsability to make sure that they are the same, the user does not get affected if a mistake is made.
+     * We prefer to prioritize the user's safety (not overpay) over the relayer.
      */
     function exec(
         address to,
         uint256 value,
-        bytes memory data
-    ) external onlyEntryPoint {
-        // gasleft() will be the gas provided in userOp.callGas.
-        bool success = _call(to, value, data, gasleft());
-        if (!success) revert LW__exec__failure();
-        else emit Success(to, value, bytes4(data));
+        bytes calldata callData,
+        uint256 _nonce,
+        uint256 maxFeePerGas,
+        uint256 maxPriorityFeePerGas,
+        uint256 gasLimit,
+        bytes calldata signatures
+    ) external {
+        // We immediately increase the nonce to avoid replay attacks.
+        unchecked {
+            // Won't overflow ...
+            if (nonce++ != _nonce) revert LW__exec__invalidNonce();
+        }
+
+        // Verifies the correctness of the transaction. It checks that the signatures are
+        // correct and that the signer has access for the transaction.
+        verifyTransaction(to, value, callData, _nonce, maxFeePerGas, maxPriorityFeePerGas, gasLimit, signatures);
+
+        // Once we verified that the transaction is correct, we execute the main call.
+        // We subtract 10_000 to have enough gas to complete the function.
+        bool success = _call(to, value, callData, gasleft() - 10000);
+
+        // We do not revert the call if it fails, because the wallet needs to pay the relayer even in case of failure.
+        if (success) emit ExecSuccess(to, value, nonce);
+        else emit ExecFailure(to, value, nonce);
+
+        // We calculate the gas price, as per the user's request ...
+        uint256 gasPrice = calculateGasPrice(maxFeePerGas, maxPriorityFeePerGas);
+
+        // gasUsed is the total amount of gas consumed for this transaction.
+        // This is contemplating the initial callData cost, the main transaction,
+        // and we add the surplus for what is left (refund the relayer).
+        uint256 gasUsed = gasLimit - gasleft() + 7000;
+
+        uint256 refundAmount = gasUsed * gasPrice;
+
+        // We refund the relayer ...
+        success = _call(msg.sender, refundAmount, new bytes(0), gasleft());
+
+        // If the transaction returns false, we revert ..
+        if (!success) revert LW__exec__refundFailure();
     }
 
     /**
-     * @dev Simulates a transaction to have a rough estimate for UserOp.callGas.
-     * @notice Needs to be called off-chain from the address zero.
+     * @dev Executes a series of generic transactions. It can only be called from exec.
+     * @param transactions Basic transactions array (to, value, calldata).
+     */
+    function multiCall(Transaction[] calldata transactions) external authorized {
+        uint256 transactionsLength = transactions.length;
+        for (uint256 i = 0; i < transactionsLength; ) {
+            Transaction calldata transaction = transactions[i];
+
+            // We get the actual function selector to determine access ...
+            bytes4 funcSelector = bytes4(transaction.callData);
+
+            // access() checks if the wallet is locked for the owner or guardians and returns who has access ...
+            Access access = access(funcSelector);
+
+            // Only the owner is allowed to trigger a multiCall.
+            // The signatures were already verified in 'exec', here we just need to make sure that access == owner.
+            if (access != Access.Owner) revert LW__multiCall__notOwner();
+
+            bool success = _call(transaction.to, transaction.value, transaction.callData, gasleft());
+
+            // We do not revert the call if it fails, because the wallet needs to pay the relayer even in case of failure.
+            (success);
+
+            unchecked {
+                // Won't overflow .... You would need way more gas usage than current available block gas (30m) to overflow it.
+                ++i;
+            }
+        }
+    }
+
+    /**
+     * @dev Simulates a transaction. This should be called from the relayer, to verify that the transaction will not revert.
+     * This does not guarantees 100% that the transaction will succeed, the state will be different next block.
+     * @notice Needs to be called off-chain from  address zero.
      */
     function simulateTransaction(
         address to,
         uint256 value,
-        bytes memory data
-    ) external returns (uint256 gasUsed) {
-        uint256 preGas = gasleft();
-        bool success = _call(to, value, data, gasleft());
-        require(success, "Execution failed");
-        gasUsed = preGas - gasleft();
-        require(
-            msg.sender == address(0),
-            "Must be called off-chain from address zero."
-        );
+        bytes calldata callData,
+        uint256 _nonce,
+        uint256 maxFeePerGas,
+        uint256 maxPriorityFeePerGas,
+        uint256 gasLimit,
+        bytes calldata signatures
+    ) external returns (uint256 totalGas) {
+        if (nonce++ != _nonce) revert LW__simulateTransaction__invalidNonce();
+        verifyTransaction(to, value, callData, _nonce, maxFeePerGas, maxPriorityFeePerGas, gasLimit, signatures);
+        bool success = _call(to, value, callData, gasleft());
+        if (!success) revert LW__simulateTransaction__mainCallError();
+        uint256 gasPrice = calculateGasPrice(maxFeePerGas, maxPriorityFeePerGas);
+        uint256 gasUsed = gasLimit - gasleft() + 7000;
+        uint256 refundAmount = gasUsed * gasPrice;
+        success = _call(msg.sender, refundAmount, new bytes(0), gasleft());
+        if (!success) revert LW__simulateTransaction__refundFailure();
+        totalGas = gasLimit - gasleft();
+        require(msg.sender == address(0), "Must be called off-chain from address zero.");
     }
 
     /**
-     * @dev Returns the user operation hash to be signed by owners.
-     * @param userOp The UserOperation struct.
+     * @dev The transaction's hash. This is necessary to check that the signatures are correct and to avoid replay attacks.
      */
-    function userOperationHash(UserOperation calldata userOp)
-        external
-        view
-        returns (bytes32)
-    {
-        return
-            keccak256(
-                encodeUserOperationData(
-                    userOp.sender,
-                    userOp.nonce,
-                    userOp.callData,
-                    userOp.callGas,
-                    userOp.verificationGas,
-                    userOp.preVerificationGas,
-                    userOp.maxFeePerGas,
-                    userOp.maxPriorityFeePerGas,
-                    userOp.paymaster,
-                    userOp.paymasterData
-                )
-            );
+    function operationHash(
+        address to,
+        uint256 value,
+        bytes calldata callData,
+        uint256 _nonce,
+        uint256 maxFeePerGas,
+        uint256 maxPriorityFeePerGas,
+        uint256 gasLimit
+    ) external view returns (bytes32) {
+        return keccak256(encodeOperation(to, value, callData, _nonce, maxFeePerGas, maxPriorityFeePerGas, gasLimit));
     }
 
     /**
@@ -183,18 +195,17 @@ contract LaserWallet is
      * @param signature Signature byte array associated with _msgHash.
      * @return Magic value  or reverts with an error message.
      */
-    function isValidSignature(bytes32 hash, bytes memory signature)
-        external
-        view
-        returns (bytes4)
-    {
+    function isValidSignature(bytes32 hash, bytes memory signature) external view returns (bytes4) {
         bytes32 r;
         bytes32 s;
         uint8 v;
         (r, s, v) = splitSigs(signature, 0);
-        address recovered = returnSigner(hash, r, s, v);
-        if (recovered != owner) revert LW__isValidSignature__invalidSigner();
-        else return EIP1271_MAGIC_VALUE;
+        address recovered = returnSigner(hash, r, s, v, signature);
+
+        // The guardians and recovery owners should not be able to sign transactions that are out of scope from this wallet.
+        // Only the owner should be able to sign external data.
+        if (recovered != owner) revert LaserWallet__invalidSignature();
+        return EIP1271_MAGIC_VALUE;
     }
 
     /**
@@ -207,107 +218,159 @@ contract LaserWallet is
     }
 
     function domainSeparator() public view returns (bytes32) {
-        return
-            keccak256(
-                abi.encode(
-                    DOMAIN_SEPARATOR_TYPEHASH,
-                    getChainId(),
-                    address(this)
-                )
-            );
+        return keccak256(abi.encode(DOMAIN_SEPARATOR_TYPEHASH, getChainId(), address(this)));
     }
 
-    /**
-     * @dev Pays the required amount to the EntryPoint contract.
-     * @param requiredPrefund amount to pay to EntryPoint to perform execution.
-     */
-    function payPrefund(uint256 requiredPrefund) internal {
-        if (requiredPrefund > 0) {
-            // If we need to pay back to EntryPoint ...
-            // The only possible caller of this function is EntryPoint.
-            bool success = _call(
-                payable(msg.sender),
-                requiredPrefund,
-                new bytes(0),
-                gasleft()
-            );
-            // It is EntryPoint's job to check for success.
-            (success);
-        }
+    function verifyTransaction(
+        address to,
+        uint256 value,
+        bytes calldata callData,
+        uint256 _nonce,
+        uint256 maxFeePerGas,
+        uint256 maxPriorityFeePerGas,
+        uint256 gasLimit,
+        bytes calldata signatures
+    ) internal view {
+        // We encode the transaction data.
+        bytes memory encodedData = encodeOperation(
+            to,
+            value,
+            callData,
+            _nonce,
+            maxFeePerGas,
+            maxPriorityFeePerGas,
+            gasLimit
+        );
+
+        // Now we hash it ...
+        bytes32 dataHash = keccak256(encodedData);
+
+        // We get the actual function selector to determine access ...
+        bytes4 funcSelector = bytes4(callData);
+
+        // access() checks if the wallet is locked for the owner or guardians and returns who has access ...
+        Access access = access(funcSelector);
+
+        // We verify that the signatures are correct depending on the transaction type ...
+        verifySignatures(access, dataHash, signatures);
     }
 
     /**
      * @dev Verifies that the signature(s) match the transaction type and sender.
      * @param _access Who has permission to invoke this transaction.
      * @param dataHash The keccak256 has of the transaction's data playload.
-     * @param signatures The signatures sent by the UserOp.
+     * @param signatures The signature(s) of the hash.
      */
     function verifySignatures(
         Access _access,
         bytes32 dataHash,
         bytes calldata signatures
     ) internal view {
-        if (_access == Access.Owner) {
-            verifyOwner(dataHash, signatures);
-        } else if (_access == Access.Guardian) {
-            verifyGuardian(dataHash, signatures);
-        } else if (_access == Access.OwnerAndGuardian) {
-            verifyOwnerAndGuardian(dataHash, signatures);
-        } else if (_access == Access.RecoveryOwnerAndGuardian) {
-            verifyRecoveryOwnerAndGurdian(dataHash, signatures);
-        } else if (_access == Access.OwnerAndRecoveryOwner) {
-            verifyOwnerAndRecoveryOwner(dataHash, signatures);
-        } else {
-            revert();
+        // If it is the owner or guardian, then only 1 signature is required.
+        // For all other operations, 2 signatures are required.
+        uint256 requiredSignatures = _access == Access.Owner || _access == Access.Guardian ? 1 : 2;
+
+        if (signatures.length < requiredSignatures * 65) {
+            revert LW__verifySignatures__invalidSignatureLength();
+        }
+
+        address signer;
+        bytes32 r;
+        bytes32 s;
+        uint8 v;
+
+        for (uint256 i = 0; i < requiredSignatures; ) {
+            (r, s, v) = splitSigs(signatures, i);
+
+            signer = returnSigner(dataHash, r, s, v, signatures);
+
+            if (_access == Access.Owner) {
+                // If access == owner, the signer needs to be the owner.
+
+                // We do not need further checks e.g 'is the wallet locked', they were done in 'access'.
+                if (owner != signer) revert LW__verifySignatures__notOwner();
+            } else if (_access == Access.Guardian) {
+                // If access == guardian, the signer needs to be a guardian.
+
+                // The guardian by itself can only lock the wallet, additional checks were done in 'access'.
+                if (guardians[signer] == address(0)) {
+                    revert LW__verifySignatures__notGuardian();
+                }
+            } else if (_access == Access.OwnerAndGuardian) {
+                // If access == owner and guardian, the first signer needs to be the owner.
+                if (i == 0) {
+                    // The first signer needs to be the owner.
+                    if (owner != signer) {
+                        revert LW__verifySignatures__notOwner();
+                    }
+                } else {
+                    // The second signer needs to be a guardian.
+                    if (guardians[signer] == address(0)) {
+                        revert LW__verifySignatures__notGuardian();
+                    }
+                }
+            } else if (_access == Access.RecoveryOwnerAndGuardian) {
+                // If access == recovery owner and guardian, the first signer needs to be the recovery owner.
+
+                // We do not need further checks, they were done in 'access'.
+                if (i == 0) {
+                    // The first signer needs to be a recovery owner.
+
+                    // validateRecoveryOwner() handles all the necessary checks.
+                    validateRecoveryOwner(signer);
+                } else {
+                    // The second signer needs to be a guardian.
+                    if (guardians[signer] == address(0)) {
+                        revert LW__verifySignatures__notGuardian();
+                    }
+                }
+            } else if (_access == Access.OwnerAndRecoveryOwner) {
+                // If access == owner and recovery owner, the first signer needs to be the owner.
+
+                if (i == 0) {
+                    if (owner != signer) {
+                        revert LW__verifySignatures__notOwner();
+                    }
+                } else {
+                    // The second signer needs to be the recovery owner.
+
+                    // validateRecoveryOwner() handles all the necessary checks.
+                    validateRecoveryOwner(signer);
+                }
+            } else {
+                // This else statement should never reach.
+                revert();
+            }
+
+            unchecked {
+                // Won't overflow ...
+                ++i;
+            }
         }
     }
 
-    /**
-     * @dev Returns the bytes that are hashed to be signed by owners.
-     * @param sender The wallet making the operation (should be address(this)).
-     * @param _nonce Anti-replay parameter; also used as the salt for first-time wallet creation.
-     * @param callData The data to pass to the sender during the main execution call.
-     * @param callGas The amount of gas to allocate the main execution call.
-     * @param verificationGas The amount of gas to allocate for the verification step.
-     * @param preVerificationGas The amount of gas to pay to compensate the bundler for the pre-verification execution and calldata.
-     * @param maxFeePerGas Maximum fee per gas (similar to EIP 1559  max_fee_per_gas).
-     * @param maxPriorityFeePerGas Maximum priority fee per gas (similar to EIP 1559 max_priority_fee_per_gas).
-     * @param paymaster Address sponsoring the transaction (or zero for regular self-sponsored transactions).
-     * @param paymasterData Extra data to send to the paymaster.
-     */
-    function encodeUserOperationData(
-        address sender,
-        uint256 _nonce,
+    function encodeOperation(
+        address to,
+        uint256 value,
         bytes calldata callData,
-        uint256 callGas,
-        uint256 verificationGas,
-        uint256 preVerificationGas,
+        uint256 _nonce,
         uint256 maxFeePerGas,
         uint256 maxPriorityFeePerGas,
-        address paymaster,
-        bytes calldata paymasterData
+        uint256 gasLimit
     ) internal view returns (bytes memory) {
-        bytes32 _userOperationHash = keccak256(
+        bytes32 opHash = keccak256(
             abi.encode(
-                LASER_OP_TYPEHASH,
-                sender,
-                _nonce,
+                LASER_TYPE_STRUCTURE,
+                to,
+                value,
                 keccak256(callData),
-                callGas,
-                verificationGas,
-                preVerificationGas,
+                _nonce,
                 maxFeePerGas,
                 maxPriorityFeePerGas,
-                paymaster,
-                keccak256(paymasterData)
+                gasLimit
             )
         );
-        return
-            abi.encodePacked(
-                bytes1(0x19),
-                bytes1(0x01),
-                domainSeparator(),
-                _userOperationHash
-            );
+
+        return abi.encodePacked(bytes1(0x19), bytes1(0x01), domainSeparator(), opHash);
     }
 }

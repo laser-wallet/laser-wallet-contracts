@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: LGPL-3.0-only
-pragma solidity 0.8.14;
+pragma solidity 0.8.15;
 
 import "../proxies/LaserProxy.sol";
 
@@ -25,17 +25,12 @@ interface IProxyFactory {
      * @param initializer Payload for message call sent to new proxy contract.
      * @param saltNonce Nonce that will be used to generate the salt to calculate the address of the new proxy contract.
      */
-    function createProxyWithNonce(bytes memory initializer, uint256 saltNonce)
-        external
-        returns (LaserProxy proxy);
+    function createProxyWithNonce(bytes memory initializer, uint256 saltNonce) external returns (LaserProxy proxy);
 
     /**
      * @dev Precomputes the address of a proxy that is created through 'create2'.
      */
-    function preComputeAddress(bytes memory initializer, uint256 saltNonce)
-        external
-        view
-        returns (address);
+    function preComputeAddress(bytes memory initializer, uint256 saltNonce) external view returns (address);
 
     /**
      * @dev Allows to retrieve the runtime code of a deployed Proxy. This can be used to check that the expected Proxy was deployed.

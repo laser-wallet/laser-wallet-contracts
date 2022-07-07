@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: LGPL-3.0-only
-pragma solidity 0.8.14;
+pragma solidity 0.8.15;
 
 /**
  * @title LaserWalletStorage
@@ -8,9 +8,6 @@ pragma solidity 0.8.14;
 contract LaserWalletStorage {
     // core/Singleton.sol
     address public singleton;
-
-    // core/AccountAbstraction.sol
-    address public entryPoint;
 
     // core/Owner.sol
     address public owner;

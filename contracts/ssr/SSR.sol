@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: LGPL-3.0-only
-pragma solidity 0.8.14;
+pragma solidity 0.8.15;
 
 import "../core/SelfAuthorized.sol";
 import "../core/Owner.sol";
@@ -8,8 +8,10 @@ import "../interfaces/IERC165.sol";
 import "../interfaces/ISSR.sol";
 import "../utils/Utils.sol";
 
+import "hardhat/console.sol";
+
 /**
- * @title SSR - Sovereign Social Recovery
+ * @title SSR - Smart Social Recovery
  * @notice New wallet recovery mechanism.
  * @author Rodrigo Herrera I.
  */
@@ -17,13 +19,19 @@ contract SSR is ISSR, SelfAuthorized, Owner, Utils {
     ///@dev pointer address for the nested mapping.
     address internal constant pointer = address(0x1);
 
+    uint256 internal recoveryOwnersCount;
+
     uint256 internal guardianCount;
+
+    uint256 public timeLock;
 
     bool public isLocked;
 
-    ///@dev If guardians are blocked, they cannot do any transaction.
+    ///@dev If guardians are locked, they cannot do any transaction.
     ///This is to completely prevent from guardians misbehaving.
-    bool public guardiansBlocked;
+    bool public guardiansLocked;
+
+    mapping(address => address) internal recoveryOwners;
 
     mapping(address => address) internal guardians;
 
@@ -31,6 +39,7 @@ contract SSR is ISSR, SelfAuthorized, Owner, Utils {
      * @dev Locks the wallet. Can only be called by a guardian.
      */
     function lock() external authorized {
+        timeLock = block.timestamp;
         isLocked = true;
         emit WalletLocked();
     }
@@ -39,18 +48,19 @@ contract SSR is ISSR, SelfAuthorized, Owner, Utils {
      * @dev Unlocks the wallet. Can only be called by a guardian + the owner.
      */
     function unlock() external authorized {
+        timeLock = 0;
         isLocked = false;
         emit WalletUnlocked();
     }
 
     /**
-     * @dev Unlocks the wallet. Can only be called by the recovery owner + the owner.
+     * @dev Unlocks the wallet. Can only be called by a recovery owner + the owner.
      * This is to avoid the wallet being locked forever if a guardian misbehaves.
      * The guardians will be locked until the owner decides otherwise.
      */
     function recoveryUnlock() external authorized {
         isLocked = false;
-        guardiansBlocked = true;
+        guardiansLocked = true;
         emit RecoveryUnlocked();
     }
 
@@ -58,24 +68,17 @@ contract SSR is ISSR, SelfAuthorized, Owner, Utils {
      * @dev Unlocks the guardians. This can only be called by the owner.
      */
     function unlockGuardians() external authorized {
-        guardiansBlocked = false;
+        guardiansLocked = false;
     }
 
     /**
      * @dev Can only recover with the signature of 1 guardian and the recovery owner.
      * @param newOwner The new owner address. This is generated instantaneously.
-     * @param newRecoveryOwner The new recovery owner address. This is generated instantaneously.
-     * @notice The newOwner and newRecoveryOwner key pair should be generated from the mobile device.
-     * The main reason of this is to restart the generation process in case an attacker has the current recoveryOwner.
      */
-    function recover(address newOwner, address newRecoveryOwner)
-        external
-        authorized
-    {
-        checkParams(newOwner, newRecoveryOwner);
+    function recover(address newOwner) external authorized {
+        timeLock = 0;
         owner = newOwner;
-        recoveryOwner = newRecoveryOwner;
-        emit WalletRecovered(newOwner, newRecoveryOwner);
+        emit WalletRecovered(newOwner);
     }
 
     /**
@@ -84,14 +87,7 @@ contract SSR is ISSR, SelfAuthorized, Owner, Utils {
      * @notice Can only be called by the owner.
      */
     function addGuardian(address newGuardian) external authorized {
-        if (
-            newGuardian == address(0) ||
-            newGuardian == owner ||
-            guardians[newGuardian] != address(0)
-        ) revert SSR__addGuardian__invalidAddress();
-        if (!IERC165(newGuardian).supportsInterface(0x1626ba7e))
-            revert SSR__addGuardian__invalidAddress();
-
+        verifyNewRecoveryOwnerOrGuardian(newGuardian);
         guardians[newGuardian] = guardians[pointer];
         guardians[pointer] = newGuardian;
 
@@ -108,10 +104,7 @@ contract SSR is ISSR, SelfAuthorized, Owner, Utils {
      * @param guardianToRemove Address of the guardian to be removed.
      * @notice Can only be called by the owner.
      */
-    function removeGuardian(address prevGuardian, address guardianToRemove)
-        external
-        authorized
-    {
+    function removeGuardian(address prevGuardian, address guardianToRemove) external authorized {
         if (guardianToRemove == pointer) {
             revert SSR__removeGuardian__invalidAddress();
         }
@@ -133,6 +126,89 @@ contract SSR is ISSR, SelfAuthorized, Owner, Utils {
     }
 
     /**
+     * @dev Swaps a guardian for a new address.
+     * @param prevGuardian The address of the previous guardian in the link list.
+     * @param newGuardian The address of the new guardian.
+     * @param oldGuardian The address of the current guardian to be swapped by the new one.
+     */
+    function swapGuardian(
+        address prevGuardian,
+        address newGuardian,
+        address oldGuardian
+    ) external authorized {
+        verifyNewRecoveryOwnerOrGuardian(newGuardian);
+        if (guardians[prevGuardian] != oldGuardian) {
+            revert SSR__swapGuardian__invalidPrevGuardian();
+        }
+        if (oldGuardian == pointer) {
+            revert SSR__swapGuardian__invalidOldGuardian();
+        }
+
+        guardians[newGuardian] = guardians[oldGuardian];
+        guardians[prevGuardian] = newGuardian;
+        guardians[oldGuardian] = address(0);
+        emit GuardianSwapped(newGuardian, oldGuardian);
+    }
+
+    /**
+     * @dev Adds a new recovery owner to the chain list.
+     * @param newRecoveryOwner The address of the new recovery owner.
+     * @notice The new recovery owner will be added at the end of the chain.
+     */
+    function addRecoveryOwner(address newRecoveryOwner) external authorized {
+        verifyNewRecoveryOwnerOrGuardian(newRecoveryOwner);
+        recoveryOwners[newRecoveryOwner] = recoveryOwners[pointer];
+        unchecked {
+            ++recoveryOwnersCount;
+        }
+        emit NewRecoveryOwner(newRecoveryOwner);
+    }
+
+    /**
+     * @dev Removes a guardian to the wallet.
+     * @param prevRecoveryOwner Address of the previous recovery owner in the linked list.
+     * @param recoveryOwnerToRemove Address of the recovery owner to be removed.
+     * @notice Can only be called by the owner.
+     */
+    function removeRecoveryOwner(address prevRecoveryOwner, address recoveryOwnerToRemove) external authorized {
+        if (recoveryOwnersCount - 1 < 2) {
+            revert SSR__removeRecoveryOwner__incorrectIndex();
+        }
+        ///@todo Add checks.
+        recoveryOwners[prevRecoveryOwner] = recoveryOwners[recoveryOwnerToRemove];
+        recoveryOwners[recoveryOwnerToRemove] = address(0);
+        unchecked {
+            --recoveryOwnersCount;
+        }
+        emit RecoveryOwnerRemoved(recoveryOwnerToRemove);
+    }
+
+    /**
+     * @dev Swaps a recovery owner for a new address.
+     * @param prevRecoveryOwner The address of the previous owner in the link list.
+     * @param newRecoveryOwner The address of the new recovery owner.
+     * @param oldRecoveryOwner The address of the current recovery owner to be swapped by the new one.
+     */
+    function swapRecoveryOwner(
+        address prevRecoveryOwner,
+        address newRecoveryOwner,
+        address oldRecoveryOwner
+    ) external authorized {
+        verifyNewRecoveryOwnerOrGuardian(newRecoveryOwner);
+        if (recoveryOwners[prevRecoveryOwner] != oldRecoveryOwner) {
+            revert SSR__swapRecoveryOwner__invalidPrevRecoveryOwner();
+        }
+        if (oldRecoveryOwner == pointer) {
+            revert SSR__swapRecoveryOwner__invalidOldRecoveryOwner();
+        }
+
+        recoveryOwners[newRecoveryOwner] = recoveryOwners[oldRecoveryOwner];
+        recoveryOwners[prevRecoveryOwner] = newRecoveryOwner;
+        recoveryOwners[oldRecoveryOwner] = address(0);
+        emit RecoveryOwnerSwapped(newRecoveryOwner, oldRecoveryOwner);
+    }
+
+    /**
      * @param guardian Requested address.
      * @return Boolean if the address is a guardian of the current wallet.
      */
@@ -141,9 +217,28 @@ contract SSR is ISSR, SelfAuthorized, Owner, Utils {
     }
 
     /**
+     * @return Array of the recovery owners in struct format 'RecoverySettings'.
+     */
+    function getRecoveryOwners() external view returns (address[] memory) {
+        address[] memory recoveryOwnersArray = new address[](recoveryOwnersCount);
+        address currentRecoveryOwner = recoveryOwners[pointer];
+
+        uint256 index;
+        while (currentRecoveryOwner != pointer) {
+            recoveryOwnersArray[index] = currentRecoveryOwner;
+            currentRecoveryOwner = recoveryOwners[currentRecoveryOwner];
+            unchecked {
+                //Even if it is a view function, we reduce gas costs if it is called by another contract.
+                ++index;
+            }
+        }
+        return recoveryOwnersArray;
+    }
+
+    /**
      * @return Array of guardians of this.
      */
-    function getGuardians() public view returns (address[] memory) {
+    function getGuardians() external view returns (address[] memory) {
         address[] memory guardiansArray = new address[](guardianCount);
         address currentGuardian = guardians[pointer];
 
@@ -151,9 +246,40 @@ contract SSR is ISSR, SelfAuthorized, Owner, Utils {
         while (currentGuardian != pointer) {
             guardiansArray[index] = currentGuardian;
             currentGuardian = guardians[currentGuardian];
-            index++;
+            unchecked {
+                //Even if it is a view function, we reduce gas costs if it is called by another contract.
+                ++index;
+            }
         }
         return guardiansArray;
+    }
+
+    /**
+     * @dev Inits the recovery owners.
+     * @param _recoveryOwners Array of ricovery owners.
+     * @notice There needs to be at least 2 recovery owners.
+     */
+    function initRecoveryOwners(address[] calldata _recoveryOwners) internal {
+        uint256 recoveryOwnersLength = _recoveryOwners.length;
+        // There needs to be at least 2 recovery owners.
+        if (recoveryOwnersLength < 2) {
+            revert SSR__initRecoveryOwners__underflow();
+        }
+        address currentRecoveryOwner = pointer;
+        for (uint256 i = 0; i < recoveryOwnersLength; ) {
+            address recoveryOwner = _recoveryOwners[i];
+            recoveryOwners[currentRecoveryOwner] = recoveryOwner;
+            currentRecoveryOwner = recoveryOwner;
+            verifyNewRecoveryOwnerOrGuardian(recoveryOwner);
+
+            unchecked {
+                // Won't overflow ...
+                ++i;
+            }
+        }
+
+        recoveryOwners[currentRecoveryOwner] = pointer;
+        recoveryOwnersCount = recoveryOwnersLength;
     }
 
     /**
@@ -162,32 +288,20 @@ contract SSR is ISSR, SelfAuthorized, Owner, Utils {
      */
     function initGuardians(address[] calldata _guardians) internal {
         uint256 guardiansLength = _guardians.length;
-        if (guardiansLength < 1) revert SSR__initGuardians__zeroGuardians();
+        // There needs to be at least 2 guardians.
+        if (guardiansLength < 2) revert SSR__initGuardians__underflow();
 
         address currentGuardian = pointer;
 
         for (uint256 i = 0; i < guardiansLength; ) {
             address guardian = _guardians[i];
-            if (
-                guardian == owner ||
-                guardian == address(0) ||
-                guardian == pointer ||
-                guardian == currentGuardian ||
-                guardians[guardian] != address(0)
-            ) revert SSR__initGuardians__invalidAddress();
-
-            if (guardian.code.length > 0) {
-                // If the guardian is a smart contract wallet, it needs to support EIP1271.
-                if (!IERC165(guardian).supportsInterface(0x1626ba7e))
-                    revert SSR__initGuardians__invalidAddress();
-            }
-
             unchecked {
                 // Won't overflow...
                 ++i;
             }
             guardians[currentGuardian] = guardian;
             currentGuardian = guardian;
+            verifyNewRecoveryOwnerOrGuardian(guardian);
         }
 
         guardians[currentGuardian] = pointer;
@@ -201,227 +315,75 @@ contract SSR is ISSR, SelfAuthorized, Owner, Utils {
     function access(bytes4 funcSelector) internal view returns (Access) {
         if (funcSelector == this.lock.selector) {
             // Only a guardian can lock the wallet ...
+
             // If  guardians are locked, we revert ...
-            if (guardiansBlocked) revert SSR__access__guardiansBlocked();
+            if (guardiansLocked) revert SSR__access__guardiansLocked();
             else return Access.Guardian;
         } else if (funcSelector == this.unlock.selector) {
             // Only a guardian + the owner can unlock the wallet ...
+
             return Access.OwnerAndGuardian;
         } else if (funcSelector == this.recoveryUnlock.selector) {
             // This is in case a guardian is misbehaving ...
+
             return Access.OwnerAndRecoveryOwner;
         } else if (funcSelector == this.recover.selector) {
             // Only the recovery owner + the guardian can recover the wallet (change the owner keys) ...
+
             return Access.RecoveryOwnerAndGuardian;
         } else {
             // Else is the owner ... If the the wallet is locked, we revert ...
+
             if (isLocked) revert SSR__access__walletLocked();
             else return Access.Owner;
         }
     }
 
     /**
-     * @dev Verifies that the signature matches the owner.
+     * @dev Validates that a recovery owner can execute an operation 'now'.
+     * @param signer The returned address from the provided signature and hash.
      */
-    function verifyOwner(bytes32 dataHash, bytes memory signature)
-        internal
-        view
-    {
-        bytes32 r;
-        bytes32 s;
-        uint8 v;
+    function validateRecoveryOwner(address signer) internal view {
+        // Time elapsed since the recovery mechanism was activated.
+        uint256 elapsedTime = block.timestamp - timeLock;
+        address currentRecoveryOwner = recoveryOwners[pointer];
+        bool isAuthorized;
+        uint256 index;
 
-        if (signature.length < 65)
-            revert SSR__verifyGuardian__invalidSignature();
+        while (currentRecoveryOwner != pointer) {
+            if (elapsedTime > 1 weeks * index) {
+                // Each recovery owner (index ordered) has access to sign the transaction after 1 week.
+                // e.g. The first recovery owner (indexed 0) can sign immediately, the second recovery owner needs to wait 1 week, the third 2 weeks, and so on ...
 
-        (r, s, v) = splitSigs(signature, 0);
-        address recovered = returnSigner(dataHash, r, s, v);
-        if (recovered != owner) revert SSR__verifyOwner__notOwner();
-    }
+                if (currentRecoveryOwner == signer) isAuthorized = true;
+            }
+            currentRecoveryOwner = recoveryOwners[currentRecoveryOwner];
 
-    /**
-     * @dev Verifies that the signature matches a guardian.
-     */
-    function verifyGuardian(bytes32 dataHash, bytes memory signature)
-        internal
-        view
-    {
-        bytes32 r;
-        bytes32 s;
-        uint8 v;
-        bool _isGuardian;
-
-        if (signature.length < 65)
-            revert SSR__verifyGuardian__invalidSignature();
-
-        (r, s, v) = splitSigs(signature, 0);
-
-        // We first check if the guardian is a regular EOA ...
-        address recovered = returnSigner(dataHash, r, s, v);
-
-        if (guardians[recovered] != address(0)) {
-            _isGuardian = true;
-        } else {
-            // Else, the guardian can be a smart contract wallet ...
-            // Each wallet can pack their signatures in different ways,
-            // so we need to send the payload ...
-            address[] memory _guardians = getGuardians();
-
-            for (uint256 i = 0; i < guardianCount; ) {
-                address guardian = _guardians[i];
-                // We check if the guardian is a smart contract wallet ...
-                if (guardian.code.length > 0) {
-                    if (
-                        IEIP1271(guardian).isValidSignature(
-                            dataHash,
-                            signature
-                        ) == 0x1626ba7e
-                    ) _isGuardian = true;
-                }
-                unchecked {
-                    // Won't overflow ...
-                    ++i;
-                }
+            unchecked {
+                ++index;
             }
         }
-        if (!_isGuardian) revert SSR__verifyGurdian__notGuardian();
+
+        if (!isAuthorized) revert SSR__validateRecoveryOwner__notAuthorized();
     }
 
     /**
-     * @dev Verifies that the signatures correspond to the owner and guardian.
-     * The first signature needs to match the owner.
+     * @dev Checks that the provided address is correct for a new recovery owner or guardian.
+     * @param toVerify The address to verify.
      */
-    function verifyOwnerAndGuardian(bytes32 dataHash, bytes calldata signatures)
-        internal
-        view
-    {
-        bytes32 r;
-        bytes32 s;
-        uint8 v;
-
-        // The guardian can be an EOA or smart contract wallet ...
-        if (signatures.length < 130)
-            revert SSR__verifyOwnerAndGuardian__invalidSignature();
-
-        // The first signer needs to be the owner ...
-        (r, s, v) = splitSigs(signatures, 0);
-        address _isOwner = returnSigner(dataHash, r, s, v);
-        if (_isOwner != owner) revert SSR__verifyOwnerAndGuardian__notOwner();
-
-        // The second signer needs to be the guardian ...
-        // We first check if the guardian is a regular EOA ...
-        address recoveredGuardian;
-        bool _isGuardian;
-        recoveredGuardian = returnSigner(dataHash, r, s, v);
-        if (guardians[recoveredGuardian] != address(0)) {
-            _isGuardian = true;
-        } else {
-            // Else, the guardian can be a smart contract wallet ...
-            // Each wallet can pack their signatures in different ways,
-            // so we need to send the payload ...
-            address[] memory _guardians = getGuardians();
-
-            for (uint256 i = 0; i < guardianCount; ) {
-                address guardian = _guardians[i];
-                // We check if the guardian is a smart contract wallet ...
-                if (guardian.code.length > 0) {
-                    if (
-                        IEIP1271(guardian).isValidSignature(
-                            dataHash,
-                            signatures
-                        ) == 0x1626ba7e
-                    ) _isGuardian = true;
-                }
-                unchecked {
-                    // Won't overflow ...
-                    ++i;
-                }
+    function verifyNewRecoveryOwnerOrGuardian(address toVerify) internal view {
+        if (toVerify.code.length > 0) {
+            // If the recovery owner is a smart contract wallet, it needs to support EIP1271.
+            if (!IERC165(toVerify).supportsInterface(0x1626ba7e)) {
+                revert SSR__verifyNewRecoveryOwnerOrGuardian__invalidAddress();
             }
         }
-        if (!_isGuardian) revert SSR__verifyOwnerAndGuardian__notGuardian();
-    }
 
-    /**
-     * @dev Verifies that the signatures correspond to the recovery owner and guardian.
-     * The first signature needs to match the recovery owner.
-     */
-    function verifyRecoveryOwnerAndGurdian(
-        bytes32 dataHash,
-        bytes calldata signatures
-    ) internal view {
-        bytes32 r;
-        bytes32 s;
-        uint8 v;
-
-        // The guardian can be an EOA or smart contract wallet ...
-        if (signatures.length < 130)
-            revert SSR__verifyRecoveryOwnerAndGurdian__invalidSignature();
-
-        // The first signer needs to be the recovery owner ...
-        (r, s, v) = splitSigs(signatures, 0);
-        address _isRecoveryOwner = returnSigner(dataHash, r, s, v);
-        if (_isRecoveryOwner != recoveryOwner)
-            revert SSR__verifyRecoveryOwnerAndGurdian__notRecoveryOwner();
-
-        // The second signer needs to be the guardian ...
-        // We first check if the guardian is a regular EOA ...
-        bool _isGuardian;
-        address recoveredGuardian = returnSigner(dataHash, r, s, v);
-        if (guardians[recoveredGuardian] != address(0)) {
-            _isGuardian = true;
-        } else {
-            // Else, the guardian can be a smart contract wallet ...
-            // Each wallet can pack their signatures in different ways,
-            // so we need to send the payload ...
-            address[] memory _guardians = getGuardians();
-
-            for (uint256 i = 0; i < guardianCount; ) {
-                address guardian = _guardians[i];
-                // We check if the guardian is a smart contract wallet ...
-                if (guardian.code.length > 0) {
-                    if (
-                        IEIP1271(guardian).isValidSignature(
-                            dataHash,
-                            signatures
-                        ) == 0x1626ba7e
-                    ) _isGuardian = true;
-                }
-                unchecked {
-                    // Won't overflow ...
-                    ++i;
-                }
-            }
-        }
-        if (!_isGuardian)
-            revert SSR__verifyRecoveryOwnerAndGurdian__notGuardian();
-    }
-
-    /**
-     * @dev Verifies that the signatures correspond to the owner and recovery owner.
-     * The first signature needs to match the owner.
-     */
-    function verifyOwnerAndRecoveryOwner(
-        bytes32 dataHash,
-        bytes memory signatures
-    ) internal view {
-        bytes32 r;
-        bytes32 s;
-        uint8 v;
-
-        // Both, the owner and recovery owner must be EOA's ....
-        if (signatures.length != 130)
-            revert SSR__verifyOwnerAndRecoveryOwner__invalidSignature();
-
-        // The first signer needs to be the owner ...
-        (r, s, v) = splitSigs(signatures, 0);
-        address _isOwner = returnSigner(dataHash, r, s, v);
-        if (_isOwner != owner)
-            revert SSR__verifyOwnerAndRecoveryOwner__notOwner();
-
-        // The second signer needs to be the recovery owner ...
-        (r, s, v) = splitSigs(signatures, 1);
-        address _isRecoveryOwner = returnSigner(dataHash, r, s, v);
-        if (_isRecoveryOwner != recoveryOwner)
-            revert SSR__verifyOwnerAndRecoveryOwner__notRecoveryOwner();
+        if (
+            toVerify == address(0) ||
+            toVerify == owner ||
+            guardians[toVerify] != address(0) ||
+            recoveryOwners[toVerify] != address(0)
+        ) revert SSR__verifyNewRecoveryOwnerOrGuardian__invalidAddress();
     }
 }

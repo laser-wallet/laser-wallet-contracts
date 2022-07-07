@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: LGPL-3.0-only
-pragma solidity 0.8.14;
+pragma solidity 0.8.15;
 
 import "../interfaces/IERC165.sol";
 import "../interfaces/ISingleton.sol";
@@ -10,8 +10,8 @@ import "./SelfAuthorized.sol";
  * This contract is tightly coupled to our proxy contract (see `proxies/LaserProxy.sol`).
  */
 contract Singleton is SelfAuthorized, ISingleton {
-    // Singleton always needs to be first declared variable, to ensure that it is at the same location as in the Proxy contract.
-    // It should also always be ensured that the address is stored alone (uses a full word)
+    ///@dev Singleton always needs to be first declared variable, to ensure that it is at the same location as in the Proxy contract.
+    /// It should also always be ensured that the address is stored alone (uses a full word).
     address public singleton;
 
     /**
@@ -19,8 +19,9 @@ contract Singleton is SelfAuthorized, ISingleton {
      * @param _singleton New implementation address.
      */
     function upgradeSingleton(address _singleton) external authorized {
-        if (_singleton == address(this))
+        if (_singleton == address(this)) {
             revert Singleton__upgradeSingleton__incorrectAddress();
+        }
 
         if (!IERC165(_singleton).supportsInterface(0xae029e0b)) {
             //bytes4(keccak256("I_AM_LASER")))

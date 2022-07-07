@@ -1,47 +1,62 @@
-import { BigNumber } from "ethers";
+import { BigNumber, BigNumberish } from "ethers";
 
 export type Address = string;
 
-export type Numberish = BigNumber | number | string;
+export const types = {
+    LaserOperation: [
+        {
+            type: "address",
+            name: "to",
+        },
+        {
+            type: "uint256",
+            name: "value",
+        },
+        {
+            type: "bytes",
+            name: "callData",
+        },
+        {
+            type: "uint256",
+            name: "nonce",
+        },
+        {
+            type: "uint256",
+            name: "maxFeePerGas",
+        },
+        {
+            type: "uint256",
+            name: "maxPriorityFeePerGas",
+        },
+        {
+            type: "uint256",
+            name: "gasLimit",
+        },
+    ],
+};
 
-export interface TxMessage {
-    to: string;
-    value: number | BigNumber;
-    data: string;
-    nonce: string | number;
-}
+export type Domain = {
+    chainId: BigNumberish;
+    verifyingContract: string;
+};
 
-export interface SafeTx {
-    to: string;
-    value: BigNumber | number;
-    data: string;
-    signature: string;
-}
-
-export interface LaserOp {
-    sender: string;
-    nonce: string | number;
+export interface Transaction {
+    to: Address;
+    value: BigNumberish;
     callData: string;
-    callGas: string | number | BigNumber;
-    verificationGas: string | number | BigNumber;
-    preVerificationGas: string | number | BigNumber;
-    maxFeePerGas: string | number | BigNumber;
-    maxPriorityFeePerGas: string | number | BigNumber;
-    paymaster: string;
-    paymasterData: string;
+    nonce: BigNumberish;
+    maxFeePerGas: BigNumberish;
+    maxPriorityFeePerGas: BigNumberish;
+    gasLimit: BigNumberish;
+    signatures: string;
 }
 
-export interface UserOp {
-    sender: string;
-    nonce: string | number;
-    initCode: string;
+export interface LaserTypes {
+    to: Address;
+    value: BigNumberish;
     callData: string;
-    callGas: string | number | BigNumber;
-    verificationGas: string | number | BigNumber;
-    preVerificationGas: string | number | BigNumber;
-    maxFeePerGas: string | number | BigNumber;
-    maxPriorityFeePerGas: string | number | BigNumber;
-    paymaster: string;
-    paymasterData: string;
-    signature: string;
+    nonce: BigNumberish;
+    maxFeePerGas: BigNumberish;
+    maxPriorityFeePerGas: BigNumberish;
+    gasLimit: BigNumberish;
 }

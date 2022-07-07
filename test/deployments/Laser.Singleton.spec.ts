@@ -1,22 +1,18 @@
 import { expect } from "chai";
-import { ethers } from "hardhat";
+import { deployments, ethers } from "hardhat";
 import { Contract, Signer, Wallet } from "ethers";
 
 const mock = Wallet.createRandom().address;
-const {
-    abi,
-} = require("../../artifacts/contracts/LaserWallet.sol/LaserWallet.json");
 
 const VERSION = "1.0.0";
 
 describe("Laser Wallet (singleton)", () => {
-    let relayer: Signer;
     let singleton: Contract;
 
     beforeEach(async () => {
-        [relayer] = await ethers.getSigners();
-        const factorySingleton = await ethers.getContractFactory("LaserWallet");
-        singleton = await factorySingleton.deploy();
+        await deployments.fixture(["LaserWallet"]);
+        const Singleton = await deployments.get("LaserWallet");
+        singleton = await ethers.getContractAt(Singleton.abi, Singleton.address);
     });
 
     describe("singleton correct deployment", async () => {
@@ -26,9 +22,9 @@ describe("Laser Wallet (singleton)", () => {
         });
 
         it("should not allow to init", async () => {
-            await expect(
-                singleton.init(mock, mock, [mock], mock)
-            ).to.be.revertedWith("Owner__initOwner__walletInitialized()");
+            await expect(singleton.init(mock, [mock], [mock])).to.be.revertedWith(
+                "Owner__initOwner__walletInitialized()"
+            );
         });
 
         it(`should be version ${VERSION}`, async () => {
@@ -42,9 +38,7 @@ describe("Laser Wallet (singleton)", () => {
         });
 
         it("should not be able to make operations", async () => {
-            await expect(singleton.changeOwner(mock)).to.be.revertedWith(
-                "SelfAuthorized__notWallet()"
-            );
+            await expect(singleton.changeOwner(mock)).to.be.revertedWith("SelfAuthorized__notWallet()");
         });
     });
 });

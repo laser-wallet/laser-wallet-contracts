@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: LGPL-3.0-only
-pragma solidity 0.8.14;
+pragma solidity 0.8.15;
 
 /**
  * @title LaserProxy - Proxy contract that delegates all calls to a master copy.
@@ -24,14 +24,7 @@ contract LaserProxy {
         address _singleton = singleton;
         assembly {
             calldatacopy(0, 0, calldatasize())
-            let success := delegatecall(
-                gas(),
-                _singleton,
-                0,
-                calldatasize(),
-                0,
-                0
-            )
+            let success := delegatecall(gas(), _singleton, 0, calldatasize(), 0, 0)
             returndatacopy(0, 0, returndatasize())
             if eq(success, 0) {
                 revert(0, returndatasize())

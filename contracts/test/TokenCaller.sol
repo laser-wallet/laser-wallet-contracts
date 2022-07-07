@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: LGPL-3.0-only
-pragma solidity 0.8.14;
+pragma solidity 0.8.15;
 
 interface Callee {
     function onERC1155Received(
@@ -29,46 +29,24 @@ interface Callee {
 }
 
 contract TokenCaller {
-    function checkERC1155(address _contract)
-        external
-        view
-        returns (bytes4 result)
-    {
+    function checkERC1155(address _contract) external view returns (bytes4 result) {
         address zero = address(0);
         result = Callee(_contract).onERC1155Received(zero, zero, 0, 0, "0x");
     }
 
-    function checkERC115Batch(address _contract)
-        external
-        view
-        returns (bytes4 result)
-    {
+    function checkERC115Batch(address _contract) external view returns (bytes4 result) {
         address zero = address(0);
         uint256[] memory mock = new uint256[](1);
         mock[0] = 0;
-        result = Callee(_contract).onERC1155BatchReceived(
-            zero,
-            zero,
-            mock,
-            mock,
-            "0x"
-        );
+        result = Callee(_contract).onERC1155BatchReceived(zero, zero, mock, mock, "0x");
     }
 
-    function checkERC721(address _contract)
-        external
-        view
-        returns (bytes4 result)
-    {
+    function checkERC721(address _contract) external view returns (bytes4 result) {
         address zero = address(0);
         result = Callee(_contract).onERC721Received(zero, zero, 0, "0x");
     }
 
-    function checkERC165(address _contract, bytes4 _interfaceId)
-        external
-        view
-        returns (bool result)
-    {
+    function checkERC165(address _contract, bytes4 _interfaceId) external view returns (bool result) {
         result = Callee(_contract).supportsInterface(_interfaceId);
     }
 }

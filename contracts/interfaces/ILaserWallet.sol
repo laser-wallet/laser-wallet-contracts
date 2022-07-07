@@ -1,7 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity 0.8.14;
-
-import {UserOperation} from "../libraries/UserOperation.sol";
+pragma solidity 0.8.15;
 
 /**
  * @title ILaserWallet
@@ -9,70 +7,110 @@ import {UserOperation} from "../libraries/UserOperation.sol";
  * @notice Has all the external functions, structs, events and errors for LaserWallet.sol.
  */
 interface ILaserWallet {
+    struct Transaction {
+        address to;
+        uint256 value;
+        bytes callData;
+    }
+
     event Received(address indexed sender, uint256 amount);
-    event Setup(address owner, address[] guardians, address entryPoint);
-    event Success(address to, uint256 value, bytes4 funcSelector);
+    event Setup(address owner, address[] recoveryOwners, address[] guardians);
+    event ExecSuccess(address to, uint256 value, uint256 nonce);
+    event ExecFailure(address to, uint256 value, uint256 nonce);
 
-    ///@dev modifier custom error.
-    error LW__notEntryPoint();
+    ///@dev exec() custom errors.
+    error LW__exec__invalidNonce();
+    error LW__exec__refundFailure();
 
-    ///@dev validateUserOp custom error.
-    error LW__validateUserOp__invalidNonce();
+    ///@dev multiCall() custom error.
+    error LW__multiCall__notOwner();
 
-    ///@dev exec() custom error.
-    error LW__exec__failure();
+    ///@dev simulateTransaction() custom errors.
+    error LW__simulateTransaction__invalidNonce();
+    error LW__simulateTransaction__mainCallError();
+    error LW__simulateTransaction__refundFailure();
 
-    ///@dev isValidSignature() custom error.
-    error LW__isValidSignature__invalidSigner();
+    ///@dev isValidSignature() Laser custom error.
+    error LaserWallet__invalidSignature();
+
+    ///@dev verifySignatures() custom errors.
+    error LW__verifySignatures__invalidSignatureLength();
+    error LW__verifySignatures__notOwner();
+    error LW__verifySignatures__notGuardian();
 
     /**
      * @dev Setup function, sets initial storage of contract.
      * @param owner The owner of the wallet.
-     * @param recoveryOwner Recovery owner in case the owner looses the main device. Implementation of Sovereign Social Recovery.
+     * @param recoveryOwners Array of recovery owners. Implementation of Sovereign Social Recovery.
      * @param guardians Addresses that can activate the social recovery mechanism.
-     * @param entryPoint Entry Point contract address.
      * @notice It can't be called after initialization.
      */
     function init(
         address owner,
-        address recoveryOwner,
-        address[] calldata guardians,
-        address entryPoint
+        address[] calldata recoveryOwners,
+        address[] calldata guardians
+        // ropsten, kovan, sepoia.
     ) external;
 
     /**
-     * @dev Core interface to be EIP4337 compliant.
-     * @param userOp the operation to be executed.
-     * @param _requiredPrefund the minimum amount to transfer to the sender(entryPoint) to be able to make the call.
-     * @notice only the EntryPoint contract can call this function.
-     */
-    function validateUserOp(
-        UserOperation calldata userOp,
-        bytes32,
-        uint256 _requiredPrefund
-    ) external;
-
-    /**
-     * @dev Executes an AA transaction. The msg.sender needs to be the EntryPoint address.
-     * The signatures are verified in validateUserOp().
-     * @param to Destination address of the transaction.
-     * @param value Ether value of the transaction.
-     * @param data Data payload of the transaction.
+     * @dev Executes a generic transaction. It does not support 'delegatecall' for security reasons.
+     * @param to Destination address.
+     * @param value Amount to send.
+     * @param callData Data payload for the transaction.
+     * @param _nonce Unsigned integer to avoid replay attacks. It needs to match the current wallet's nonce.
+     * @param maxFeePerGas Maximum amount that the user is willing to pay for a unit of gas.
+     * @param maxPriorityFeePerGas Miner's tip.
+     * @param gasLimit The transaction's gas limit. It needs to be the same as the actual transaction gas limit.
+     * @param signatures The signatures of the transaction.
+     * @notice If 'gasLimit' does not match the actual gas limit of the transaction, the relayer can incur losses.
+     * It is the relayer's responsability to make sure that they are the same, the user does not get affected if a mistake is made.
+     * We prefer to prioritize the user's safety (not overpay) over the relayer.
      */
     function exec(
         address to,
         uint256 value,
-        bytes memory data
+        bytes calldata callData,
+        uint256 _nonce,
+        uint256 maxFeePerGas,
+        uint256 maxPriorityFeePerGas,
+        uint256 gasLimit,
+        bytes calldata signatures
     ) external;
 
     /**
-     * @dev Returns the user operation hash to be signed by owners.
-     * @param userOp The UserOperation struct.
+     * @dev Executes a series of generic transactions. It can only be called from exec.
+     * @param transactions Basic transactions array (to, value, calldata).
      */
-    function userOperationHash(UserOperation calldata userOp)
-        external
-        view
-        returns (bytes32);
+    function multiCall(Transaction[] calldata transactions) external;
+
+    /**
+     * @dev Simulates a transaction. This should be called from the relayer, to verify that the transaction will not revert.
+     * This does not guarantees 100% that the transaction will succeed, the state will be different next block.
+     * @notice Needs to be called off-chain from  address zero.
+     */
+    function simulateTransaction(
+        address to,
+        uint256 value,
+        bytes calldata callData,
+        uint256 _nonce,
+        uint256 maxFeePerGas,
+        uint256 maxPriorityFeePerGas,
+        uint256 gasLimit,
+        bytes calldata signatures
+    ) external returns (uint256 totalGas);
+
+    /**
+     * @dev The transaction's hash. This is necessary to check that the signatures are correct and to avoid replay attacks.
+     */
+    function operationHash(
+        address to,
+        uint256 value,
+        bytes calldata callData,
+        uint256 _nonce,
+        uint256 maxFeePerGas,
+        uint256 maxPriorityFeePerGas,
+        uint256 gasLimit
+    ) external view returns (bytes32);
 
     /**
      * @dev Implementation of EIP 1271: https://eips.ethereum.org/EIPS/eip-1271.
@@ -80,9 +118,7 @@ interface ILaserWallet {
      * @param signature Signature byte array associated with _msgHash.
      * @return Magic value  or reverts with an error message.
      */
-    function isValidSignature(bytes32 hash, bytes memory signature)
-        external
-        returns (bytes4);
+    function isValidSignature(bytes32 hash, bytes memory signature) external returns (bytes4);
 
     /**
      * @dev Returns the chain id of this.

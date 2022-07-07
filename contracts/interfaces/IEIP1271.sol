@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: LGPL-3.0-only
-pragma solidity 0.8.14;
+pragma solidity 0.8.15;
 
 /**
  * @title IEIP1271
@@ -12,8 +12,5 @@ interface IEIP1271 {
      * @param signature Signature byte array associated with _msgHash.
      * @return Magic value  or reverts with an error message.
      */
-    function isValidSignature(bytes32 hash, bytes memory signature)
-        external
-        view
-        returns (bytes4);
+    function isValidSignature(bytes32 hash, bytes memory signature) external view returns (bytes4);
 }
