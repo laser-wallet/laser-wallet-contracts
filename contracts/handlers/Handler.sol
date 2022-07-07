@@ -46,11 +46,7 @@ contract Handler is IHandler, IERC165 {
         bytes calldata
     ) external pure {}
 
-    function supportsInterface(bytes4 _interfaceId)
-        external
-        pure
-        returns (bool)
-    {
+    function supportsInterface(bytes4 _interfaceId) external pure returns (bool) {
         return
             _interfaceId == 0x01ffc9a7 || // ERC165 interface ID for ERC165
             _interfaceId == 0x1626ba7e || // EIP 1271

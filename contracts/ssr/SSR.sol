@@ -8,6 +8,8 @@ import "../interfaces/IERC165.sol";
 import "../interfaces/ISSR.sol";
 import "../utils/Utils.sol";
 
+import "hardhat/console.sol";
+
 /**
  * @title SSR - Smart Social Recovery
  * @notice New wallet recovery mechanism.
@@ -21,7 +23,7 @@ contract SSR is ISSR, SelfAuthorized, Owner, Utils {
 
     uint256 internal guardianCount;
 
-    uint256 internal timeLock;
+    uint256 public timeLock;
 
     bool public isLocked;
 
@@ -102,10 +104,7 @@ contract SSR is ISSR, SelfAuthorized, Owner, Utils {
      * @param guardianToRemove Address of the guardian to be removed.
      * @notice Can only be called by the owner.
      */
-    function removeGuardian(address prevGuardian, address guardianToRemove)
-        external
-        authorized
-    {
+    function removeGuardian(address prevGuardian, address guardianToRemove) external authorized {
         if (guardianToRemove == pointer) {
             revert SSR__removeGuardian__invalidAddress();
         }
@@ -171,17 +170,12 @@ contract SSR is ISSR, SelfAuthorized, Owner, Utils {
      * @param recoveryOwnerToRemove Address of the recovery owner to be removed.
      * @notice Can only be called by the owner.
      */
-    function removeRecoveryOwner(
-        address prevRecoveryOwner,
-        address recoveryOwnerToRemove
-    ) external authorized {
+    function removeRecoveryOwner(address prevRecoveryOwner, address recoveryOwnerToRemove) external authorized {
         if (recoveryOwnersCount - 1 < 2) {
             revert SSR__removeRecoveryOwner__incorrectIndex();
         }
         ///@todo Add checks.
-        recoveryOwners[prevRecoveryOwner] = recoveryOwners[
-            recoveryOwnerToRemove
-        ];
+        recoveryOwners[prevRecoveryOwner] = recoveryOwners[recoveryOwnerToRemove];
         recoveryOwners[recoveryOwnerToRemove] = address(0);
         unchecked {
             --recoveryOwnersCount;
@@ -226,9 +220,7 @@ contract SSR is ISSR, SelfAuthorized, Owner, Utils {
      * @return Array of the recovery owners in struct format 'RecoverySettings'.
      */
     function getRecoveryOwners() external view returns (address[] memory) {
-        address[] memory recoveryOwnersArray = new address[](
-            recoveryOwnersCount
-        );
+        address[] memory recoveryOwnersArray = new address[](recoveryOwnersCount);
         address currentRecoveryOwner = recoveryOwners[pointer];
 
         uint256 index;
@@ -325,7 +317,7 @@ contract SSR is ISSR, SelfAuthorized, Owner, Utils {
             // Only a guardian can lock the wallet ...
 
             // If  guardians are locked, we revert ...
-            if (guardiansLocked) revert SSR__access__guardiansBlocked();
+            if (guardiansLocked) revert SSR__access__guardiansLocked();
             else return Access.Guardian;
         } else if (funcSelector == this.unlock.selector) {
             // Only a guardian + the owner can unlock the wallet ...
@@ -354,15 +346,14 @@ contract SSR is ISSR, SelfAuthorized, Owner, Utils {
     function validateRecoveryOwner(address signer) internal view {
         // Time elapsed since the recovery mechanism was activated.
         uint256 elapsedTime = block.timestamp - timeLock;
-
         address currentRecoveryOwner = recoveryOwners[pointer];
         bool isAuthorized;
-
         uint256 index;
+
         while (currentRecoveryOwner != pointer) {
-            if (elapsedTime * index > 1 weeks) {
+            if (elapsedTime > 1 weeks * index) {
                 // Each recovery owner (index ordered) has access to sign the transaction after 1 week.
-                // e.g. The first recovery owner (indexed 0) can sign immediately, the second recovery owner needs to wait 1 week, and so on ...
+                // e.g. The first recovery owner (indexed 0) can sign immediately, the second recovery owner needs to wait 1 week, the third 2 weeks, and so on ...
 
                 if (currentRecoveryOwner == signer) isAuthorized = true;
             }

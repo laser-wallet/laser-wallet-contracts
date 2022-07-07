@@ -1,12 +1,7 @@
 import { expect } from "chai";
 import { deployments, ethers } from "hardhat";
 import { Contract, Signer, Wallet } from "ethers";
-import {
-    walletSetup,
-    signersForTest,
-    AddressesForTest,
-    addressesForTest,
-} from "../utils";
+import { walletSetup, signersForTest, AddressesForTest, addressesForTest } from "../utils";
 import { Address } from "../types";
 
 const oneEth = ethers.utils.parseEther("1");

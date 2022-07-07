@@ -2,12 +2,7 @@ import { expect } from "chai";
 import { deployments, ethers } from "hardhat";
 import { Contract, Signer } from "ethers";
 import { Address } from "../types";
-import {
-    encodeFunctionData,
-    walletSetup,
-    addressesForTest,
-    AddressesForTest,
-} from "../utils";
+import { encodeFunctionData, walletSetup, addressesForTest, AddressesForTest } from "../utils";
 
 describe("Proxy Factory", () => {
     let addresses: AddressesForTest;
@@ -26,34 +21,25 @@ describe("Proxy Factory", () => {
 
         it("should revert by providing an invalid singleton (EOA)", async () => {
             const randy = ethers.Wallet.createRandom();
-            const Factory = await ethers.getContractFactory(
-                "LaserProxyFactory"
-            );
+            const Factory = await ethers.getContractFactory("LaserProxyFactory");
             await expect(Factory.deploy(randy.address)).to.be.reverted;
         });
 
         it("should revert by providing an invalid singleton (contract)", async () => {
             const Caller = await ethers.getContractFactory("Caller");
             const caller = await Caller.deploy();
-            const Factory = await ethers.getContractFactory(
-                "LaserProxyFactory"
-            );
+            const Factory = await ethers.getContractFactory("LaserProxyFactory");
             await expect(Factory.deploy(caller.address)).to.be.reverted;
         });
 
         it("should deploy a proxy with 'createProxy'", async () => {
             const { factory, initializer } = await walletSetup();
-            await expect(factory.createProxy(initializer)).to.emit(
-                factory,
-                "ProxyCreation"
-            );
+            await expect(factory.createProxy(initializer)).to.emit(factory, "ProxyCreation");
         });
 
         it("should precompute the proxy address with 'create'", async () => {
             const { factory, initializer } = await walletSetup();
-            const factoryNonce = await ethers.provider.getTransactionCount(
-                factory.address
-            );
+            const factoryNonce = await ethers.provider.getTransactionCount(factory.address);
             // Precompute the address.
             const from = factory.address;
             const nonce = factoryNonce;
@@ -71,10 +57,7 @@ describe("Proxy Factory", () => {
 
         it("should deploy a proxy with 'createProxyWithNonce'", async () => {
             const { factory, initializer } = await walletSetup();
-            await expect(factory.createProxyWithNonce(initializer, 1)).to.emit(
-                factory,
-                "ProxyCreation"
-            );
+            await expect(factory.createProxyWithNonce(initializer, 1)).to.emit(factory, "ProxyCreation");
         });
 
         it("should precompute the proxy address with create2", async () => {
@@ -96,8 +79,7 @@ describe("Proxy Factory", () => {
             const { factory, initializer } = await walletSetup();
             const salt = 1;
             await factory.createProxyWithNonce(initializer, salt); // first deployment.
-            await expect(factory.createProxyWithNonce(initializer, salt)).to.be
-                .reverted; // second deployment.
+            await expect(factory.createProxyWithNonce(initializer, salt)).to.be.reverted; // second deployment.
         });
     });
 });

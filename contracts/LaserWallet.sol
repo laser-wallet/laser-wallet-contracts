@@ -6,6 +6,8 @@ import "./handlers/Handler.sol";
 import "./interfaces/ILaserWallet.sol";
 import "./ssr/SSR.sol";
 
+import "hardhat/console.sol";
+
 /**
  * @title LaserWallet - EVM based smart contract wallet. Implementes smart social recovery mechanism.
  * @author Rodrigo Herrera I.
@@ -21,8 +23,7 @@ contract LaserWallet is Singleton, SSR, Handler, ILaserWallet {
             "LaserOperation(address to,uint256 value,bytes callData,uint256 nonce,uint256 maxFeePerGas,uint256 maxPriorityFeePerGas,uint256 gasLimit)"
         );
 
-    bytes4 private constant EIP1271_MAGIC_VALUE =
-        bytes4(keccak256("isValidSignature(bytes32,bytes)"));
+    bytes4 private constant EIP1271_MAGIC_VALUE = bytes4(keccak256("isValidSignature(bytes32,bytes)"));
 
     uint256 public nonce;
 
@@ -87,16 +88,7 @@ contract LaserWallet is Singleton, SSR, Handler, ILaserWallet {
 
         // Verifies the correctness of the transaction. It checks that the signatures are
         // correct and that the signer has access for the transaction.
-        verifyTransaction(
-            to,
-            value,
-            callData,
-            _nonce,
-            maxFeePerGas,
-            maxPriorityFeePerGas,
-            gasLimit,
-            signatures
-        );
+        verifyTransaction(to, value, callData, _nonce, maxFeePerGas, maxPriorityFeePerGas, gasLimit, signatures);
 
         // Once we verified that the transaction is correct, we execute the main call.
         // We subtract 10_000 to have enough gas to complete the function.
@@ -107,10 +99,7 @@ contract LaserWallet is Singleton, SSR, Handler, ILaserWallet {
         else emit ExecFailure(to, value, nonce);
 
         // We calculate the gas price, as per the user's request ...
-        uint256 gasPrice = calculateGasPrice(
-            maxFeePerGas,
-            maxPriorityFeePerGas
-        );
+        uint256 gasPrice = calculateGasPrice(maxFeePerGas, maxPriorityFeePerGas);
 
         // gasUsed is the total amount of gas consumed for this transaction.
         // This is contemplating the initial callData cost, the main transaction,
@@ -130,10 +119,7 @@ contract LaserWallet is Singleton, SSR, Handler, ILaserWallet {
      * @dev Executes a series of generic transactions. It can only be called from exec.
      * @param transactions Basic transactions array (to, value, calldata).
      */
-    function multiCall(Transaction[] calldata transactions)
-        external
-        authorized
-    {
+    function multiCall(Transaction[] calldata transactions) external authorized {
         uint256 transactionsLength = transactions.length;
         for (uint256 i = 0; i < transactionsLength; ) {
             Transaction calldata transaction = transactions[i];
@@ -148,12 +134,7 @@ contract LaserWallet is Singleton, SSR, Handler, ILaserWallet {
             // The signatures were already verified in 'exec', here we just need to make sure that access == owner.
             if (access != Access.Owner) revert LW__multiCall__notOwner();
 
-            bool success = _call(
-                transaction.to,
-                transaction.value,
-                transaction.callData,
-                gasleft()
-            );
+            bool success = _call(transaction.to, transaction.value, transaction.callData, gasleft());
 
             // We do not revert the call if it fails, because the wallet needs to pay the relayer even in case of failure.
             (success);
@@ -181,31 +162,16 @@ contract LaserWallet is Singleton, SSR, Handler, ILaserWallet {
         bytes calldata signatures
     ) external returns (uint256 totalGas) {
         if (nonce++ != _nonce) revert LW__simulateTransaction__invalidNonce();
-        verifyTransaction(
-            to,
-            value,
-            callData,
-            _nonce,
-            maxFeePerGas,
-            maxPriorityFeePerGas,
-            gasLimit,
-            signatures
-        );
+        verifyTransaction(to, value, callData, _nonce, maxFeePerGas, maxPriorityFeePerGas, gasLimit, signatures);
         bool success = _call(to, value, callData, gasleft());
         if (!success) revert LW__simulateTransaction__mainCallError();
-        uint256 gasPrice = calculateGasPrice(
-            maxFeePerGas,
-            maxPriorityFeePerGas
-        );
+        uint256 gasPrice = calculateGasPrice(maxFeePerGas, maxPriorityFeePerGas);
         uint256 gasUsed = gasLimit - gasleft() + 7000;
         uint256 refundAmount = gasUsed * gasPrice;
         success = _call(msg.sender, refundAmount, new bytes(0), gasleft());
         if (!success) revert LW__simulateTransaction__refundFailure();
         totalGas = gasLimit - gasleft();
-        require(
-            msg.sender == address(0),
-            "Must be called off-chain from address zero."
-        );
+        require(msg.sender == address(0), "Must be called off-chain from address zero.");
     }
 
     /**
@@ -220,18 +186,7 @@ contract LaserWallet is Singleton, SSR, Handler, ILaserWallet {
         uint256 maxPriorityFeePerGas,
         uint256 gasLimit
     ) external view returns (bytes32) {
-        return
-            keccak256(
-                encodeOperation(
-                    to,
-                    value,
-                    callData,
-                    _nonce,
-                    maxFeePerGas,
-                    maxPriorityFeePerGas,
-                    gasLimit
-                )
-            );
+        return keccak256(encodeOperation(to, value, callData, _nonce, maxFeePerGas, maxPriorityFeePerGas, gasLimit));
     }
 
     /**
@@ -240,11 +195,7 @@ contract LaserWallet is Singleton, SSR, Handler, ILaserWallet {
      * @param signature Signature byte array associated with _msgHash.
      * @return Magic value  or reverts with an error message.
      */
-    function isValidSignature(bytes32 hash, bytes memory signature)
-        external
-        view
-        returns (bytes4)
-    {
+    function isValidSignature(bytes32 hash, bytes memory signature) external view returns (bytes4) {
         bytes32 r;
         bytes32 s;
         uint8 v;
@@ -267,14 +218,7 @@ contract LaserWallet is Singleton, SSR, Handler, ILaserWallet {
     }
 
     function domainSeparator() public view returns (bytes32) {
-        return
-            keccak256(
-                abi.encode(
-                    DOMAIN_SEPARATOR_TYPEHASH,
-                    getChainId(),
-                    address(this)
-                )
-            );
+        return keccak256(abi.encode(DOMAIN_SEPARATOR_TYPEHASH, getChainId(), address(this)));
     }
 
     function verifyTransaction(
@@ -324,10 +268,7 @@ contract LaserWallet is Singleton, SSR, Handler, ILaserWallet {
     ) internal view {
         // If it is the owner or guardian, then only 1 signature is required.
         // For all other operations, 2 signatures are required.
-        uint256 requiredSignatures = _access == Access.Owner ||
-            _access == Access.Guardian
-            ? 1
-            : 2;
+        uint256 requiredSignatures = _access == Access.Owner || _access == Access.Guardian ? 1 : 2;
 
         if (signatures.length < requiredSignatures * 65) {
             revert LW__verifySignatures__invalidSignatureLength();
@@ -357,7 +298,6 @@ contract LaserWallet is Singleton, SSR, Handler, ILaserWallet {
                 }
             } else if (_access == Access.OwnerAndGuardian) {
                 // If access == owner and guardian, the first signer needs to be the owner.
-
                 if (i == 0) {
                     // The first signer needs to be the owner.
                     if (owner != signer) {
@@ -418,7 +358,7 @@ contract LaserWallet is Singleton, SSR, Handler, ILaserWallet {
         uint256 maxPriorityFeePerGas,
         uint256 gasLimit
     ) internal view returns (bytes memory) {
-        bytes32 operationHash = keccak256(
+        bytes32 opHash = keccak256(
             abi.encode(
                 LASER_TYPE_STRUCTURE,
                 to,
@@ -431,12 +371,6 @@ contract LaserWallet is Singleton, SSR, Handler, ILaserWallet {
             )
         );
 
-        return
-            abi.encodePacked(
-                bytes1(0x19),
-                bytes1(0x01),
-                domainSeparator(),
-                operationHash
-            );
+        return abi.encodePacked(bytes1(0x19), bytes1(0x01), domainSeparator(), opHash);
     }
 }

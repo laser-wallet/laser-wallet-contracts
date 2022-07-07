@@ -118,9 +118,7 @@ interface ILaserWallet {
      * @param signature Signature byte array associated with _msgHash.
      * @return Magic value  or reverts with an error message.
      */
-    function isValidSignature(bytes32 hash, bytes memory signature)
-        external
-        returns (bytes4);
+    function isValidSignature(bytes32 hash, bytes memory signature) external returns (bytes4);
 
     /**
      * @dev Returns the chain id of this.

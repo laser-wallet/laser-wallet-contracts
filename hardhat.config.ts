@@ -13,8 +13,7 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-const { INFURA_KEY, ALCHEMY_URL, DEPLOYER_PRIVATE_KEY, ETHERSCAN_API_KEY } =
-    process.env;
+const { INFURA_KEY, ALCHEMY_URL, DEPLOYER_PRIVATE_KEY, ETHERSCAN_API_KEY } = process.env;
 
 const config: HardhatUserConfig = {
     solidity: {
@@ -40,17 +39,8 @@ const config: HardhatUserConfig = {
             url: `https://goerli.infura.io/v3/${INFURA_KEY}`,
             accounts: [`0x${DEPLOYER_PRIVATE_KEY}`],
         },
-        optimism: {
-            url: "https://mainnet.optimism.io",
-            accounts: [`0x${DEPLOYER_PRIVATE_KEY}`],
-        },
         rinkeby: {
             url: `https://rinkeby.infura.io/v3/${INFURA_KEY}`,
-
-            accounts: [`0x${DEPLOYER_PRIVATE_KEY}`],
-        },
-        "optimism-kovan": {
-            url: "https://kovan.optimism.io",
             accounts: [`0x${DEPLOYER_PRIVATE_KEY}`],
         },
         hardhat: {

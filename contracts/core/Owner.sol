@@ -17,11 +17,7 @@ contract Owner is IOwner, SelfAuthorized {
      * @param newOwner The address of the new owner.
      */
     function changeOwner(address newOwner) external authorized {
-        if (
-            newOwner.code.length != 0 ||
-            newOwner == address(0) ||
-            newOwner == owner
-        ) {
+        if (newOwner.code.length != 0 || newOwner == address(0) || newOwner == owner) {
             revert Owner__changeOwner__invalidOwnerAddress();
         }
         owner = newOwner;

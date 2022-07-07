@@ -5,9 +5,7 @@ import { walletSetup, addressesForTest, AddressesForTest } from "../utils";
 import { Address } from "../types";
 import { addrZero } from "../constants/constants";
 
-const {
-    abi,
-} = require("../../artifacts/contracts/LaserWallet.sol/LaserWallet.json");
+const { abi } = require("../../artifacts/contracts/LaserWallet.sol/LaserWallet.json");
 
 describe("Core", () => {
     let addresses: AddressesForTest;
@@ -23,30 +21,26 @@ describe("Core", () => {
             const random = ethers.Wallet.createRandom().address;
             const { recoveryOwners, guardians } = addresses;
 
-            await expect(
-                wallet.init(random, recoveryOwners, guardians)
-            ).to.be.revertedWith("Owner__initOwner__walletInitialized(");
+            await expect(wallet.init(random, recoveryOwners, guardians)).to.be.revertedWith(
+                "Owner__initOwner__walletInitialized("
+            );
         });
 
         it("should revert if we provide an address with code for the owner", async () => {
             const factory = await ethers.getContractFactory("LaserWallet");
             const contract = await factory.deploy();
             const { recoveryOwners, guardians } = addresses;
-            await expect(
-                walletSetup(contract.address, recoveryOwners, guardians)
-            ).to.be.reverted;
+            await expect(walletSetup(contract.address, recoveryOwners, guardians)).to.be.reverted;
         });
 
         it("should revert if we provide address0 for the owner", async () => {
             const { recoveryOwners, guardians } = addresses;
-            await expect(walletSetup(addrZero, recoveryOwners, guardians)).to.be
-                .reverted;
+            await expect(walletSetup(addrZero, recoveryOwners, guardians)).to.be.reverted;
         });
 
         it("should revert if we provide 1 recovery owner", async () => {
             const { owner, recoveryOwners, guardians } = addresses;
-            await expect(walletSetup(owner, [recoveryOwners[0]], guardians)).to
-                .be.reverted;
+            await expect(walletSetup(owner, [recoveryOwners[0]], guardians)).to.be.reverted;
         });
 
         it("should revert if recovery owner is a contract that doesn't support 1271", async () => {
@@ -61,28 +55,24 @@ describe("Core", () => {
         it("should revert if we provide address 0 as a recovery owner", async () => {
             const { owner, recoveryOwners, guardians } = addresses;
             recoveryOwners[0] = addrZero;
-            await expect(walletSetup(owner, recoveryOwners, guardians)).to.be
-                .reverted;
+            await expect(walletSetup(owner, recoveryOwners, guardians)).to.be.reverted;
         });
 
         it("should revert if the recovery owner is also a guardian", async () => {
             const { owner, recoveryOwners, guardians } = addresses;
             recoveryOwners[0] = guardians[0];
-            await expect(walletSetup(owner, recoveryOwners, guardians)).to.be
-                .reverted;
+            await expect(walletSetup(owner, recoveryOwners, guardians)).to.be.reverted;
         });
 
         it("should revert if we provide the owner as the recovery owner", async () => {
             const { owner, recoveryOwners, guardians } = addresses;
             recoveryOwners[0] = owner;
-            await expect(walletSetup(owner, recoveryOwners, guardians)).to.be
-                .reverted;
+            await expect(walletSetup(owner, recoveryOwners, guardians)).to.be.reverted;
         });
 
         it("should revert if we provide 1 guardian", async () => {
             const { owner, recoveryOwners, guardians } = addresses;
-            await expect(walletSetup(owner, recoveryOwners, [guardians[0]])).to
-                .be.reverted;
+            await expect(walletSetup(owner, recoveryOwners, [guardians[0]])).to.be.reverted;
         });
 
         it("should revert if the guardian is a contract and doesn't support 1271", async () => {
@@ -91,30 +81,26 @@ describe("Core", () => {
             const { owner, recoveryOwners, guardians } = addresses;
             const guardian2 = guardians[0]; // correct address;
             const invalid = [contract.address, guardian2];
-            await expect(walletSetup(owner, recoveryOwners, invalid)).to.be
-                .reverted;
+            await expect(walletSetup(owner, recoveryOwners, invalid)).to.be.reverted;
         });
 
         it("should revert if we provide the owner as a guardian", async () => {
             const { owner, recoveryOwners, guardians } = addresses;
 
             guardians[0] = owner;
-            await expect(walletSetup(owner, recoveryOwners, guardians)).to.be
-                .reverted;
+            await expect(walletSetup(owner, recoveryOwners, guardians)).to.be.reverted;
         });
 
         it("should revert if we provide address 0 as a guardian", async () => {
             const { owner, recoveryOwners, guardians } = addresses;
             guardians[0] = addrZero;
-            await expect(walletSetup(owner, recoveryOwners, guardians)).to.be
-                .reverted;
+            await expect(walletSetup(owner, recoveryOwners, guardians)).to.be.reverted;
         });
 
         it("should revert if there are duplicate guardians", async () => {
             const { owner, recoveryOwners, guardians } = addresses;
             guardians[guardians.length - 1] = guardians[0];
-            await expect(walletSetup(owner, recoveryOwners, guardians)).to.be
-                .reverted;
+            await expect(walletSetup(owner, recoveryOwners, guardians)).to.be.reverted;
         });
 
         it("should correctly init with EOA's as recovery owners and guardians", async () => {

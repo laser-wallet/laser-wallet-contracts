@@ -12,10 +12,7 @@ describe("Laser Wallet (singleton)", () => {
     beforeEach(async () => {
         await deployments.fixture(["LaserWallet"]);
         const Singleton = await deployments.get("LaserWallet");
-        singleton = await ethers.getContractAt(
-            Singleton.abi,
-            Singleton.address
-        );
+        singleton = await ethers.getContractAt(Singleton.abi, Singleton.address);
     });
 
     describe("singleton correct deployment", async () => {
@@ -25,9 +22,9 @@ describe("Laser Wallet (singleton)", () => {
         });
 
         it("should not allow to init", async () => {
-            await expect(
-                singleton.init(mock, [mock], [mock])
-            ).to.be.revertedWith("Owner__initOwner__walletInitialized()");
+            await expect(singleton.init(mock, [mock], [mock])).to.be.revertedWith(
+                "Owner__initOwner__walletInitialized()"
+            );
         });
 
         it(`should be version ${VERSION}`, async () => {
@@ -41,9 +38,7 @@ describe("Laser Wallet (singleton)", () => {
         });
 
         it("should not be able to make operations", async () => {
-            await expect(singleton.changeOwner(mock)).to.be.revertedWith(
-                "SelfAuthorized__notWallet()"
-            );
+            await expect(singleton.changeOwner(mock)).to.be.revertedWith("SelfAuthorized__notWallet()");
         });
     });
 });

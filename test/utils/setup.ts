@@ -30,25 +30,12 @@ export interface SignersForTest {
 }
 
 export async function addressesForTest(): Promise<AddressesForTest> {
-    const [
-        owner,
-        recoveryOwner1,
-        recoveryOwner2,
-        guardian1,
-        guardian2,
-        relayer,
-    ] = await ethers.getSigners();
+    const [owner, recoveryOwner1, recoveryOwner2, guardian1, guardian2, relayer] = await ethers.getSigners();
     const ownerAddress = await owner.getAddress();
 
-    const recoveryOwners = [
-        await recoveryOwner1.getAddress(),
-        await recoveryOwner2.getAddress(),
-    ];
+    const recoveryOwners = [await recoveryOwner1.getAddress(), await recoveryOwner2.getAddress()];
 
-    const guardians = [
-        await guardian1.getAddress(),
-        await guardian2.getAddress(),
-    ];
+    const guardians = [await guardian1.getAddress(), await guardian2.getAddress()];
 
     const relayerAddress = await relayer.getAddress();
     return {
@@ -60,14 +47,7 @@ export async function addressesForTest(): Promise<AddressesForTest> {
 }
 
 export async function signersForTest(): Promise<SignersForTest> {
-    const [
-        owner,
-        recoveryOwner1,
-        recoveryOwner2,
-        guardian1,
-        guardian2,
-        relayer,
-    ] = await ethers.getSigners();
+    const [owner, recoveryOwner1, recoveryOwner2, guardian1, guardian2, relayer] = await ethers.getSigners();
     return {
         ownerSigner: owner,
         recoveryOwner1Signer: recoveryOwner1,
@@ -86,10 +66,7 @@ export async function walletSetup(
     // deployments.fixture() needs to be called prior to the execution of this function.
     const _LaserWallet = await deployments.get("LaserWallet");
     const abi = _LaserWallet.abi;
-    const singleton = (await ethers.getContractAt(
-        abi,
-        _LaserWallet.address
-    )) as LaserWallet;
+    const singleton = (await ethers.getContractAt(abi, _LaserWallet.address)) as LaserWallet;
     const Factory = await deployments.get("LaserProxyFactory");
     const factory = await ethers.getContractAt(Factory.abi, Factory.address);
 
@@ -103,10 +80,7 @@ export async function walletSetup(
     const transaction = await factory.createProxy(initializer);
     const receipt = await transaction.wait();
     const proxyAddress = receipt.events[1].args.proxy;
-    const wallet = (await ethers.getContractAt(
-        abi,
-        proxyAddress
-    )) as LaserWallet;
+    const wallet = (await ethers.getContractAt(abi, proxyAddress)) as LaserWallet;
     return {
         address: proxyAddress,
         wallet: wallet,

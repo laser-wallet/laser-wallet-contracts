@@ -96,9 +96,9 @@ describe("Setup", () => {
             const hash = ethers.utils.keccak256("0x1234");
             const sig = (await sign(ownerSigner, hash)).replace(/1f$/, "03");
             const [r, s, v] = await wallet.splitSigs(sig, 0);
-            await expect(
-                wallet.returnSigner(hash, r, s, v, sig)
-            ).to.be.revertedWith("Utils__returnSigner__invalidSignature()");
+            await expect(wallet.returnSigner(hash, r, s, v, sig)).to.be.revertedWith(
+                "Utils__returnSigner__invalidSignature()"
+            );
         });
     });
 });

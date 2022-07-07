@@ -17,9 +17,7 @@ import { addrZero } from "../constants/constants";
 import { fundWallet } from "../utils";
 import { sign } from "../utils/sign";
 
-const {
-    abi,
-} = require("../../artifacts/contracts/LaserWallet.sol/LaserWallet.json");
+const { abi } = require("../../artifacts/contracts/LaserWallet.sol/LaserWallet.json");
 
 describe("Owner", () => {
     let addresses: AddressesForTest;
@@ -39,22 +37,14 @@ describe("Owner", () => {
         it("should not allow to init with address0", async () => {
             const { factory } = await walletSetup();
             const { recoveryOwners, guardians } = addresses;
-            const initializer = encodeFunctionData(abi, "init", [
-                addrZero,
-                recoveryOwners,
-                guardians,
-            ]);
+            const initializer = encodeFunctionData(abi, "init", [addrZero, recoveryOwners, guardians]);
             await expect(factory.createProxy(initializer)).to.be.reverted;
         });
 
         it("should not allow to init with address with code", async () => {
             const { address, factory } = await walletSetup();
             const { recoveryOwners, guardians } = addresses;
-            const initializer = encodeFunctionData(abi, "init", [
-                address,
-                recoveryOwners,
-                guardians,
-            ]);
+            const initializer = encodeFunctionData(abi, "init", [address, recoveryOwners, guardians]);
             await expect(factory.createProxy(initializer)).to.be.reverted;
         });
 
@@ -75,9 +65,7 @@ describe("Owner", () => {
             const Caller = await ethers.getContractFactory("Caller");
             const caller = await Caller.deploy();
             const tx = await generateTransaction();
-            tx.callData = encodeFunctionData(abi, "changeOwner", [
-                caller.address,
-            ]);
+            tx.callData = encodeFunctionData(abi, "changeOwner", [caller.address]);
             tx.to = address;
             const hash = await getHash(wallet, tx);
             const { ownerSigner } = await signersForTest();

@@ -10,9 +10,7 @@ describe("Handlers", () => {
 
     beforeEach(async () => {
         await deployments.fixture();
-        const tokenCallerFactory = await ethers.getContractFactory(
-            "TokenCaller"
-        );
+        const tokenCallerFactory = await ethers.getContractFactory("TokenCaller");
         tokenCaller = await tokenCallerFactory.deploy();
     });
 
@@ -80,9 +78,7 @@ describe("Handlers", () => {
         it("should support Laser's magic value", async () => {
             const { address, wallet } = await walletSetup();
             // bytes4(keccak256("I_AM_LASER"))
-            const hash = ethers.utils.keccak256(
-                ethers.utils.toUtf8Bytes("I_AM_LASER")
-            );
+            const hash = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("I_AM_LASER"));
             const magicValue = hash.slice(0, 10);
             const [relayer] = await ethers.getSigners();
             expect(await wallet.supportsInterface(magicValue)).to.equal(true);

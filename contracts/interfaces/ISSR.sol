@@ -23,10 +23,7 @@ interface ISSR {
     event GuardianSwapped(address newGuardian, address oldGuardian);
     event NewRecoveryOwner(address newRecoveryOwner);
     event RecoveryOwnerRemoved(address removedRecoveryOwner);
-    event RecoveryOwnerSwapped(
-        address newRecoveryOwner,
-        address oldRecoveryOwner
-    );
+    event RecoveryOwnerSwapped(address newRecoveryOwner, address oldRecoveryOwner);
     event WalletRecovered(address newOwner);
 
     ///@dev addGuardian() custom errors.
@@ -60,7 +57,7 @@ interface ISSR {
     error SSR__initGuardians__invalidAddress();
 
     ///@dev access() custom errors.
-    error SSR__access__guardiansBlocked();
+    error SSR__access__guardiansLocked();
     error SSR__access__walletLocked();
 
     ///@dev validateRecoveryOwner() custom error.
@@ -110,8 +107,7 @@ interface ISSR {
      * @param guardianToRemove Address of the guardian to be removed.
      * @notice Can only be called by the owner.
      */
-    function removeGuardian(address prevGuardian, address guardianToRemove)
-        external;
+    function removeGuardian(address prevGuardian, address guardianToRemove) external;
 
     /**
      * @dev Swaps a guardian for a new address.
@@ -138,10 +134,7 @@ interface ISSR {
      * @param recoveryOwnerToRemove Address of the recovery owner to be removed.
      * @notice Can only be called by the owner.
      */
-    function removeRecoveryOwner(
-        address prevRecoveryOwner,
-        address recoveryOwnerToRemove
-    ) external;
+    function removeRecoveryOwner(address prevRecoveryOwner, address recoveryOwnerToRemove) external;
 
     /**
      * @dev Swaps a recovery owner for a new address.
