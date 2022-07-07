@@ -6,8 +6,6 @@ import "./handlers/Handler.sol";
 import "./interfaces/ILaserWallet.sol";
 import "./ssr/SSR.sol";
 
-import "hardhat/console.sol";
-
 /**
  * @title LaserWallet - EVM based smart contract wallet. Implementes smart social recovery mechanism.
  * @author Rodrigo Herrera I.
@@ -53,7 +51,7 @@ contract LaserWallet is Singleton, SSR, Handler, ILaserWallet {
         initOwner(_owner);
         initGuardians(_guardians);
         initRecoveryOwners(_recoveryOwners);
-        emit Setup(owner, _recoveryOwners, _guardians);
+        emit Setup(_owner, _recoveryOwners, _guardians);
     }
 
     /**

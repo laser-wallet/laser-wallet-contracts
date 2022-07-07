@@ -1,6 +1,7 @@
 import { expect } from "chai";
 import { deployments, ethers } from "hardhat";
 import { Contract, Signer, Wallet } from "ethers";
+import { LaserWallet } from "../../typechain-types";
 
 const mock = Wallet.createRandom().address;
 

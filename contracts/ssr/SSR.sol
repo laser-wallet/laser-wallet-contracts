@@ -8,8 +8,6 @@ import "../interfaces/IERC165.sol";
 import "../interfaces/ISSR.sol";
 import "../utils/Utils.sol";
 
-import "hardhat/console.sol";
-
 /**
  * @title SSR - Smart Social Recovery
  * @notice New wallet recovery mechanism.

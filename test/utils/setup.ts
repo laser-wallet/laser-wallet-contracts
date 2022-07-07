@@ -1,4 +1,4 @@
-import { Contract, Signer } from "ethers";
+import { BigNumberish, Contract, Signer } from "ethers";
 import { ethers, deployments, getNamedAccounts } from "hardhat";
 import { encodeFunctionData } from "./utils";
 import { Address } from "../types";

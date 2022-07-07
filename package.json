@@ -5,12 +5,12 @@
     "homepage": "https://github.com/laser-wallet/laser-wallet-contracts",
     "license": "LGPL-3.0",
     "scripts": {
-        "lint:ts": "prettier --write test/**/*.ts && npx prettier --write hardhat.config.ts && npx prettier --write deploy/**/*.ts",
-        "lint:sol": "prettier --write 'contracts/**/*.sol'",
-        "lint:all": "npm run lint:ts && npm run lint:sol",
-        "test": "hardhat test",
-        "compile": "hardhat compile", 
-        "deploy-and-verify": "hardhat deploy-and-verify --network",
+        "lint:ts": "echo linting ts files ... && prettier --write test/**/*.ts && npx prettier --write hardhat.config.ts && npx prettier --write deploy/**/*.ts",
+        "lint:sol": "echo liniting solidity files ... && prettier --write 'contracts/**/*.sol'",
+        "lint:all": "echo linting everything ... && npm run lint:ts && npm run lint:sol",
+        "test": "echo running tests for Laser core contracts ... && hardhat test",
+        "compile": "echo compiling Laser contracts ... && hardhat compile", 
+        "deploy-and-verify": "echo deploying the contracts and verifying them on Etherscan ... && hardhat deploy-and-verify --network",
         "coverage": "hardhat coverage"
     },
     "keywords": [
