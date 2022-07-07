@@ -7,4 +7,4 @@
 
 ## NOTE: 
 
-### This branch is no longer the latest, go to master.
+### This branch is not longer in use, go to master.
