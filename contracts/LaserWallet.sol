@@ -321,9 +321,7 @@ contract LaserWallet is Singleton, SSR, Handler, ILaserWallet {
         // For all other operations, 2 signatures are required.
         uint256 requiredSignatures = _access == Access.Owner || _access == Access.Guardian ? 1 : 2;
 
-        if (signatures.length < requiredSignatures * 65) {
-            revert LW__verifySignatures__invalidSignatureLength();
-        }
+        if (signatures.length < requiredSignatures * 65) revert LW__verifySignatures__invalidSignatureLength();
 
         address signer;
         bytes32 r;
@@ -344,21 +342,15 @@ contract LaserWallet is Singleton, SSR, Handler, ILaserWallet {
                 // If access == guardian, the signer needs to be a guardian.
 
                 // The guardian by itself can only lock the wallet, additional checks were done in 'access'.
-                if (guardians[signer] == address(0)) {
-                    revert LW__verifySignatures__notGuardian();
-                }
+                if (guardians[signer] == address(0)) revert LW__verifySignatures__notGuardian();
             } else if (_access == Access.OwnerAndGuardian) {
                 // If access == owner and guardian, the first signer needs to be the owner.
                 if (i == 0) {
                     // The first signer needs to be the owner.
-                    if (owner != signer) {
-                        revert LW__verifySignatures__notOwner();
-                    }
+                    if (owner != signer) revert LW__verifySignatures__notOwner();
                 } else {
                     // The second signer needs to be a guardian.
-                    if (guardians[signer] == address(0)) {
-                        revert LW__verifySignatures__notGuardian();
-                    }
+                    if (guardians[signer] == address(0)) revert LW__verifySignatures__notGuardian();
                 }
             } else if (_access == Access.RecoveryOwnerAndGuardian) {
                 // If access == recovery owner and guardian, the first signer needs to be the recovery owner.
@@ -371,17 +363,13 @@ contract LaserWallet is Singleton, SSR, Handler, ILaserWallet {
                     validateRecoveryOwner(signer);
                 } else {
                     // The second signer needs to be a guardian.
-                    if (guardians[signer] == address(0)) {
-                        revert LW__verifySignatures__notGuardian();
-                    }
+                    if (guardians[signer] == address(0)) revert LW__verifySignatures__notGuardian();
                 }
             } else if (_access == Access.OwnerAndRecoveryOwner) {
                 // If access == owner and recovery owner, the first signer needs to be the owner.
 
                 if (i == 0) {
-                    if (owner != signer) {
-                        revert LW__verifySignatures__notOwner();
-                    }
+                    if (owner != signer) revert LW__verifySignatures__notOwner();
                 } else {
                     // The second signer needs to be the recovery owner.
 
