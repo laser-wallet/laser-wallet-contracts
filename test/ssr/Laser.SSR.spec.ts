@@ -13,6 +13,7 @@ import {
     getHash,
     sendTx,
     fundWallet,
+    lockWalelt,
 } from "../utils";
 import { Address, Domain, Transaction } from "../types";
 import { addrZero, ownerWallet } from "../constants/constants";
@@ -482,14 +483,22 @@ describe("Sovereign Social Recovery", () => {
                 });
 
                 it("owner + guardian should be able to unlock the wallet", async () => {
-                    // const { address, wallet } = await walletSetup();
-                    // tx.to = address;
-                    // const { guardian1Signer, ownerSigner } = await signersForTest();
-                    // await fundWallet(ownerSigner, address);
-                    // const hash = await getHash(wallet, tx);
-                    // const sig1 = await sign(ownerSiger, hash);
-                    // const sig2 = await sign(guardian1Signer, hash);
-                    // tx.signatures = sig1 + sig2.slice(2);
+                    const { address, wallet } = await walletSetup();
+                    tx.to = address;
+                    const { guardian1Signer, ownerSigner } = await signersForTest();
+                    await fundWallet(ownerSigner, address);
+                    await lockWalelt(wallet, guardian1Signer);
+                    // Wallet is locked.
+                    expect(await wallet.isLocked()).to.equal(true);
+
+                    // Now we unlock the wallet.
+                    tx.nonce = 1; // We increase the nonce to 1 (lock wallet was 0).
+                    const hash = await getHash(wallet, tx);
+                    const ownerSig = await sign(ownerSigner, hash);
+                    const guardianSig = await sign(guardian1Signer, hash);
+                    tx.signatures = ownerSig + guardianSig.slice(2);
+                    await sendTx(wallet, tx);
+                    expect(await wallet.isLocked()).to.equal(false);
                 });
             });
         });

@@ -2,6 +2,9 @@ import { Wallet, Contract, BigNumber, Signer } from "ethers";
 import { ethers } from "hardhat";
 import { Address, LaserTypes, Transaction } from "../types";
 import { addressesForTest } from "./setup";
+import { sign } from "./sign";
+
+const { abi } = require("../../artifacts/contracts/LaserWallet.sol/LaserWallet.json");
 
 export function encodeFunctionData(abi: any, functionName: string, ..._params: any[]): string {
     const params = _params[0];
@@ -86,4 +89,13 @@ export async function fundWallet(sender: Signer, address: Address): Promise<void
         to: address,
         value: oneEth,
     });
+}
+
+export async function lockWalelt(wallet: Contract, guardian: Signer) {
+    const tx = await generateTransaction();
+    tx.to = wallet.address;
+    tx.callData = encodeFunctionData(abi, "lock", []);
+    const hash = await getHash(wallet, tx);
+    tx.signatures = await sign(guardian, hash);
+    await sendTx(wallet, tx);
 }
