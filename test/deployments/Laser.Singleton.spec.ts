@@ -23,7 +23,7 @@ describe("Laser Wallet (singleton)", () => {
         });
 
         it("should not allow to init", async () => {
-            await expect(singleton.init(mock, [mock], [mock])).to.be.revertedWith(
+            await expect(singleton.init(mock, [mock], [mock], 0, 0, 0, mock, "0x")).to.be.revertedWith(
                 "Owner__initOwner__walletInitialized()"
             );
         });

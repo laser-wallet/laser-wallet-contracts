@@ -42,8 +42,8 @@ describe("Sovereign Social Recovery", () => {
 
             it("should fail if we try to init after initialization", async () => {
                 const { address, wallet } = await walletSetup();
-                const { owner, recoveryOwners, guardians } = addresses;
-                await expect(wallet.init(owner, recoveryOwners, guardians)).to.be.revertedWith(
+                const { owner, recoveryOwners, guardians, relayer } = addresses;
+                await expect(wallet.init(owner, recoveryOwners, guardians, 0, 0, 0, relayer, "0x")).to.be.revertedWith(
                     "'Owner__initOwner__walletInitialized()'"
                 );
             });

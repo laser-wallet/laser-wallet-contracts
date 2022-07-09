@@ -31,7 +31,7 @@ contract Owner is IOwner, SelfAuthorized {
     function initOwner(address _owner) internal {
         // If owner is not address 0, the wallet was already initialized...
         if (owner != address(0)) revert Owner__initOwner__walletInitialized();
-        if (_owner.code.length != 0 || _owner == address(0)) {
+        if (_owner.code.length != 0) {
             revert Owner__initOwner__invalidOwnerAddress();
         }
         owner = _owner;

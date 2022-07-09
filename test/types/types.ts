@@ -48,6 +48,7 @@ export interface Transaction {
     maxFeePerGas: BigNumberish;
     maxPriorityFeePerGas: BigNumberish;
     gasLimit: BigNumberish;
+    relayer: Address;
     signatures: string;
 }
 

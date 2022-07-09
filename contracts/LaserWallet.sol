@@ -8,7 +8,7 @@ import "./ssr/SSR.sol";
 
 /**
  * @title LaserWallet - EVM based smart contract wallet. Implementes smart social recovery mechanism.
- * @author Rodrigo Herrera I.
+ * @author Rodrigo Herrera I. The contract design was greatly inspired on Gnosis:
  */
 contract LaserWallet is Singleton, SSR, Handler, ILaserWallet {
     string public constant VERSION = "1.0.0";
@@ -39,18 +39,67 @@ contract LaserWallet is Singleton, SSR, Handler, ILaserWallet {
      * @param _owner The owner of the wallet.
      * @param _recoveryOwners Array of recovery owners. Implementation of Sovereign Social Recovery.
      * @param _guardians Addresses that can activate the social recovery mechanism.
+     * @param maxFeePerGas Maximum amount that the user is willing to pay for a unit of gas.
+     * @param maxPriorityFeePerGas Miner's tip.
+     * @param gasLimit The transaction's gas limit. It needs to be the same as the actual transaction gas limit.
+     * @param relayer Address that forwards the transaction so it abstracts away the gas costs.
+     * @param signature The signature of the owner. We require the owner's signature for the refund amount and
+     * to be confirm the initial wallet configuration.
      * @notice It can't be called after initialization.
      */
     function init(
         address _owner,
         address[] calldata _recoveryOwners,
-        address[] calldata _guardians
+        address[] calldata _guardians,
+        uint256 maxFeePerGas,
+        uint256 maxPriorityFeePerGas,
+        uint256 gasLimit,
+        address relayer,
+        bytes memory signature
     ) external {
         // initOwner() requires that the current owner is address 0.
         // This is enough to protect init() from being called after initialization.
         initOwner(_owner);
+
+        // We initialize the guardians ...
         initGuardians(_guardians);
+
+        // We initialize the recovery owners ...
         initRecoveryOwners(_recoveryOwners);
+
+        // We check the correctness of the signature (belongs to the owner).
+        // This is so the wallet refunds the specified amount to the relayer.
+
+        // Check the signature of the owner.
+        // This is so the wallet refunds the specified amount to the relayer.
+        bytes32 signedHash = keccak256(abi.encodePacked(maxFeePerGas, maxPriorityFeePerGas, gasLimit));
+
+        (bytes32 r, bytes32 s, uint8 v) = splitSigs(signature, 0);
+
+        address signer = returnSigner(signedHash, r, s, v, signature);
+
+        //@todo Optimize this.
+        if (signer != _owner) revert LW__init__notOwner();
+
+        if (gasLimit > 0) {
+            // If gas limit is greater than 0, then the transaction was sent through a relayer.
+            // We calculate the gas price, as per the user's request ...
+            uint256 gasPrice = calculateGasPrice(maxFeePerGas, maxPriorityFeePerGas);
+
+            // gasUsed is the total amount of gas consumed for this transaction.
+            // This is contemplating the initial callData cost, the main transaction,
+            // and we add the surplus for what is left (refund the relayer).
+            uint256 gasUsed = gasLimit - gasleft() + 7000;
+
+            uint256 refundAmount = gasUsed * gasPrice;
+
+            // We refund the relayer ...
+            bool success = _call(relayer == address(0) ? tx.origin : relayer, refundAmount, new bytes(0), gasleft());
+
+            // If the transaction returns false, we revert ..
+            if (!success) revert LW__exec__refundFailure();
+        }
+
         emit Setup(_owner, _recoveryOwners, _guardians);
     }
 
@@ -63,6 +112,7 @@ contract LaserWallet is Singleton, SSR, Handler, ILaserWallet {
      * @param maxFeePerGas Maximum amount that the user is willing to pay for a unit of gas.
      * @param maxPriorityFeePerGas Miner's tip.
      * @param gasLimit The transaction's gas limit. It needs to be the same as the actual transaction gas limit.
+     * @param relayer Address that forwards the transaction so it abstracts away the gas costs.
      * @param signatures The signatures of the transaction.
      * @notice If 'gasLimit' does not match the actual gas limit of the transaction, the relayer can incur losses.
      * It is the relayer's responsability to make sure that they are the same, the user does not get affected if a mistake is made.
@@ -76,6 +126,7 @@ contract LaserWallet is Singleton, SSR, Handler, ILaserWallet {
         uint256 maxFeePerGas,
         uint256 maxPriorityFeePerGas,
         uint256 gasLimit,
+        address relayer,
         bytes calldata signatures
     ) external {
         // We immediately increase the nonce to avoid replay attacks.
@@ -107,7 +158,7 @@ contract LaserWallet is Singleton, SSR, Handler, ILaserWallet {
         uint256 refundAmount = gasUsed * gasPrice;
 
         // We refund the relayer ...
-        success = _call(msg.sender, refundAmount, new bytes(0), gasleft());
+        success = _call(relayer == address(0) ? tx.origin : relayer, refundAmount, new bytes(0), gasleft());
 
         // If the transaction returns false, we revert ..
         if (!success) revert LW__exec__refundFailure();
@@ -137,6 +188,8 @@ contract LaserWallet is Singleton, SSR, Handler, ILaserWallet {
             // We do not revert the call if it fails, because the wallet needs to pay the relayer even in case of failure.
             (success);
 
+            //@todo Return the success transactions and return data in an array.
+
             unchecked {
                 // Won't overflow .... You would need way more gas usage than current available block gas (30m) to overflow it.
                 ++i;
@@ -144,7 +197,7 @@ contract LaserWallet is Singleton, SSR, Handler, ILaserWallet {
         }
     }
 
-    /**
+    /**c
      * @dev Simulates a transaction. This should be called from the relayer, to verify that the transaction will not revert.
      * This does not guarantees 100% that the transaction will succeed, the state will be different next block.
      * @notice Needs to be called off-chain from  address zero.

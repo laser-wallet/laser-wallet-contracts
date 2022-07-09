@@ -1,9 +1,11 @@
 import { BigNumberish, Contract, Signer } from "ethers";
 import { ethers, deployments, getNamedAccounts } from "hardhat";
 import { encodeFunctionData } from "./utils";
+import { sign } from "./sign";
 import { Address } from "../types";
 import { LaserWallet } from "../../typechain-types";
 import { LaserProxyFactory } from "../../typechain-types";
+import { addrZero, ownerWallet } from "../constants/constants";
 
 interface ReturnWalletSetup {
     address: Address;
@@ -61,7 +63,13 @@ export async function signersForTest(): Promise<SignersForTest> {
 export async function walletSetup(
     _owner?: Address,
     _recoveryOwners?: Address[],
-    _guardians?: Address[]
+    _guardians?: Address[],
+    _maxFeePerGas?: BigNumberish,
+    _maxPriorityFeePerGas?: BigNumberish,
+    _gasLimit?: BigNumberish,
+    _relayer?: Address,
+    _signatures?: string,
+    _ownerSigner?: Signer
 ): Promise<ReturnWalletSetup> {
     // deployments.fixture() needs to be called prior to the execution of this function.
     const _LaserWallet = await deployments.get("LaserWallet");
@@ -70,12 +78,32 @@ export async function walletSetup(
     const Factory = await deployments.get("LaserProxyFactory");
     const factory = await ethers.getContractAt(Factory.abi, Factory.address);
 
-    const { owner, recoveryOwners, guardians } = await addressesForTest();
+    let { owner, recoveryOwners, guardians } = await addressesForTest();
+    let { ownerSigner } = await signersForTest();
+
+    const maxFeePerGas = _maxFeePerGas ? _maxFeePerGas : 0;
+    const maxPriorityFeePerGas = _maxPriorityFeePerGas ? _maxPriorityFeePerGas : 0;
+    const gasLimit = _gasLimit ? _gasLimit : 0;
+
+    const abiCoder = new ethers.utils.AbiCoder();
+    const dataHash = ethers.utils.keccak256(
+        abiCoder.encode(["uint256", "uint256", "uint256"], [maxFeePerGas, maxPriorityFeePerGas, gasLimit])
+    );
+
+    owner = _owner ? _owner : owner;
+    ownerSigner = _ownerSigner ? _ownerSigner : ownerSigner;
+
+    const signature = await sign(ownerSigner, dataHash);
 
     const initializer = encodeFunctionData(abi, "init", [
-        _owner ? _owner : owner,
+        owner,
         _recoveryOwners ? _recoveryOwners : recoveryOwners,
         _guardians ? _guardians : guardians,
+        maxFeePerGas,
+        maxPriorityFeePerGas,
+        gasLimit,
+        _relayer ? _relayer : addrZero,
+        signature,
     ]);
     const transaction = await factory.createProxy(initializer);
     const receipt = await transaction.wait();

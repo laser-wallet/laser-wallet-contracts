@@ -18,6 +18,9 @@ interface ILaserWallet {
     event ExecSuccess(address to, uint256 value, uint256 nonce);
     event ExecFailure(address to, uint256 value, uint256 nonce);
 
+    ///@dev init() custom error.
+    error LW__init__notOwner();
+
     ///@dev exec() custom errors.
     error LW__exec__invalidNonce();
     error LW__exec__refundFailure();
@@ -40,15 +43,26 @@ interface ILaserWallet {
 
     /**
      * @dev Setup function, sets initial storage of contract.
-     * @param owner The owner of the wallet.
-     * @param recoveryOwners Array of recovery owners. Implementation of Sovereign Social Recovery.
-     * @param guardians Addresses that can activate the social recovery mechanism.
+     * @param _owner The owner of the wallet.
+     * @param _recoveryOwners Array of recovery owners. Implementation of Sovereign Social Recovery.
+     * @param _guardians Addresses that can activate the social recovery mechanism.
+     * @param maxFeePerGas Maximum amount that the user is willing to pay for a unit of gas.
+     * @param maxPriorityFeePerGas Miner's tip.
+     * @param gasLimit The transaction's gas limit. It needs to be the same as the actual transaction gas limit.
+     * @param relayer Address that forwards the transaction so it abstracts away the gas costs.
+     * @param signature The signature of the owner. We require the owner's signature for the refund amount and
+     * to be confirm the initial wallet configuration.
      * @notice It can't be called after initialization.
      */
     function init(
-        address owner,
-        address[] calldata recoveryOwners,
-        address[] calldata guardians
+        address _owner,
+        address[] calldata _recoveryOwners,
+        address[] calldata _guardians,
+        uint256 maxFeePerGas,
+        uint256 maxPriorityFeePerGas,
+        uint256 gasLimit,
+        address relayer,
+        bytes memory signature
     ) external;
 
     /**
@@ -73,6 +87,7 @@ interface ILaserWallet {
         uint256 maxFeePerGas,
         uint256 maxPriorityFeePerGas,
         uint256 gasLimit,
+        address relayer,
         bytes calldata signatures
     ) external;
 

@@ -32,13 +32,15 @@ contract Utils is IUtils {
                 contractSignature := add(add(signatures, s), 0x20)
             }
 
-            if (IEIP1271(signer).isValidSignature(dataHash, contractSignature) != 0x1626ba7e)
+            if (IEIP1271(signer).isValidSignature(dataHash, contractSignature) != 0x1626ba7e) {
                 revert Utils__returnSigner__invalidContractSignature();
+            }
         } else if (v > 30) {
             signer = ecrecover(keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", dataHash)), v - 4, r, s);
         } else {
             signer = ecrecover(dataHash, v, r, s);
         }
+
         if (signer == address(0)) {
             revert Utils__returnSigner__invalidSignature();
         }

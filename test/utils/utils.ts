@@ -1,6 +1,7 @@
 import { Wallet, Contract, BigNumber, Signer } from "ethers";
 import { ethers } from "hardhat";
 import { Address, LaserTypes, Transaction } from "../types";
+import { addressesForTest } from "./setup";
 
 export function encodeFunctionData(abi: any, functionName: string, ..._params: any[]): string {
     const params = _params[0];
@@ -50,6 +51,7 @@ export async function sendTx(wallet: Contract, transaction: Transaction, signer?
             transaction.maxFeePerGas,
             transaction.maxPriorityFeePerGas,
             transaction.gasLimit,
+            transaction.relayer,
             transaction.signatures,
             {
                 gasLimit: transaction.gasLimit,
@@ -64,6 +66,7 @@ export async function generateTransaction(): Promise<Transaction> {
     const baseFee = (await ethers.provider.send("eth_getBlockByNumber", ["latest", true])).baseFeePerGas;
     const _maxPriorityFeePerGas = 2000000000;
     const _maxFeePerGas = 2 * baseFee + _maxPriorityFeePerGas;
+    const { relayer } = await addressesForTest();
     return {
         to: "",
         value: 0,
@@ -72,6 +75,7 @@ export async function generateTransaction(): Promise<Transaction> {
         maxFeePerGas: _maxFeePerGas,
         maxPriorityFeePerGas: _maxPriorityFeePerGas,
         gasLimit: 200000,
+        relayer: relayer,
         signatures: "0x",
     };
 }
