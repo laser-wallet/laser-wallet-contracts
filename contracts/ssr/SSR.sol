@@ -29,8 +29,10 @@ contract SSR is ISSR, SelfAuthorized, Owner, Utils {
     ///This is to completely prevent from guardians misbehaving.
     bool public guardiansLocked;
 
+    // Recovery owners in a link list.
     mapping(address => address) internal recoveryOwners;
 
+    // Guardians in a link list.
     mapping(address => address) internal guardians;
 
     /**
@@ -63,14 +65,14 @@ contract SSR is ISSR, SelfAuthorized, Owner, Utils {
     }
 
     /**
-     * @dev Unlocks the guardians. This can only be called by the owner.
+     * @dev Unlocks the guardians. Can only be called by the owner.
      */
     function unlockGuardians() external authorized {
         guardiansLocked = false;
     }
 
     /**
-     * @dev Can only recover with the signature of 1 guardian and the recovery owner.
+     * @dev Can only recover with the signature of a recovery owner and guardian.
      * @param newOwner The new owner address. This is generated instantaneously.
      */
     function recover(address newOwner) external authorized {
@@ -91,30 +93,31 @@ contract SSR is ISSR, SelfAuthorized, Owner, Utils {
         guardians[pointer] = newGuardian;
 
         unchecked {
-            // Won't overflow...
+            // If this overflows, this bug would be the least of the problems ..
             ++guardianCount;
         }
         emit NewGuardian(newGuardian);
     }
 
     /**
-     * @dev Removes a guardian to the wallet.
+     * @dev Removes a guardian from the wallet.
      * @param prevGuardian Address of the previous guardian in the linked list.
      * @param guardianToRemove Address of the guardian to be removed.
      * @notice Can only be called by the owner.
      */
     function removeGuardian(address prevGuardian, address guardianToRemove) external authorized {
+        // There needs to be at least 2 guardian ...
+        if (guardianCount - 2 < 1) revert SSR__removeGuardian__underflow();
+
         if (guardianToRemove == pointer) revert SSR__removeGuardian__invalidAddress();
 
         if (guardians[prevGuardian] != guardianToRemove) revert SSR__removeGuardian__incorrectPreviousGuardian();
 
-        // There needs to be at least 1 guardian ..
-        if (guardianCount - 1 < 1) revert SSR__removeGuardian__underflow();
-
         guardians[prevGuardian] = guardians[guardianToRemove];
         guardians[guardianToRemove] = address(0);
+
         unchecked {
-            //Won't underflow...
+            // Can't underflow, there needs to be more than 2 guardians to reach here.
             --guardianCount;
         }
         emit GuardianRemoved(guardianToRemove);
@@ -143,32 +146,43 @@ contract SSR is ISSR, SelfAuthorized, Owner, Utils {
     }
 
     /**
-     * @dev Adds a new recovery owner to the chain list.
-     * @param newRecoveryOwner The address of the new recovery owner.
-     * @notice The new recovery owner will be added at the end of the chain.
+     * @dev Adds a recovery owner to the wallet.
+     * @param newRecoveryOwner Address of the new recovery owner.
+     * @notice Can only be called by the owner.
      */
     function addRecoveryOwner(address newRecoveryOwner) external authorized {
         verifyNewRecoveryOwnerOrGuardian(newRecoveryOwner);
         recoveryOwners[newRecoveryOwner] = recoveryOwners[pointer];
+        recoveryOwners[pointer] = newRecoveryOwner;
+
         unchecked {
+            // If this overflows, this bug would be the least of the problems ...
             ++recoveryOwnerCount;
         }
         emit NewRecoveryOwner(newRecoveryOwner);
     }
 
     /**
-     * @dev Removes a guardian to the wallet.
+     * @dev Removes a recovery owner  to the wallet.
      * @param prevRecoveryOwner Address of the previous recovery owner in the linked list.
      * @param recoveryOwnerToRemove Address of the recovery owner to be removed.
      * @notice Can only be called by the owner.
      */
     function removeRecoveryOwner(address prevRecoveryOwner, address recoveryOwnerToRemove) external authorized {
-        if (recoveryOwnerCount - 1 < 2) revert SSR__removeRecoveryOwner__incorrectIndex();
+        // There needs to be at least 2 recovery owners ...
+        if (recoveryOwnerCount - 1 < 2) revert SSR__removeRecoveryOwner__underflow();
 
-        ///@todo Add checks.
+        if (recoveryOwnerToRemove == pointer) revert SSR__removeRecoveryOwner__invalidAddress();
+
+        if (recoveryOwners[prevRecoveryOwner] != recoveryOwnerToRemove) {
+            revert SSR__removeRecoveryOwner__incorrectPreviousRecoveryOwner();
+        }
+
         recoveryOwners[prevRecoveryOwner] = recoveryOwners[recoveryOwnerToRemove];
         recoveryOwners[recoveryOwnerToRemove] = address(0);
+
         unchecked {
+            // Can't underflow, there needs to be more than 2 recovery owners to reach here.
             --recoveryOwnerCount;
         }
         emit RecoveryOwnerRemoved(recoveryOwnerToRemove);
@@ -189,6 +203,7 @@ contract SSR is ISSR, SelfAuthorized, Owner, Utils {
         if (recoveryOwners[prevRecoveryOwner] != oldRecoveryOwner) {
             revert SSR__swapRecoveryOwner__invalidPrevRecoveryOwner();
         }
+
         if (oldRecoveryOwner == pointer) {
             revert SSR__swapRecoveryOwner__invalidOldRecoveryOwner();
         }
@@ -208,26 +223,15 @@ contract SSR is ISSR, SelfAuthorized, Owner, Utils {
     }
 
     /**
-     * @return Array of the recovery owners in struct format 'RecoverySettings'.
+     * @param recoveryOwner Requested address.
+     * @return Boolean if the address is a recovery owner of the current wallet.
      */
-    function getRecoveryOwners() external view returns (address[] memory) {
-        address[] memory recoveryOwnersArray = new address[](recoveryOwnerCount);
-        address currentRecoveryOwner = recoveryOwners[pointer];
-
-        uint256 index;
-        while (currentRecoveryOwner != pointer) {
-            recoveryOwnersArray[index] = currentRecoveryOwner;
-            currentRecoveryOwner = recoveryOwners[currentRecoveryOwner];
-            unchecked {
-                //Even if it is a view function, we reduce gas costs if it is called by another contract.
-                ++index;
-            }
-        }
-        return recoveryOwnersArray;
+    function isRecoveryOwner(address recoveryOwner) external view returns (bool) {
+        return recoveryOwner != pointer && recoveryOwners[recoveryOwner] != address(0);
     }
 
     /**
-     * @return Array of guardians of this.
+     * @return Array of the guardians of this wallet.
      */
     function getGuardians() external view returns (address[] memory) {
         address[] memory guardiansArray = new address[](guardianCount);
@@ -243,6 +247,51 @@ contract SSR is ISSR, SelfAuthorized, Owner, Utils {
             }
         }
         return guardiansArray;
+    }
+
+    /**
+     * @return Array of the recovery owners of this wallet.
+     */
+    function getRecoveryOwners() external view returns (address[] memory) {
+        address[] memory recoveryOwnersArray = new address[](recoveryOwnerCount);
+        address currentRecoveryOwner = recoveryOwners[pointer];
+
+        uint256 index;
+        while (currentRecoveryOwner != pointer) {
+            recoveryOwnersArray[index] = currentRecoveryOwner;
+            currentRecoveryOwner = recoveryOwners[currentRecoveryOwner];
+            unchecked {
+                // Even if it is a view function, we reduce gas costs if it is called by another contract.
+                ++index;
+            }
+        }
+        return recoveryOwnersArray;
+    }
+
+    /**
+     * @dev Sets up the initial guardian configuration. Can only be called from the init function.
+     * @param _guardians Array of guardians.
+     */
+    function initGuardians(address[] calldata _guardians) internal {
+        uint256 guardiansLength = _guardians.length;
+        // There needs to be at least 2 guardians.
+        if (guardiansLength < 2) revert SSR__initGuardians__underflow();
+
+        address currentGuardian = pointer;
+
+        for (uint256 i = 0; i < guardiansLength; ) {
+            address guardian = _guardians[i];
+            unchecked {
+                // If this overflows, this bug would be the least of the problems ...
+                ++i;
+            }
+            guardians[currentGuardian] = guardian;
+            currentGuardian = guardian;
+            verifyNewRecoveryOwnerOrGuardian(guardian);
+        }
+
+        guardians[currentGuardian] = pointer;
+        guardianCount = guardiansLength;
     }
 
     /**
@@ -263,39 +312,13 @@ contract SSR is ISSR, SelfAuthorized, Owner, Utils {
             verifyNewRecoveryOwnerOrGuardian(recoveryOwner);
 
             unchecked {
-                // Won't overflow ...
+                // If this overflows, this bug would be the least of the problems ...
                 ++i;
             }
         }
 
         recoveryOwners[currentRecoveryOwner] = pointer;
         recoveryOwnerCount = recoveryOwnersLength;
-    }
-
-    /**
-     * @dev Sets up the initial guardian configuration. Can only be called from the init function.
-     * @param _guardians Array of guardians.
-     */
-    function initGuardians(address[] calldata _guardians) internal {
-        uint256 guardiansLength = _guardians.length;
-        // There needs to be at least 2 guardians.
-        if (guardiansLength < 2) revert SSR__initGuardians__underflow();
-
-        address currentGuardian = pointer;
-
-        for (uint256 i = 0; i < guardiansLength; ) {
-            address guardian = _guardians[i];
-            unchecked {
-                // Won't overflow...
-                ++i;
-            }
-            guardians[currentGuardian] = guardian;
-            currentGuardian = guardian;
-            verifyNewRecoveryOwnerOrGuardian(guardian);
-        }
-
-        guardians[currentGuardian] = pointer;
-        guardianCount = guardiansLength;
     }
 
     /**

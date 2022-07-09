@@ -30,9 +30,9 @@ interface ISSR {
     error SSR__addGuardian__invalidAddress();
 
     ///@dev removeGuardian() custom errors.
+    error SSR__removeGuardian__underflow();
     error SSR__removeGuardian__invalidAddress();
     error SSR__removeGuardian__incorrectPreviousGuardian();
-    error SSR__removeGuardian__underflow();
 
     ///@dev swapRecoveryOwner() custom errors.
     error SSR__swapGuardian__invalidPrevGuardian();
@@ -41,8 +41,10 @@ interface ISSR {
     ///@dev addRecoveryOwner() custom error.
     error SSR__addRecoveryOwner__invalidAddress();
 
-    ///@dev removeRecoveryOwner() custom error.
-    error SSR__removeRecoveryOwner__incorrectIndex();
+    ///@dev removeRecoveryOwner() custom errors.
+    error SSR__removeRecoveryOwner__underflow();
+    error SSR__removeRecoveryOwner__invalidAddress();
+    error SSR__removeRecoveryOwner__incorrectPreviousRecoveryOwner();
 
     ///@dev swapRecoveryOwner() custom errors.
     error SSR__swapRecoveryOwner__invalidPrevRecoveryOwner();
@@ -77,19 +79,19 @@ interface ISSR {
     function unlock() external;
 
     /**
-     * @dev Unlocks the wallet. Can only be called by the recovery owner + the owner.
+     * @dev Unlocks the wallet. Can only be called by the owner + a recovery owner.
      * This is to avoid the wallet being locked forever if a guardian misbehaves.
      * The guardians will be locked until the owner decides otherwise.
      */
     function recoveryUnlock() external;
 
     /**
-     * @dev Unlocks the guardians. This can only be called by the owner.
+     * @dev Unlocks the guardians. Can only be called by the owner.
      */
     function unlockGuardians() external;
 
     /**
-     * @dev Can only recover with the signature of the recovery owner and guardian.
+     * @dev Can only recover with the signature of a recovery owner and guardian.
      * @param newOwner The new owner address. This is generated instantaneously.
      */
     function recover(address newOwner) external;
@@ -122,14 +124,14 @@ interface ISSR {
     ) external;
 
     /**
-     * @dev Adds a new recovery owner to the chain list.
-     * @param newRecoveryOwner The address of the new recovery owner.
-     * @notice The new recovery owner will be added at the end of the chain.
+     * @dev Adds a recovery owner to the wallet.
+     * @param newRecoveryOwner Address of the new recovery owner.
+     * @notice Can only be called by the owner.
      */
     function addRecoveryOwner(address newRecoveryOwner) external;
 
     /**
-     * @dev Removes a guardian to the wallet.
+     * @dev Removes a recovery owner  to the wallet.
      * @param prevRecoveryOwner Address of the previous recovery owner in the linked list.
      * @param recoveryOwnerToRemove Address of the recovery owner to be removed.
      * @notice Can only be called by the owner.
@@ -155,12 +157,18 @@ interface ISSR {
     function isGuardian(address guardian) external view returns (bool);
 
     /**
-     * @return Array of the recovery owners in struct format 'RecoverySettings'.
+     * @param recoveryOwner Requested address.
+     * @return Boolean if the address is a recovery owner of the current wallet.
      */
-    function getRecoveryOwners() external view returns (address[] memory);
+    function isRecoveryOwner(address recoveryOwner) external view returns (bool);
 
     /**
-     * @return Array of guardians of this.
+     * @return Array of the guardians of this wallet.
      */
     function getGuardians() external view returns (address[] memory);
+
+    /**
+     * @return Array of the recovery owners of this wallet.
+     */
+    function getRecoveryOwners() external view returns (address[] memory);
 }

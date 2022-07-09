@@ -272,6 +272,9 @@ contract LaserWallet is Singleton, SSR, Handler, ILaserWallet {
         return keccak256(abi.encode(DOMAIN_SEPARATOR_TYPEHASH, getChainId(), address(this)));
     }
 
+    /**
+     * @dev Verifies that the transaction is correct (signatures match the parameters).
+     */
     function verifyTransaction(
         address to,
         uint256 value,

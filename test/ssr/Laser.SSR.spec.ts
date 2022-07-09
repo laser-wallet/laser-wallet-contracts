@@ -173,6 +173,16 @@ describe("Smart Social Recovery", () => {
         });
 
         describe("removeRecoveryOwner()", () => {
+            let randomAddress1: Address;
+            let randomAddress2: Address;
+            let randomAddress3: Address;
+
+            beforeEach(async () => {
+                randomAddress1 = ethers.Wallet.createRandom().address;
+                randomAddress2 = ethers.Wallet.createRandom().address;
+                randomAddress3 = ethers.Wallet.createRandom().address;
+            });
+
             it("should not allow to have less than 2 recovery owners", async () => {
                 const { address, wallet } = await walletSetup();
                 const tx = await generateTransaction();
@@ -192,9 +202,77 @@ describe("Smart Social Recovery", () => {
                 expect(transaction.events[0].event).to.equal("ExecFailure");
                 expect(JSON.stringify(recoveryOwners)).to.equal(JSON.stringify(await wallet.getRecoveryOwners()));
             });
+
+            it("should not allow to remove while providing an incorrect previous recovery owner", async () => {
+                const rOwners = [randomAddress1, randomAddress2, randomAddress3];
+                const { address, wallet } = await walletSetup(undefined, rOwners);
+                const tx = await generateTransaction();
+                const recoveryOwners = await wallet.getRecoveryOwners();
+                const prevRecoveryOwner = "0x0000000000000000000000000000000000000001";
+                const recoveryOwnerToRemove = recoveryOwners[1];
+                tx.to = address;
+                tx.callData = encodeFunctionData(abi, "removeRecoveryOwner", [
+                    prevRecoveryOwner,
+                    recoveryOwnerToRemove,
+                ]);
+                const hash = await getHash(wallet, tx);
+                const { ownerSigner } = await signersForTest();
+                tx.signatures = await sign(ownerSigner, hash);
+                await fundWallet(ownerSigner, address);
+                const transaction = await sendTx(wallet, tx);
+                expect(transaction.events[0].event).to.equal("ExecFailure");
+                expect(JSON.stringify(recoveryOwners)).to.equal(JSON.stringify(await wallet.getRecoveryOwners()));
+            });
+
+            it("should not allow to remove if provided with the pointer", async () => {
+                const rOwners = [randomAddress1, randomAddress2, randomAddress3];
+                const { address, wallet } = await walletSetup(undefined, rOwners);
+                const tx = await generateTransaction();
+                const recoveryOwners = await wallet.getRecoveryOwners();
+                const prevRecoveryOwner = recoveryOwners[0];
+                const recoveryOwnerToRemove = "0x0000000000000000000000000000000000000001";
+                tx.to = address;
+                tx.callData = encodeFunctionData(abi, "removeRecoveryOwner", [
+                    prevRecoveryOwner,
+                    recoveryOwnerToRemove,
+                ]);
+                const hash = await getHash(wallet, tx);
+                const { ownerSigner } = await signersForTest();
+                tx.signatures = await sign(ownerSigner, hash);
+                await fundWallet(ownerSigner, address);
+                const transaction = await sendTx(wallet, tx);
+                expect(transaction.events[0].event).to.equal("ExecFailure");
+                expect(JSON.stringify(recoveryOwners)).to.equal(JSON.stringify(await wallet.getRecoveryOwners()));
+            });
+
+            it("should remove a recovery owner", async () => {
+                const rOwners = [randomAddress1, randomAddress2, randomAddress3];
+                const { address, wallet } = await walletSetup(undefined, rOwners);
+                const tx = await generateTransaction();
+                const recoveryOwners = await wallet.getRecoveryOwners();
+                const prevRecoveryOwner = recoveryOwners[0];
+                const recoveryOwnerToRemove = recoveryOwners[1];
+                expect(await wallet.isRecoveryOwner(recoveryOwnerToRemove)).to.equal(true);
+                tx.to = address;
+                tx.callData = encodeFunctionData(abi, "removeRecoveryOwner", [
+                    prevRecoveryOwner,
+                    recoveryOwnerToRemove,
+                ]);
+                const hash = await getHash(wallet, tx);
+                const { ownerSigner } = await signersForTest();
+                tx.signatures = await sign(ownerSigner, hash);
+                await fundWallet(ownerSigner, address);
+                await sendTx(wallet, tx);
+
+                const postRecoveryOwners = await wallet.getRecoveryOwners();
+                expect(postRecoveryOwners.length).to.equal(2);
+                expect(await wallet.isRecoveryOwner(recoveryOwnerToRemove)).to.equal(false);
+            });
         });
 
-        describe("swapRecoveryOwner()", () => {});
+        describe("swapRecoveryOwner()", () => {
+            
+        });
     });
 
     describe("Guardians", () => {
@@ -313,7 +391,91 @@ describe("Smart Social Recovery", () => {
             });
         });
 
-        describe("removeGuardian()", () => {});
+        describe("removeGuardian()", () => {
+            let randomAddress1: Address;
+            let randomAddress2: Address;
+            let randomAddress3: Address;
+
+            beforeEach(async () => {
+                randomAddress1 = ethers.Wallet.createRandom().address;
+                randomAddress2 = ethers.Wallet.createRandom().address;
+                randomAddress3 = ethers.Wallet.createRandom().address;
+            });
+
+            it("should not allow to have less than 2 guardians", async () => {
+                const { address, wallet } = await walletSetup();
+                const tx = await generateTransaction();
+                const guardians = await wallet.getGuardians();
+                const prevGuardian = guardians[0];
+                const guardianToRemove = guardians[1];
+                tx.to = address;
+                tx.callData = encodeFunctionData(abi, "removeGuardian", [prevGuardian, guardianToRemove]);
+                const hash = await getHash(wallet, tx);
+                const { ownerSigner } = await signersForTest();
+                tx.signatures = await sign(ownerSigner, hash);
+                await fundWallet(ownerSigner, address);
+                const transaction = await sendTx(wallet, tx);
+                expect(transaction.events[0].event).to.equal("ExecFailure");
+                expect(JSON.stringify(guardians)).to.equal(JSON.stringify(await wallet.getGuardians()));
+            });
+
+            it("should not allow to remove while providing an incorrect previous guardian", async () => {
+                const _guardians = [randomAddress1, randomAddress2, randomAddress3];
+                const { address, wallet } = await walletSetup(undefined, undefined, _guardians);
+                const tx = await generateTransaction();
+                const guardians = await wallet.getGuardians();
+                const prevGuardian = "0x0000000000000000000000000000000000000001";
+                const guardianToRemove = guardians[1];
+                tx.to = address;
+                tx.callData = encodeFunctionData(abi, "removeGuardian", [prevGuardian, guardianToRemove]);
+                const hash = await getHash(wallet, tx);
+                const { ownerSigner } = await signersForTest();
+                tx.signatures = await sign(ownerSigner, hash);
+                await fundWallet(ownerSigner, address);
+                const transaction = await sendTx(wallet, tx);
+                expect(transaction.events[0].event).to.equal("ExecFailure");
+                expect(JSON.stringify(guardians)).to.equal(JSON.stringify(await wallet.getGuardians()));
+            });
+
+            it("should not allow to remove if provided with the pointer", async () => {
+                const _guardians = [randomAddress1, randomAddress2, randomAddress3];
+                const { address, wallet } = await walletSetup(undefined, _guardians);
+                const tx = await generateTransaction();
+                const guardians = await wallet.getGuardians();
+                const prevGuardian = guardians[0];
+                const guardianToRemove = "0x0000000000000000000000000000000000000001";
+                tx.to = address;
+                tx.callData = encodeFunctionData(abi, "removeGuardian", [prevGuardian, guardianToRemove]);
+                const hash = await getHash(wallet, tx);
+                const { ownerSigner } = await signersForTest();
+                tx.signatures = await sign(ownerSigner, hash);
+                await fundWallet(ownerSigner, address);
+                const transaction = await sendTx(wallet, tx);
+                expect(transaction.events[0].event).to.equal("ExecFailure");
+                expect(JSON.stringify(guardians)).to.equal(JSON.stringify(await wallet.getGuardians()));
+            });
+
+            it("should remove a guardian", async () => {
+                const _guardians = [randomAddress1, randomAddress2, randomAddress3];
+                const { address, wallet } = await walletSetup(undefined, undefined, _guardians);
+                const tx = await generateTransaction();
+                const guardians = await wallet.getGuardians();
+                const prevGuardian = guardians[0];
+                const guardianToRemove = guardians[1];
+                expect(await wallet.isGuardian(guardianToRemove)).to.equal(true);
+                tx.to = address;
+                tx.callData = encodeFunctionData(abi, "removeGuardian", [prevGuardian, guardianToRemove]);
+                const hash = await getHash(wallet, tx);
+                const { ownerSigner } = await signersForTest();
+                tx.signatures = await sign(ownerSigner, hash);
+                await fundWallet(ownerSigner, address);
+                await sendTx(wallet, tx);
+
+                const postGuardians = await wallet.getGuardians();
+                expect(postGuardians.length).to.equal(2);
+                expect(await wallet.isGuardian(guardianToRemove)).to.equal(false);
+            });
+        });
 
         describe("swapGuardian()", () => {});
     });
