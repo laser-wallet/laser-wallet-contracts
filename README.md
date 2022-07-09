@@ -1,25 +1,52 @@
 # Laser Wallet Contracts
 
-## Laser Wallet is a non-custodial smart contract wallet made for the EVM.
+## Laser is a non-custodial smart contract wallet made for the EVM.
 
 ### It implements the following features:
 
-### 1. Smart Social Recovery: A new recovery mechanism that abstracts away the seed phrase while remaining non-custodial. 
+#### 1. Smart Social Recovery: A new recovery mechanism that evolves from the traditional social recovery. It provides the same benefits --> abstracts away the seed phrase and implements guardians in case that the main device is lost. The main difference is that this mechanism is more bullet-proof in the sense that the guardians can never freeze or take the users funds.
 
-### 2. It is primarily made so the transactions are sent through a relayer, so it abstracts away the need to pay gas through an EOA.
+#### 2. It is primarily made so the transactions are sent through a relayer, so it abstracts away the need to pay gas through an EOA.
 
-## Acknowledgements
 
-### The design of the contracts were greatly inspired by Gnosis: https://github.com/safe-global/safe-contracts
 
-## Building in the Open 
+## Usage: 
 
-### Laser is commited to build in the open. Apart from the code being open sourced, all the everyday commits will be on public repos.
+### 1. Install the packages: 
+```
+npm i
+```
+
+### 2. Create a .env file and add environment variables
+
+
+### 3. Testing: 
+
+```
+npm run test
+```
+
+#### Apart from the conventional unit and integration tests, the contracts were also extensively tested with echidna, a propery-based smart contract fuzzer: https://github.com/crytic/echidna
+
+
+### 4. Deploy: 
+
+#### This command will deploy the contracts to the desired network, and verify them on Etherscan
+```
+npm run deploy-and-verify --network <network-name>
+```
+
+
+### The contracts are deployed deterministically, any minor change will output a different address
 
 ## License
 
-#### All the contracts are under the LGPL-3.0 License.
+### All the contracts are under the LGPL-3.0 License
+
+### Acknowledgements
+
+### The design of the contracts were greatly inspired by Gnosis Safe: https://github.com/safe-global/safe-contracts
 
 ## Open-source software
 
-#### We are strong believers of open-source software. 100% of Laser's code is open sourced.
+
