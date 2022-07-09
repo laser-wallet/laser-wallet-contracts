@@ -8,7 +8,7 @@ import "./ssr/SSR.sol";
 
 /**
  * @title LaserWallet - EVM based smart contract wallet. Implementes smart social recovery mechanism.
- * @author Rodrigo Herrera I. The contract design was greatly inspired on Gnosis:
+ * @author Rodrigo Herrera I.
  */
 contract LaserWallet is Singleton, SSR, Handler, ILaserWallet {
     string public constant VERSION = "1.0.0";
