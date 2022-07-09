@@ -1,22 +1,6 @@
 import { expect } from "chai";
 import { deployments, ethers } from "hardhat";
-import { Contract, Signer, Wallet } from "ethers";
-import {
-    walletSetup,
-    sign,
-    signTypedData,
-    generateTransaction,
-    addressesForTest,
-    signersForTest,
-    AddressesForTest,
-    encodeFunctionData,
-    getHash,
-    sendTx,
-    fundWallet,
-    lockWallet,
-} from "../utils";
-import { Address, Domain, Transaction } from "../types";
-import { addrZero } from "../constants/constants";
+import { walletSetup } from "../utils";
 
 describe("Testing with a lot of signers", () => {
     beforeEach(async () => {
@@ -80,7 +64,7 @@ describe("Testing with a lot of signers", () => {
 
     it("should init with 50 guardians", async () => {
         let guardians = [];
-        for (let i = 0; i < 10; i++) {
+        for (let i = 0; i < 50; i++) {
             const guardian = ethers.Wallet.createRandom().address;
             guardians.push(guardian);
         }
@@ -91,7 +75,7 @@ describe("Testing with a lot of signers", () => {
 
     it("should init with 100 guardians", async () => {
         let guardians = [];
-        for (let i = 0; i < 10; i++) {
+        for (let i = 0; i < 100; i++) {
             const guardian = ethers.Wallet.createRandom().address;
             guardians.push(guardian);
         }
@@ -102,7 +86,7 @@ describe("Testing with a lot of signers", () => {
 
     it("should init with 200 guardians", async () => {
         let guardians = [];
-        for (let i = 0; i < 10; i++) {
+        for (let i = 0; i < 200; i++) {
             const guardian = ethers.Wallet.createRandom().address;
             guardians.push(guardian);
         }
