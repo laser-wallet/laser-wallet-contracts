@@ -17,7 +17,7 @@ contract SSR is ISSR, SelfAuthorized, Owner, Utils {
     ///@dev pointer address for the nested mapping.
     address internal constant pointer = address(0x1);
 
-    uint256 internal recoveryOwnersCount;
+    uint256 internal recoveryOwnerCount;
 
     uint256 internal guardianCount;
 
@@ -157,7 +157,7 @@ contract SSR is ISSR, SelfAuthorized, Owner, Utils {
         verifyNewRecoveryOwnerOrGuardian(newRecoveryOwner);
         recoveryOwners[newRecoveryOwner] = recoveryOwners[pointer];
         unchecked {
-            ++recoveryOwnersCount;
+            ++recoveryOwnerCount;
         }
         emit NewRecoveryOwner(newRecoveryOwner);
     }
@@ -169,14 +169,14 @@ contract SSR is ISSR, SelfAuthorized, Owner, Utils {
      * @notice Can only be called by the owner.
      */
     function removeRecoveryOwner(address prevRecoveryOwner, address recoveryOwnerToRemove) external authorized {
-        if (recoveryOwnersCount - 1 < 2) {
+        if (recoveryOwnerCount - 1 < 2) {
             revert SSR__removeRecoveryOwner__incorrectIndex();
         }
         ///@todo Add checks.
         recoveryOwners[prevRecoveryOwner] = recoveryOwners[recoveryOwnerToRemove];
         recoveryOwners[recoveryOwnerToRemove] = address(0);
         unchecked {
-            --recoveryOwnersCount;
+            --recoveryOwnerCount;
         }
         emit RecoveryOwnerRemoved(recoveryOwnerToRemove);
     }
@@ -218,7 +218,7 @@ contract SSR is ISSR, SelfAuthorized, Owner, Utils {
      * @return Array of the recovery owners in struct format 'RecoverySettings'.
      */
     function getRecoveryOwners() external view returns (address[] memory) {
-        address[] memory recoveryOwnersArray = new address[](recoveryOwnersCount);
+        address[] memory recoveryOwnersArray = new address[](recoveryOwnerCount);
         address currentRecoveryOwner = recoveryOwners[pointer];
 
         uint256 index;
@@ -277,7 +277,7 @@ contract SSR is ISSR, SelfAuthorized, Owner, Utils {
         }
 
         recoveryOwners[currentRecoveryOwner] = pointer;
-        recoveryOwnersCount = recoveryOwnersLength;
+        recoveryOwnerCount = recoveryOwnersLength;
     }
 
     /**

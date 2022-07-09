@@ -13,7 +13,7 @@ contract LaserWalletStorage {
     address public owner;
 
     // ssr/SSR.sol
-    uint256 internal recoveryOwnersCount;
+    uint256 internal recoveryOwnerCount;
     uint256 internal guardianCount;
     uint256 public timeLock;
     bool public isLocked;
