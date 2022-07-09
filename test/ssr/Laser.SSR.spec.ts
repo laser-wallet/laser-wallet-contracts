@@ -13,16 +13,15 @@ import {
     getHash,
     sendTx,
     fundWallet,
-    lockWalelt,
+    lockWallet,
 } from "../utils";
 import { Address, Domain, Transaction } from "../types";
-import { addrZero, ownerWallet } from "../constants/constants";
+import { addrZero } from "../constants/constants";
 
 const { abi } = require("../../artifacts/contracts/LaserWallet.sol/LaserWallet.json");
 
-describe("Sovereign Social Recovery", () => {
+describe("Smart Social Recovery", () => {
     let addresses: AddressesForTest;
-    let ownerSiger: Signer;
 
     beforeEach(async () => {
         await deployments.fixture();
@@ -456,7 +455,7 @@ describe("Sovereign Social Recovery", () => {
                     await expect(sendTx(wallet, tx)).to.be.revertedWith("'LW__verifySignatures__notGuardian()'");
                 });
 
-                it("should not be allowed to be called by a recovery owner  + owner", async () => {
+                it("should not be allowed to be called by a recovery owner + owner", async () => {
                     const { address, wallet } = await walletSetup();
                     tx.to = address;
                     const { recoveryOwner1Signer, ownerSigner } = await signersForTest();
@@ -487,7 +486,7 @@ describe("Sovereign Social Recovery", () => {
                     tx.to = address;
                     const { guardian1Signer, ownerSigner } = await signersForTest();
                     await fundWallet(ownerSigner, address);
-                    await lockWalelt(wallet, guardian1Signer);
+                    await lockWallet(wallet, guardian1Signer);
                     // Wallet is locked.
                     expect(await wallet.isLocked()).to.equal(true);
 
@@ -499,6 +498,243 @@ describe("Sovereign Social Recovery", () => {
                     tx.signatures = ownerSig + guardianSig.slice(2);
                     await sendTx(wallet, tx);
                     expect(await wallet.isLocked()).to.equal(false);
+                });
+            });
+
+            describe("this.recoveryUnlock.selector", () => {
+                let callData: string;
+                let tx: Transaction;
+
+                beforeEach(async () => {
+                    callData = encodeFunctionData(abi, "recoveryUnlock", []);
+                    tx = await generateTransaction();
+                    tx.callData = callData;
+                });
+
+                it("should not be allowed to be called by the owner", async () => {
+                    const { address, wallet } = await walletSetup();
+                    tx.to = address;
+                    const hash = await getHash(wallet, tx);
+                    const { ownerSigner } = await signersForTest();
+                    tx.signatures = await sign(ownerSigner, hash);
+                    await fundWallet(ownerSigner, address);
+                    await expect(sendTx(wallet, tx)).to.be.revertedWith(
+                        "'LW__verifySignatures__invalidSignatureLength()'"
+                    );
+                });
+
+                it("should not be allowed to be called by any single signer", async () => {
+                    const { address, wallet } = await walletSetup();
+                    tx.to = address;
+                    const hash = await getHash(wallet, tx);
+                    const { ownerSigner } = await signersForTest();
+                    await fundWallet(ownerSigner, address);
+                    for (let i = 0; i < 10; i++) {
+                        const randomSigner = ethers.Wallet.createRandom();
+                        tx.signatures = await sign(randomSigner, hash);
+                        await expect(sendTx(wallet, tx)).to.be.revertedWith(
+                            "'LW__verifySignatures__invalidSignatureLength()'"
+                        );
+                    }
+                });
+
+                it("should not be allowed to be called by the owner + a guardian", async () => {
+                    const { address, wallet } = await walletSetup();
+                    tx.to = address;
+                    const { guardian1Signer, ownerSigner } = await signersForTest();
+                    await fundWallet(ownerSigner, address);
+
+                    const hash = await getHash(wallet, tx);
+                    const sig1 = await sign(ownerSigner, hash);
+                    const sig2 = await sign(guardian1Signer, hash);
+                    tx.signatures = sig1 + sig2.slice(2);
+                    await expect(sendTx(wallet, tx)).to.be.revertedWith(
+                        "'SSR__validateRecoveryOwner__notAuthorized()'"
+                    );
+                });
+
+                it("should not be allowed to be called by a recovery owner + owner (reverse order)", async () => {
+                    const { address, wallet } = await walletSetup();
+                    tx.to = address;
+                    const { recoveryOwner1Signer, ownerSigner } = await signersForTest();
+                    await fundWallet(ownerSigner, address);
+
+                    const hash = await getHash(wallet, tx);
+                    const sig1 = await sign(recoveryOwner1Signer, hash);
+                    const sig2 = await sign(ownerSigner, hash);
+                    tx.signatures = sig1 + sig2.slice(2);
+                    await expect(sendTx(wallet, tx)).to.be.revertedWith("'LW__verifySignatures__notOwner()'");
+                });
+
+                it("should not be allowed to be called by the guardian + owner", async () => {
+                    const { address, wallet } = await walletSetup();
+                    tx.to = address;
+                    const { guardian1Signer, ownerSigner } = await signersForTest();
+                    await fundWallet(ownerSigner, address);
+
+                    const hash = await getHash(wallet, tx);
+                    const sig1 = await sign(guardian1Signer, hash);
+                    const sig2 = await sign(ownerSigner, hash);
+                    tx.signatures = sig1 + sig2.slice(2);
+                    await expect(sendTx(wallet, tx)).to.be.revertedWith("'LW__verifySignatures__notOwner()'");
+                });
+
+                it("owner + recovery owner should be able to recovery unlock the wallet", async () => {
+                    const { address, wallet } = await walletSetup();
+                    tx.to = address;
+                    const { recoveryOwner1Signer, ownerSigner, guardian1Signer } = await signersForTest();
+                    await fundWallet(ownerSigner, address);
+                    // First we lock the wallet.
+                    await lockWallet(wallet, guardian1Signer);
+                    // Wallet is locked.
+                    expect(await wallet.isLocked()).to.equal(true);
+
+                    // Now we recovery unlock the wallet.
+                    tx.nonce = 1; // We increase the nonce to 1 (lock wallet was 0).
+                    const hash = await getHash(wallet, tx);
+                    const ownerSig = await sign(ownerSigner, hash);
+                    const recoveryOwnerSig = await sign(recoveryOwner1Signer, hash);
+                    tx.signatures = ownerSig + recoveryOwnerSig.slice(2);
+                    await sendTx(wallet, tx);
+
+                    // The wallet should be unlocked.
+                    expect(await wallet.isLocked()).to.equal(false);
+
+                    // The guardians should be locked.
+                    expect(await wallet.guardiansLocked()).to.equal(true);
+                });
+            });
+
+            describe("this.recover.selector", () => {
+                let callData: string;
+                let tx: Transaction;
+                let newOwner: Address;
+
+                beforeEach(async () => {
+                    newOwner = ethers.Wallet.createRandom().address;
+                    callData = encodeFunctionData(abi, "recover", [newOwner]);
+                    tx = await generateTransaction();
+                    tx.callData = callData;
+                });
+
+                it("should not be allowed to be called by the owner", async () => {
+                    const { address, wallet } = await walletSetup();
+                    tx.to = address;
+                    const hash = await getHash(wallet, tx);
+                    const { ownerSigner } = await signersForTest();
+                    tx.signatures = await sign(ownerSigner, hash);
+                    await fundWallet(ownerSigner, address);
+                    await expect(sendTx(wallet, tx)).to.be.revertedWith(
+                        "'LW__verifySignatures__invalidSignatureLength()'"
+                    );
+                });
+
+                it("should not be allowed to be called by any single signer", async () => {
+                    const { address, wallet } = await walletSetup();
+                    tx.to = address;
+                    const hash = await getHash(wallet, tx);
+                    const { ownerSigner } = await signersForTest();
+                    await fundWallet(ownerSigner, address);
+                    for (let i = 0; i < 10; i++) {
+                        const randomSigner = ethers.Wallet.createRandom();
+                        tx.signatures = await sign(randomSigner, hash);
+                        await expect(sendTx(wallet, tx)).to.be.revertedWith(
+                            "'LW__verifySignatures__invalidSignatureLength()'"
+                        );
+                    }
+                });
+
+                it("should not be allowed to be called by the owner + a guardian", async () => {
+                    const { address, wallet } = await walletSetup();
+                    tx.to = address;
+                    const { guardian1Signer, ownerSigner } = await signersForTest();
+                    await fundWallet(ownerSigner, address);
+
+                    const hash = await getHash(wallet, tx);
+                    const sig1 = await sign(ownerSigner, hash);
+                    const sig2 = await sign(guardian1Signer, hash);
+                    tx.signatures = sig1 + sig2.slice(2);
+                    await expect(sendTx(wallet, tx)).to.be.revertedWith(
+                        "'SSR__validateRecoveryOwner__notAuthorized()'"
+                    );
+                });
+
+                it("should not be allowed to be called by a recovery owner + owner", async () => {
+                    const { address, wallet } = await walletSetup();
+                    tx.to = address;
+                    const { recoveryOwner1Signer, ownerSigner } = await signersForTest();
+                    await fundWallet(ownerSigner, address);
+
+                    const hash = await getHash(wallet, tx);
+                    const sig1 = await sign(recoveryOwner1Signer, hash);
+                    const sig2 = await sign(ownerSigner, hash);
+                    tx.signatures = sig1 + sig2.slice(2);
+                    await expect(sendTx(wallet, tx)).to.be.revertedWith("'LW__verifySignatures__notGuardian()'");
+                });
+
+                it("should not be allowed to be called by the guardian + owner", async () => {
+                    const { address, wallet } = await walletSetup();
+                    tx.to = address;
+                    const { guardian1Signer, ownerSigner } = await signersForTest();
+                    await fundWallet(ownerSigner, address);
+
+                    const hash = await getHash(wallet, tx);
+                    const sig1 = await sign(guardian1Signer, hash);
+                    const sig2 = await sign(ownerSigner, hash);
+                    tx.signatures = sig1 + sig2.slice(2);
+                    await expect(sendTx(wallet, tx)).to.be.revertedWith(
+                        "'SSR__validateRecoveryOwner__notAuthorized()'"
+                    );
+                });
+
+                it("should not be allowed to be called by the guardian + recovery owner (reverse order)", async () => {
+                    const { address, wallet } = await walletSetup();
+                    tx.to = address;
+                    const { guardian1Signer, recoveryOwner1Signer } = await signersForTest();
+                    await fundWallet(recoveryOwner1Signer, address);
+
+                    const hash = await getHash(wallet, tx);
+                    const sig1 = await sign(guardian1Signer, hash);
+                    const sig2 = await sign(recoveryOwner1Signer, hash);
+                    tx.signatures = sig1 + sig2.slice(2);
+                    await expect(sendTx(wallet, tx)).to.be.revertedWith(
+                        "'SSR__validateRecoveryOwner__notAuthorized()'"
+                    );
+                });
+
+                it("recovery owner + guardian should be able to recover the wallet", async () => {
+                    const { address, wallet } = await walletSetup();
+                    tx.to = address;
+                    const { recoveryOwner1Signer, ownerSigner, guardian1Signer } = await signersForTest();
+                    await fundWallet(ownerSigner, address);
+                    // First we lock the wallet.
+                    await lockWallet(wallet, guardian1Signer);
+                    // Wallet is locked.
+                    expect(await wallet.isLocked()).to.equal(true);
+                    expect(Number(await wallet.timeLock())).to.be.greaterThan(0);
+
+                    // Now we recover the wallet and change the owner.
+                    tx.nonce = 1; // We increase the nonce to 1 (lock wallet was 0).
+                    const hash = await getHash(wallet, tx);
+                    const recoveryOwnerSig = await sign(recoveryOwner1Signer, hash);
+                    const guardianSig = await sign(guardian1Signer, hash);
+                    tx.signatures = recoveryOwnerSig + guardianSig.slice(2);
+
+                    // We check that the owner is the original address.
+                    const { owner } = await addressesForTest();
+                    expect(await wallet.owner()).to.equal(owner);
+
+                    // We send the transaction.
+                    await sendTx(wallet, tx);
+
+                    // The wallet should be unlocked.
+                    expect(await wallet.isLocked()).to.equal(false);
+
+                    // Timelock should be 0 again.
+                    expect(Number(await wallet.timeLock())).to.equal(0);
+
+                    // There should be a new owner.
+                    expect(await wallet.owner()).to.equal(newOwner);
                 });
             });
         });

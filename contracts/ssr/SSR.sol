@@ -52,7 +52,7 @@ contract SSR is ISSR, SelfAuthorized, Owner, Utils {
     }
 
     /**
-     * @dev Unlocks the wallet. Can only be called by a recovery owner + the owner.
+     * @dev Unlocks the wallet. Can only be called by the owner + a recovery owner.
      * This is to avoid the wallet being locked forever if a guardian misbehaves.
      * The guardians will be locked until the owner decides otherwise.
      */
@@ -75,6 +75,7 @@ contract SSR is ISSR, SelfAuthorized, Owner, Utils {
      */
     function recover(address newOwner) external authorized {
         timeLock = 0;
+        isLocked = false;
         owner = newOwner;
         emit WalletRecovered(newOwner);
     }
@@ -315,6 +316,7 @@ contract SSR is ISSR, SelfAuthorized, Owner, Utils {
         } else if (funcSelector == this.recoveryUnlock.selector) {
             // This is in case a guardian is misbehaving ...
 
+            //Only the owner + a recovery owner can trigger this ...
             return Access.OwnerAndRecoveryOwner;
         } else if (funcSelector == this.recover.selector) {
             // Only the recovery owner + the guardian can recover the wallet (change the owner keys) ...

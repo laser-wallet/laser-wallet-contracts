@@ -91,7 +91,7 @@ export async function fundWallet(sender: Signer, address: Address): Promise<void
     });
 }
 
-export async function lockWalelt(wallet: Contract, guardian: Signer) {
+export async function lockWallet(wallet: Contract, guardian: Signer) {
     const tx = await generateTransaction();
     tx.to = wallet.address;
     tx.callData = encodeFunctionData(abi, "lock", []);
