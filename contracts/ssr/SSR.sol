@@ -103,13 +103,9 @@ contract SSR is ISSR, SelfAuthorized, Owner, Utils {
      * @notice Can only be called by the owner.
      */
     function removeGuardian(address prevGuardian, address guardianToRemove) external authorized {
-        if (guardianToRemove == pointer) {
-            revert SSR__removeGuardian__invalidAddress();
-        }
+        if (guardianToRemove == pointer) revert SSR__removeGuardian__invalidAddress();
 
-        if (guardians[prevGuardian] != guardianToRemove) {
-            revert SSR__removeGuardian__incorrectPreviousGuardian();
-        }
+        if (guardians[prevGuardian] != guardianToRemove) revert SSR__removeGuardian__incorrectPreviousGuardian();
 
         // There needs to be at least 1 guardian ..
         if (guardianCount - 1 < 1) revert SSR__removeGuardian__underflow();
@@ -135,12 +131,9 @@ contract SSR is ISSR, SelfAuthorized, Owner, Utils {
         address oldGuardian
     ) external authorized {
         verifyNewRecoveryOwnerOrGuardian(newGuardian);
-        if (guardians[prevGuardian] != oldGuardian) {
-            revert SSR__swapGuardian__invalidPrevGuardian();
-        }
-        if (oldGuardian == pointer) {
-            revert SSR__swapGuardian__invalidOldGuardian();
-        }
+        if (guardians[prevGuardian] != oldGuardian) revert SSR__swapGuardian__invalidPrevGuardian();
+
+        if (oldGuardian == pointer) revert SSR__swapGuardian__invalidOldGuardian();
 
         guardians[newGuardian] = guardians[oldGuardian];
         guardians[prevGuardian] = newGuardian;
@@ -169,9 +162,8 @@ contract SSR is ISSR, SelfAuthorized, Owner, Utils {
      * @notice Can only be called by the owner.
      */
     function removeRecoveryOwner(address prevRecoveryOwner, address recoveryOwnerToRemove) external authorized {
-        if (recoveryOwnerCount - 1 < 2) {
-            revert SSR__removeRecoveryOwner__incorrectIndex();
-        }
+        if (recoveryOwnerCount - 1 < 2) revert SSR__removeRecoveryOwner__incorrectIndex();
+
         ///@todo Add checks.
         recoveryOwners[prevRecoveryOwner] = recoveryOwners[recoveryOwnerToRemove];
         recoveryOwners[recoveryOwnerToRemove] = address(0);
@@ -260,9 +252,8 @@ contract SSR is ISSR, SelfAuthorized, Owner, Utils {
     function initRecoveryOwners(address[] calldata _recoveryOwners) internal {
         uint256 recoveryOwnersLength = _recoveryOwners.length;
         // There needs to be at least 2 recovery owners.
-        if (recoveryOwnersLength < 2) {
-            revert SSR__initRecoveryOwners__underflow();
-        }
+        if (recoveryOwnersLength < 2) revert SSR__initRecoveryOwners__underflow();
+
         address currentRecoveryOwner = pointer;
         for (uint256 i = 0; i < recoveryOwnersLength; ) {
             address recoveryOwner = _recoveryOwners[i];

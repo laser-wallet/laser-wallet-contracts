@@ -19,9 +19,7 @@ contract Singleton is SelfAuthorized, ISingleton {
      * @param _singleton New implementation address.
      */
     function upgradeSingleton(address _singleton) external authorized {
-        if (_singleton == address(this)) {
-            revert Singleton__upgradeSingleton__incorrectAddress();
-        }
+        if (_singleton == address(this)) revert Singleton__upgradeSingleton__incorrectAddress();
 
         if (!IERC165(_singleton).supportsInterface(0xae029e0b)) {
             //bytes4(keccak256("I_AM_LASER")))
