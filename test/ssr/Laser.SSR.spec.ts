@@ -50,6 +50,228 @@ describe("Smart Social Recovery", () => {
         });
     });
 
+    describe("Guardians", () => {
+        describe("init()", () => {
+            it("should fail by providing one guardian", async () => {
+                const { owner, recoveryOwners } = addresses;
+                const guardian = ethers.Wallet.createRandom().address;
+                await expect(walletSetup(owner, recoveryOwners, [guardian])).to.be.reverted;
+            });
+
+            it("should fail by providing an invalid guardian", async () => {
+                const { owner, recoveryOwners, guardians } = addresses;
+                const Caller = await ethers.getContractFactory("Caller");
+                const caller = await Caller.deploy();
+                guardians[0] = caller.address;
+                await expect(walletSetup(owner, recoveryOwners, guardians)).to.be.reverted;
+            });
+
+            it("should fail by providing address 0", async () => {
+                const { owner, recoveryOwners, guardians } = addresses;
+                guardians[0] = addrZero;
+                await expect(walletSetup(owner, recoveryOwners, guardians)).to.be.reverted;
+            });
+
+            it("should fail by providing duplicate addresses", async () => {
+                const { owner, recoveryOwners, guardians } = addresses;
+                guardians[0] = guardians[1];
+                await expect(walletSetup(owner, recoveryOwners, guardians)).to.be.reverted;
+            });
+
+            it("should fail by providing the owner as guardian", async () => {
+                const { owner, recoveryOwners, guardians } = addresses;
+                guardians[0] = owner;
+                await expect(walletSetup(owner, recoveryOwners, guardians)).to.be.reverted;
+            });
+        });
+
+        describe("addGuardian()", () => {
+            it("should fail by providing address zero", async () => {
+                const { address, wallet } = await walletSetup();
+                const tx = await generateTransaction();
+                tx.to = address;
+                tx.callData = encodeFunctionData(abi, "addGuardian", [addrZero]);
+                const hash = await getHash(wallet, tx);
+                const { ownerSigner } = await signersForTest();
+                tx.signatures = await sign(ownerSigner, hash);
+                await fundWallet(ownerSigner, address);
+                const guardians = await wallet.getGuardians();
+                const transaction = await sendTx(wallet, tx);
+                expect(transaction.events[0].event).to.equal("ExecFailure");
+                expect(JSON.stringify(guardians)).to.equal(JSON.stringify(await wallet.getGuardians()));
+            });
+
+            it("should fail by providing a recovery owner", async () => {
+                const { address, wallet } = await walletSetup();
+                const tx = await generateTransaction();
+                const recoveryOwners = await wallet.getRecoveryOwners();
+                tx.to = address;
+                tx.callData = encodeFunctionData(abi, "addGuardian", [recoveryOwners[0]]);
+                const hash = await getHash(wallet, tx);
+                const { ownerSigner } = await signersForTest();
+                tx.signatures = await sign(ownerSigner, hash);
+                await fundWallet(ownerSigner, address);
+                const guardians = await wallet.getGuardians();
+                const transaction = await sendTx(wallet, tx);
+                expect(transaction.events[0].event).to.equal("ExecFailure");
+                expect(JSON.stringify(guardians)).to.equal(JSON.stringify(await wallet.getGuardians()));
+            });
+
+            it("should fail by providing a duplicate guardian", async () => {
+                const { address, wallet } = await walletSetup();
+                const tx = await generateTransaction();
+                const guardians = await wallet.getGuardians();
+                tx.to = address;
+                tx.callData = encodeFunctionData(abi, "addGuardian", [guardians[0]]);
+                const hash = await getHash(wallet, tx);
+                const { ownerSigner } = await signersForTest();
+                tx.signatures = await sign(ownerSigner, hash);
+                await fundWallet(ownerSigner, address);
+                const transaction = await sendTx(wallet, tx);
+                expect(transaction.events[0].event).to.equal("ExecFailure");
+                expect(JSON.stringify(guardians)).to.equal(JSON.stringify(await wallet.getGuardians()));
+            });
+
+            it("should fail by providing the owner", async () => {
+                const { address, wallet } = await walletSetup();
+                const tx = await generateTransaction();
+                const owner = await wallet.owner();
+                tx.to = address;
+                tx.callData = encodeFunctionData(abi, "addGuardian", [owner]);
+                const hash = await getHash(wallet, tx);
+                const { ownerSigner } = await signersForTest();
+                tx.signatures = await sign(ownerSigner, hash);
+                await fundWallet(ownerSigner, address);
+                const guardians = await wallet.getGuardians();
+                const transaction = await sendTx(wallet, tx);
+                expect(transaction.events[0].event).to.equal("ExecFailure");
+                expect(JSON.stringify(guardians)).to.equal(JSON.stringify(await wallet.getGuardians()));
+            });
+
+            it("should fail by providing a contract without 1271 support", async () => {
+                const { address, wallet } = await walletSetup();
+                const tx = await generateTransaction();
+                const Caller = await ethers.getContractFactory("Caller");
+                const caller = await Caller.deploy();
+                tx.to = address;
+                tx.callData = encodeFunctionData(abi, "addGuardian", [caller.address]);
+                const hash = await getHash(wallet, tx);
+                const { ownerSigner } = await signersForTest();
+                tx.signatures = await sign(ownerSigner, hash);
+                await fundWallet(ownerSigner, address);
+                const guardians = await wallet.getGuardians();
+                const transaction = await sendTx(wallet, tx);
+                expect(transaction.events[0].event).to.equal("ExecFailure");
+                expect(JSON.stringify(guardians)).to.equal(JSON.stringify(await wallet.getGuardians()));
+            });
+        });
+
+        describe("removeGuardian()", () => {
+            let randomAddress1: Address;
+            let randomAddress2: Address;
+            let randomAddress3: Address;
+
+            beforeEach(async () => {
+                randomAddress1 = ethers.Wallet.createRandom().address;
+                randomAddress2 = ethers.Wallet.createRandom().address;
+                randomAddress3 = ethers.Wallet.createRandom().address;
+            });
+
+            it("should not allow to have less than 2 guardians", async () => {
+                const { address, wallet } = await walletSetup();
+                const tx = await generateTransaction();
+                const guardians = await wallet.getGuardians();
+                const prevGuardian = guardians[0];
+                const guardianToRemove = guardians[1];
+                tx.to = address;
+                tx.callData = encodeFunctionData(abi, "removeGuardian", [prevGuardian, guardianToRemove]);
+                const hash = await getHash(wallet, tx);
+                const { ownerSigner } = await signersForTest();
+                tx.signatures = await sign(ownerSigner, hash);
+                await fundWallet(ownerSigner, address);
+                const transaction = await sendTx(wallet, tx);
+                expect(transaction.events[0].event).to.equal("ExecFailure");
+                expect(JSON.stringify(guardians)).to.equal(JSON.stringify(await wallet.getGuardians()));
+            });
+
+            it("should not allow to remove while providing an incorrect previous guardian", async () => {
+                const _guardians = [randomAddress1, randomAddress2, randomAddress3];
+                const { address, wallet } = await walletSetup(undefined, undefined, _guardians);
+                const tx = await generateTransaction();
+                const guardians = await wallet.getGuardians();
+                const prevGuardian = "0x0000000000000000000000000000000000000001";
+                const guardianToRemove = guardians[1];
+                tx.to = address;
+                tx.callData = encodeFunctionData(abi, "removeGuardian", [prevGuardian, guardianToRemove]);
+                const hash = await getHash(wallet, tx);
+                const { ownerSigner } = await signersForTest();
+                tx.signatures = await sign(ownerSigner, hash);
+                await fundWallet(ownerSigner, address);
+                const transaction = await sendTx(wallet, tx);
+                expect(transaction.events[0].event).to.equal("ExecFailure");
+                expect(JSON.stringify(guardians)).to.equal(JSON.stringify(await wallet.getGuardians()));
+            });
+
+            it("should not allow to remove if provided with the pointer", async () => {
+                const _guardians = [randomAddress1, randomAddress2, randomAddress3];
+                const { address, wallet } = await walletSetup(undefined, _guardians);
+                const tx = await generateTransaction();
+                const guardians = await wallet.getGuardians();
+                const prevGuardian = guardians[0];
+                const guardianToRemove = "0x0000000000000000000000000000000000000001";
+                tx.to = address;
+                tx.callData = encodeFunctionData(abi, "removeGuardian", [prevGuardian, guardianToRemove]);
+                const hash = await getHash(wallet, tx);
+                const { ownerSigner } = await signersForTest();
+                tx.signatures = await sign(ownerSigner, hash);
+                await fundWallet(ownerSigner, address);
+                const transaction = await sendTx(wallet, tx);
+                expect(transaction.events[0].event).to.equal("ExecFailure");
+                expect(JSON.stringify(guardians)).to.equal(JSON.stringify(await wallet.getGuardians()));
+            });
+
+            it("should remove a guardian", async () => {
+                const _guardians = [randomAddress1, randomAddress2, randomAddress3];
+                const { address, wallet } = await walletSetup(undefined, undefined, _guardians);
+                const tx = await generateTransaction();
+                const guardians = await wallet.getGuardians();
+                const prevGuardian = guardians[0];
+                const guardianToRemove = guardians[1];
+                expect(await wallet.isGuardian(guardianToRemove)).to.equal(true);
+                tx.to = address;
+                tx.callData = encodeFunctionData(abi, "removeGuardian", [prevGuardian, guardianToRemove]);
+                const hash = await getHash(wallet, tx);
+                const { ownerSigner } = await signersForTest();
+                tx.signatures = await sign(ownerSigner, hash);
+                await fundWallet(ownerSigner, address);
+                await sendTx(wallet, tx);
+
+                const postGuardians = await wallet.getGuardians();
+                expect(postGuardians.length).to.equal(2);
+                expect(await wallet.isGuardian(guardianToRemove)).to.equal(false);
+            });
+        });
+
+        describe("swapGuardian()", () => {
+            it("should fail by providing an incorrect previous guardian", async () => {
+                const { address, wallet } = await walletSetup();
+                const tx = await generateTransaction();
+                const guardians = await wallet.getGuardians();
+                const prevGuardian = "0x0000000000000000000000000000000000000001";
+                const guardianToRemove = guardians[1];
+                tx.to = address;
+                tx.callData = encodeFunctionData(abi, "removeGuardian", [prevGuardian, guardianToRemove]);
+                const hash = await getHash(wallet, tx);
+                const { ownerSigner } = await signersForTest();
+                tx.signatures = await sign(ownerSigner, hash);
+                await fundWallet(ownerSigner, address);
+                const transaction = await sendTx(wallet, tx);
+                expect(transaction.events[0].event).to.equal("ExecFailure");
+                expect(JSON.stringify(guardians)).to.equal(JSON.stringify(await wallet.getGuardians()));
+            });
+        });
+    });
+
     describe("Recovery Owners", () => {
         describe("init()", () => {
             it("should fail by providing one recovery owner", async () => {
@@ -270,214 +492,7 @@ describe("Smart Social Recovery", () => {
             });
         });
 
-        describe("swapRecoveryOwner()", () => {
-            
-        });
-    });
-
-    describe("Guardians", () => {
-        describe("init()", () => {
-            it("should fail by providing one guardian", async () => {
-                const { owner, recoveryOwners } = addresses;
-                const guardian = ethers.Wallet.createRandom().address;
-                await expect(walletSetup(owner, recoveryOwners, [guardian])).to.be.reverted;
-            });
-
-            it("should fail by providing an invalid guardian", async () => {
-                const { owner, recoveryOwners, guardians } = addresses;
-                const Caller = await ethers.getContractFactory("Caller");
-                const caller = await Caller.deploy();
-                guardians[0] = caller.address;
-                await expect(walletSetup(owner, recoveryOwners, guardians)).to.be.reverted;
-            });
-
-            it("should fail by providing address 0", async () => {
-                const { owner, recoveryOwners, guardians } = addresses;
-                guardians[0] = addrZero;
-                await expect(walletSetup(owner, recoveryOwners, guardians)).to.be.reverted;
-            });
-
-            it("should fail by providing duplicate addresses", async () => {
-                const { owner, recoveryOwners, guardians } = addresses;
-                guardians[0] = guardians[1];
-                await expect(walletSetup(owner, recoveryOwners, guardians)).to.be.reverted;
-            });
-
-            it("should fail by providing the owner as guardian", async () => {
-                const { owner, recoveryOwners, guardians } = addresses;
-                guardians[0] = owner;
-                await expect(walletSetup(owner, recoveryOwners, guardians)).to.be.reverted;
-            });
-        });
-
-        describe("addGuardian()", () => {
-            it("should fail by providing address zero", async () => {
-                const { address, wallet } = await walletSetup();
-                const tx = await generateTransaction();
-                tx.to = address;
-                tx.callData = encodeFunctionData(abi, "addGuardian", [addrZero]);
-                const hash = await getHash(wallet, tx);
-                const { ownerSigner } = await signersForTest();
-                tx.signatures = await sign(ownerSigner, hash);
-                await fundWallet(ownerSigner, address);
-                const guardians = await wallet.getGuardians();
-                const transaction = await sendTx(wallet, tx);
-                expect(transaction.events[0].event).to.equal("ExecFailure");
-                expect(JSON.stringify(guardians)).to.equal(JSON.stringify(await wallet.getGuardians()));
-            });
-
-            it("should fail by providing a recovery owner", async () => {
-                const { address, wallet } = await walletSetup();
-                const tx = await generateTransaction();
-                const recoveryOwners = await wallet.getRecoveryOwners();
-                tx.to = address;
-                tx.callData = encodeFunctionData(abi, "addGuardian", [recoveryOwners[0]]);
-                const hash = await getHash(wallet, tx);
-                const { ownerSigner } = await signersForTest();
-                tx.signatures = await sign(ownerSigner, hash);
-                await fundWallet(ownerSigner, address);
-                const guardians = await wallet.getGuardians();
-                const transaction = await sendTx(wallet, tx);
-                expect(transaction.events[0].event).to.equal("ExecFailure");
-                expect(JSON.stringify(guardians)).to.equal(JSON.stringify(await wallet.getGuardians()));
-            });
-
-            it("should fail by providing a duplicate guardian", async () => {
-                const { address, wallet } = await walletSetup();
-                const tx = await generateTransaction();
-                const guardians = await wallet.getGuardians();
-                tx.to = address;
-                tx.callData = encodeFunctionData(abi, "addGuardian", [guardians[0]]);
-                const hash = await getHash(wallet, tx);
-                const { ownerSigner } = await signersForTest();
-                tx.signatures = await sign(ownerSigner, hash);
-                await fundWallet(ownerSigner, address);
-                const transaction = await sendTx(wallet, tx);
-                expect(transaction.events[0].event).to.equal("ExecFailure");
-                expect(JSON.stringify(guardians)).to.equal(JSON.stringify(await wallet.getGuardians()));
-            });
-
-            it("should fail by providing the owner", async () => {
-                const { address, wallet } = await walletSetup();
-                const tx = await generateTransaction();
-                const owner = await wallet.owner();
-                tx.to = address;
-                tx.callData = encodeFunctionData(abi, "addGuardian", [owner]);
-                const hash = await getHash(wallet, tx);
-                const { ownerSigner } = await signersForTest();
-                tx.signatures = await sign(ownerSigner, hash);
-                await fundWallet(ownerSigner, address);
-                const guardians = await wallet.getGuardians();
-                const transaction = await sendTx(wallet, tx);
-                expect(transaction.events[0].event).to.equal("ExecFailure");
-                expect(JSON.stringify(guardians)).to.equal(JSON.stringify(await wallet.getGuardians()));
-            });
-
-            it("should fail by providing a contract without 1271 support", async () => {
-                const { address, wallet } = await walletSetup();
-                const tx = await generateTransaction();
-                const Caller = await ethers.getContractFactory("Caller");
-                const caller = await Caller.deploy();
-                tx.to = address;
-                tx.callData = encodeFunctionData(abi, "addGuardian", [caller.address]);
-                const hash = await getHash(wallet, tx);
-                const { ownerSigner } = await signersForTest();
-                tx.signatures = await sign(ownerSigner, hash);
-                await fundWallet(ownerSigner, address);
-                const guardians = await wallet.getGuardians();
-                const transaction = await sendTx(wallet, tx);
-                expect(transaction.events[0].event).to.equal("ExecFailure");
-                expect(JSON.stringify(guardians)).to.equal(JSON.stringify(await wallet.getGuardians()));
-            });
-        });
-
-        describe("removeGuardian()", () => {
-            let randomAddress1: Address;
-            let randomAddress2: Address;
-            let randomAddress3: Address;
-
-            beforeEach(async () => {
-                randomAddress1 = ethers.Wallet.createRandom().address;
-                randomAddress2 = ethers.Wallet.createRandom().address;
-                randomAddress3 = ethers.Wallet.createRandom().address;
-            });
-
-            it("should not allow to have less than 2 guardians", async () => {
-                const { address, wallet } = await walletSetup();
-                const tx = await generateTransaction();
-                const guardians = await wallet.getGuardians();
-                const prevGuardian = guardians[0];
-                const guardianToRemove = guardians[1];
-                tx.to = address;
-                tx.callData = encodeFunctionData(abi, "removeGuardian", [prevGuardian, guardianToRemove]);
-                const hash = await getHash(wallet, tx);
-                const { ownerSigner } = await signersForTest();
-                tx.signatures = await sign(ownerSigner, hash);
-                await fundWallet(ownerSigner, address);
-                const transaction = await sendTx(wallet, tx);
-                expect(transaction.events[0].event).to.equal("ExecFailure");
-                expect(JSON.stringify(guardians)).to.equal(JSON.stringify(await wallet.getGuardians()));
-            });
-
-            it("should not allow to remove while providing an incorrect previous guardian", async () => {
-                const _guardians = [randomAddress1, randomAddress2, randomAddress3];
-                const { address, wallet } = await walletSetup(undefined, undefined, _guardians);
-                const tx = await generateTransaction();
-                const guardians = await wallet.getGuardians();
-                const prevGuardian = "0x0000000000000000000000000000000000000001";
-                const guardianToRemove = guardians[1];
-                tx.to = address;
-                tx.callData = encodeFunctionData(abi, "removeGuardian", [prevGuardian, guardianToRemove]);
-                const hash = await getHash(wallet, tx);
-                const { ownerSigner } = await signersForTest();
-                tx.signatures = await sign(ownerSigner, hash);
-                await fundWallet(ownerSigner, address);
-                const transaction = await sendTx(wallet, tx);
-                expect(transaction.events[0].event).to.equal("ExecFailure");
-                expect(JSON.stringify(guardians)).to.equal(JSON.stringify(await wallet.getGuardians()));
-            });
-
-            it("should not allow to remove if provided with the pointer", async () => {
-                const _guardians = [randomAddress1, randomAddress2, randomAddress3];
-                const { address, wallet } = await walletSetup(undefined, _guardians);
-                const tx = await generateTransaction();
-                const guardians = await wallet.getGuardians();
-                const prevGuardian = guardians[0];
-                const guardianToRemove = "0x0000000000000000000000000000000000000001";
-                tx.to = address;
-                tx.callData = encodeFunctionData(abi, "removeGuardian", [prevGuardian, guardianToRemove]);
-                const hash = await getHash(wallet, tx);
-                const { ownerSigner } = await signersForTest();
-                tx.signatures = await sign(ownerSigner, hash);
-                await fundWallet(ownerSigner, address);
-                const transaction = await sendTx(wallet, tx);
-                expect(transaction.events[0].event).to.equal("ExecFailure");
-                expect(JSON.stringify(guardians)).to.equal(JSON.stringify(await wallet.getGuardians()));
-            });
-
-            it("should remove a guardian", async () => {
-                const _guardians = [randomAddress1, randomAddress2, randomAddress3];
-                const { address, wallet } = await walletSetup(undefined, undefined, _guardians);
-                const tx = await generateTransaction();
-                const guardians = await wallet.getGuardians();
-                const prevGuardian = guardians[0];
-                const guardianToRemove = guardians[1];
-                expect(await wallet.isGuardian(guardianToRemove)).to.equal(true);
-                tx.to = address;
-                tx.callData = encodeFunctionData(abi, "removeGuardian", [prevGuardian, guardianToRemove]);
-                const hash = await getHash(wallet, tx);
-                const { ownerSigner } = await signersForTest();
-                tx.signatures = await sign(ownerSigner, hash);
-                await fundWallet(ownerSigner, address);
-                await sendTx(wallet, tx);
-
-                const postGuardians = await wallet.getGuardians();
-                expect(postGuardians.length).to.equal(2);
-                expect(await wallet.isGuardian(guardianToRemove)).to.equal(false);
-            });
-        });
-
-        describe("swapGuardian()", () => {});
+        describe("swapRecoveryOwner()", () => {});
     });
 
     describe("SSR in action", () => {

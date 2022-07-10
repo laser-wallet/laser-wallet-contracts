@@ -102,7 +102,7 @@ describe("Owner", () => {
             tx.signatures = await sign(ownerSigner, hash);
             await fundWallet(ownerSigner, address);
             await sendTx(wallet, tx);
-            // expect(await wallet.owner()).to.equal(newOwner);
+            expect(await wallet.owner()).to.equal(newOwner);
         });
 
         it("should change the owner and emit event", async () => {});
