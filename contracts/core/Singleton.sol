@@ -25,7 +25,10 @@ contract Singleton is SelfAuthorized, ISingleton {
             //bytes4(keccak256("I_AM_LASER")))
             revert Singleton__upgradeSingleton__notLaser();
         } else {
-            singleton = _singleton;
+            assembly {
+                // We store the singleton at storage slot 0 through inline assembly to save some gas and to be very explicit about slot positions.
+                sstore(0, _singleton)
+            }
             emit SingletonChanged(_singleton);
         }
     }

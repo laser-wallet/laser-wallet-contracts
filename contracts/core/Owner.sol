@@ -9,7 +9,7 @@ import "./SelfAuthorized.sol";
  * @notice Handles the owners addresses.
  */
 contract Owner is IOwner, SelfAuthorized {
-    ///@dev owner should always bet at storage slot 2.
+    ///@dev owner should always bet at storage slot 1.
     address public owner;
 
     /**
@@ -20,7 +20,10 @@ contract Owner is IOwner, SelfAuthorized {
         if (newOwner.code.length != 0 || newOwner == address(0) || newOwner == owner) {
             revert Owner__changeOwner__invalidOwnerAddress();
         }
-        owner = newOwner;
+        assembly {
+            // We store the owner at storage slot 1 through inline assembly to save some gas and to be very explicit about slot positions.
+            sstore(1, newOwner)
+        }
         emit OwnerChanged(newOwner);
     }
 
@@ -29,10 +32,14 @@ contract Owner is IOwner, SelfAuthorized {
      * @param _owner The owner of the wallet.
      */
     function initOwner(address _owner) internal {
-        // If owner is not address 0, the wallet was already initialized...
+        // If owner is not address 0, the wallet was already initialized ...
         if (owner != address(0)) revert Owner__initOwner__walletInitialized();
+
         if (_owner.code.length != 0) revert Owner__initOwner__invalidOwnerAddress();
 
-        owner = _owner;
+        assembly {
+            // We store the owner at storage slot 1 through inline assembly to save some gas and to be very explicit about slot positions.
+            sstore(1, _owner)
+        }
     }
 }
