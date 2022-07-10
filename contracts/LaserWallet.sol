@@ -96,7 +96,7 @@ contract LaserWallet is ILaserWallet, Singleton, SSR, Handler {
             // We refund the relayer ...
             bool success = _call(relayer == address(0) ? tx.origin : relayer, refundAmount, new bytes(0), gasleft());
 
-            // If the transaction returns false, we revert ..
+            // If the transaction returns false, we revert ...
             if (!success) revert LW__exec__refundFailure();
         }
 

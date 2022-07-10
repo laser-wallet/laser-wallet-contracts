@@ -253,14 +253,21 @@ describe("Smart Social Recovery", () => {
         });
 
         describe("swapGuardian()", () => {
+            let newGuardian: Address;
+            let tx: Transaction;
+
+            beforeEach(async () => {
+                tx = await generateTransaction();
+                newGuardian = ethers.Wallet.createRandom().address;
+            });
+
             it("should fail by providing an incorrect previous guardian", async () => {
                 const { address, wallet } = await walletSetup();
-                const tx = await generateTransaction();
                 const guardians = await wallet.getGuardians();
                 const prevGuardian = "0x0000000000000000000000000000000000000001";
-                const guardianToRemove = guardians[1];
+                const oldGuardian = guardians[1];
                 tx.to = address;
-                tx.callData = encodeFunctionData(abi, "removeGuardian", [prevGuardian, guardianToRemove]);
+                tx.callData = encodeFunctionData(abi, "swapGuardian", [prevGuardian, newGuardian, oldGuardian]);
                 const hash = await getHash(wallet, tx);
                 const { ownerSigner } = await signersForTest();
                 tx.signatures = await sign(ownerSigner, hash);
@@ -268,6 +275,104 @@ describe("Smart Social Recovery", () => {
                 const transaction = await sendTx(wallet, tx);
                 expect(transaction.events[0].event).to.equal("ExecFailure");
                 expect(JSON.stringify(guardians)).to.equal(JSON.stringify(await wallet.getGuardians()));
+            });
+
+            it("should fail by providing the pointer as old guardian", async () => {
+                const { address, wallet } = await walletSetup();
+                const guardians = await wallet.getGuardians();
+                const prevGuardian = guardians[1];
+                const oldGuardian = "0x0000000000000000000000000000000000000001";
+                tx.to = address;
+                tx.callData = encodeFunctionData(abi, "swapGuardian", [prevGuardian, newGuardian, oldGuardian]);
+                const hash = await getHash(wallet, tx);
+                const { ownerSigner } = await signersForTest();
+                tx.signatures = await sign(ownerSigner, hash);
+                await fundWallet(ownerSigner, address);
+                const transaction = await sendTx(wallet, tx);
+                expect(transaction.events[0].event).to.equal("ExecFailure");
+                expect(JSON.stringify(guardians)).to.equal(JSON.stringify(await wallet.getGuardians()));
+            });
+
+            it("should fail if a guardian tries to swap a guardian", async () => {
+                const { address, wallet } = await walletSetup();
+                const guardians = await wallet.getGuardians();
+                const prevGuardian = guardians[0];
+                const oldGuardian = guardians[1];
+                tx.to = address;
+                tx.callData = encodeFunctionData(abi, "swapGuardian", [prevGuardian, newGuardian, oldGuardian]);
+                const hash = await getHash(wallet, tx);
+                const { guardian1Signer } = await signersForTest();
+                tx.signatures = await sign(guardian1Signer, hash);
+                await fundWallet(guardian1Signer, address);
+                await expect(sendTx(wallet, tx)).to.be.revertedWith("'LW__verifySignatures__notOwner()'");
+            });
+
+            it("should fail if a recovery owner tries to swap a guardian", async () => {
+                const { address, wallet } = await walletSetup();
+                const guardians = await wallet.getGuardians();
+                const prevGuardian = guardians[0];
+                const oldGuardian = guardians[1];
+                tx.to = address;
+                tx.callData = encodeFunctionData(abi, "swapGuardian", [prevGuardian, newGuardian, oldGuardian]);
+                const hash = await getHash(wallet, tx);
+                const { recoveryOwner1Signer } = await signersForTest();
+                tx.signatures = await sign(recoveryOwner1Signer, hash);
+                await fundWallet(recoveryOwner1Signer, address);
+                await expect(sendTx(wallet, tx)).to.be.revertedWith("'LW__verifySignatures__notOwner()'");
+            });
+
+            it("should fail if random signers try to swap a guardian", async () => {
+                const { address, wallet } = await walletSetup();
+                const guardians = await wallet.getGuardians();
+                const prevGuardian = guardians[0];
+                const oldGuardian = guardians[1];
+                tx.to = address;
+                tx.callData = encodeFunctionData(abi, "swapGuardian", [prevGuardian, newGuardian, oldGuardian]);
+                const hash = await getHash(wallet, tx);
+                const { recoveryOwner1Signer } = await signersForTest();
+
+                await fundWallet(recoveryOwner1Signer, address);
+                for (let i = 0; i < 10; i++) {
+                    const signer = ethers.Wallet.createRandom();
+                    tx.signatures = await sign(signer, hash);
+                    await expect(sendTx(wallet, tx)).to.be.revertedWith("'LW__verifySignatures__notOwner()'");
+                }
+            });
+
+            it("should swap a guardian", async () => {
+                const { address, wallet } = await walletSetup();
+
+                // newGuardian is not yet on the wallet.
+                expect(await wallet.isGuardian(newGuardian)).to.equal(false);
+
+                const guardians = await wallet.getGuardians();
+                const prevGuardian = guardians[0];
+
+                const oldGuardian = guardians[1];
+
+                // We confirm that the old guardian is a guardian.
+                expect(await wallet.isGuardian(oldGuardian)).to.equal(true);
+
+                tx.to = address;
+                tx.callData = encodeFunctionData(abi, "swapGuardian", [prevGuardian, newGuardian, oldGuardian]);
+                const hash = await getHash(wallet, tx);
+                const { ownerSigner } = await signersForTest();
+                tx.signatures = await sign(ownerSigner, hash);
+                await fundWallet(ownerSigner, address);
+
+                // We send the transaction.
+                await sendTx(wallet, tx);
+
+                // new guardian is added.
+                expect(await wallet.isGuardian(newGuardian)).to.equal(true);
+
+                // old guardian is removed.
+                expect(await wallet.isGuardian(oldGuardian)).to.equal(false);
+
+                const postGuardians = await wallet.getGuardians();
+
+                // new guardians should be on the same index.
+                expect(postGuardians[1]).to.equal(newGuardian);
             });
         });
     });
@@ -492,7 +597,152 @@ describe("Smart Social Recovery", () => {
             });
         });
 
-        describe("swapRecoveryOwner()", () => {});
+        describe("swapRecoveryOwner()", () => {
+            let newRecoveryOwner: Address;
+            let tx: Transaction;
+
+            beforeEach(async () => {
+                tx = await generateTransaction();
+                newRecoveryOwner = ethers.Wallet.createRandom().address;
+            });
+
+            it("should fail by providing an incorrect previous recovery owner", async () => {
+                const { address, wallet } = await walletSetup();
+                const recoveryowners = await wallet.getRecoveryOwners();
+                const prevRecoveryOwner = "0x0000000000000000000000000000000000000001";
+                const oldRecoveryOwner = recoveryowners[1];
+                tx.to = address;
+                tx.callData = encodeFunctionData(abi, "swapRecoveryOwner", [
+                    prevRecoveryOwner,
+                    newRecoveryOwner,
+                    oldRecoveryOwner,
+                ]);
+                const hash = await getHash(wallet, tx);
+                const { ownerSigner } = await signersForTest();
+                tx.signatures = await sign(ownerSigner, hash);
+                await fundWallet(ownerSigner, address);
+                const transaction = await sendTx(wallet, tx);
+                expect(transaction.events[0].event).to.equal("ExecFailure");
+                expect(JSON.stringify(recoveryowners)).to.equal(JSON.stringify(await wallet.getRecoveryOwners()));
+            });
+
+            it("should fail by providing the pointer as old recovery owner", async () => {
+                const { address, wallet } = await walletSetup();
+                const recoveryOwners = await wallet.getRecoveryOwners();
+                const prevRecoveryOwner = recoveryOwners[1];
+                const oldRecoveryOwner = "0x0000000000000000000000000000000000000001";
+                tx.to = address;
+                tx.callData = encodeFunctionData(abi, "swapRecoveryOwner", [
+                    prevRecoveryOwner,
+                    newRecoveryOwner,
+                    oldRecoveryOwner,
+                ]);
+                const hash = await getHash(wallet, tx);
+                const { ownerSigner } = await signersForTest();
+                tx.signatures = await sign(ownerSigner, hash);
+                await fundWallet(ownerSigner, address);
+                const transaction = await sendTx(wallet, tx);
+                expect(transaction.events[0].event).to.equal("ExecFailure");
+                expect(JSON.stringify(recoveryOwners)).to.equal(JSON.stringify(await wallet.getRecoveryOwners()));
+            });
+
+            it("should fail if a recovery owner tries to swap a recovery owner", async () => {
+                const { address, wallet } = await walletSetup();
+                const recoveryOwners = await wallet.getRecoveryOwners();
+                const prevRecoveryOwner = recoveryOwners[0];
+                const oldRecoveryOwner = recoveryOwners[1];
+                tx.to = address;
+                tx.callData = encodeFunctionData(abi, "swapRecoveryOwner", [
+                    prevRecoveryOwner,
+                    newRecoveryOwner,
+                    oldRecoveryOwner,
+                ]);
+                const hash = await getHash(wallet, tx);
+                const { recoveryOwner1Signer } = await signersForTest();
+                tx.signatures = await sign(recoveryOwner1Signer, hash);
+                await fundWallet(recoveryOwner1Signer, address);
+                await expect(sendTx(wallet, tx)).to.be.revertedWith("'LW__verifySignatures__notOwner()'");
+            });
+
+            it("should fail if a guardian tries to swap a recovery owner", async () => {
+                const { address, wallet } = await walletSetup();
+                const recoveryOwners = await wallet.getRecoveryOwners();
+                const prevRecoveryOwner = recoveryOwners[0];
+                const oldRecoveryOwner = recoveryOwners[1];
+                tx.to = address;
+                tx.callData = encodeFunctionData(abi, "swapRecoveryOwner", [
+                    prevRecoveryOwner,
+                    newRecoveryOwner,
+                    oldRecoveryOwner,
+                ]);
+                const hash = await getHash(wallet, tx);
+                const { guardian1Signer } = await signersForTest();
+                tx.signatures = await sign(guardian1Signer, hash);
+                await fundWallet(guardian1Signer, address);
+                await expect(sendTx(wallet, tx)).to.be.revertedWith("'LW__verifySignatures__notOwner()'");
+            });
+
+            it("should fail if random signers try to swap a recovery owner", async () => {
+                const { address, wallet } = await walletSetup();
+                const recoveryOwners = await wallet.getRecoveryOwners();
+                const prevRecoveryOwner = recoveryOwners[0];
+                const oldRecoveryOwner = recoveryOwners[1];
+                tx.to = address;
+                tx.callData = encodeFunctionData(abi, "swapRecoveryOwner", [
+                    prevRecoveryOwner,
+                    newRecoveryOwner,
+                    oldRecoveryOwner,
+                ]);
+                const hash = await getHash(wallet, tx);
+                const { recoveryOwner1Signer } = await signersForTest();
+
+                await fundWallet(recoveryOwner1Signer, address);
+                for (let i = 0; i < 10; i++) {
+                    const signer = ethers.Wallet.createRandom();
+                    tx.signatures = await sign(signer, hash);
+                    await expect(sendTx(wallet, tx)).to.be.revertedWith("'LW__verifySignatures__notOwner()'");
+                }
+            });
+
+            it("should swap a recovery owner", async () => {
+                const { address, wallet } = await walletSetup();
+
+                // newRecoveryOwner is not yet on the wallet.
+                expect(await wallet.isRecoveryOwner(newRecoveryOwner)).to.equal(false);
+
+                const recoveryOwners = await wallet.getRecoveryOwners();
+                const prevRecoveryOwner = recoveryOwners[0];
+                const oldRecoveryOwner = recoveryOwners[1];
+
+                // We confirm that the old recovery owner is a recovery owner.
+                expect(await wallet.isRecoveryOwner(oldRecoveryOwner)).to.equal(true);
+
+                tx.to = address;
+                tx.callData = encodeFunctionData(abi, "swapRecoveryOwner", [
+                    prevRecoveryOwner,
+                    newRecoveryOwner,
+                    oldRecoveryOwner,
+                ]);
+                const hash = await getHash(wallet, tx);
+                const { ownerSigner } = await signersForTest();
+                tx.signatures = await sign(ownerSigner, hash);
+                await fundWallet(ownerSigner, address);
+
+                // We send the transaction.
+                await sendTx(wallet, tx);
+
+                // new recovery owner is added.
+                expect(await wallet.isRecoveryOwner(newRecoveryOwner)).to.equal(true);
+
+                // old recovery owner is removed.
+                expect(await wallet.isRecoveryOwner(oldRecoveryOwner)).to.equal(false);
+
+                const postRecoveryOwners = await wallet.getRecoveryOwners();
+
+                // new recovery owner should be on the same index.
+                expect(postRecoveryOwners[1]).to.equal(newRecoveryOwner);
+            });
+        });
     });
 
     describe("SSR in action", () => {

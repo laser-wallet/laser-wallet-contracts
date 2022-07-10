@@ -9,7 +9,7 @@ import "../utils/Utils.sol";
 
 /**
  * @title SSR - Smart Social Recovery
- * @notice New wallet recovery mechanism.
+ * @notice Laser's recovery mechanism.
  * @author Rodrigo Herrera I.
  */
 contract SSR is ISSR, Owner, Utils {
