@@ -3,9 +3,9 @@ pragma solidity 0.8.15;
 
 /**
  * @title LaserWalletStorage
- * @dev Contract that maps the storage of the wallet.
+ * @dev Contract that maps the storage of Laser wallet.
  */
-contract LaserWalletStorage {
+abstract contract LaserWalletStorage {
     // core/Singleton.sol
     address public singleton;
 

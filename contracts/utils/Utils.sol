@@ -5,7 +5,7 @@ import "../interfaces/IUtils.sol";
 import "../interfaces/IEIP1271.sol";
 
 /**
- * @title Utils - Helper functions for LaserWallet.
+ * @title Utils - Helper functions for Laser wallet.
  */
 contract Utils is IUtils {
     /**
@@ -41,9 +41,7 @@ contract Utils is IUtils {
             signer = ecrecover(dataHash, v, r, s);
         }
 
-        if (signer == address(0)) {
-            revert Utils__returnSigner__invalidSignature();
-        }
+        if (signer == address(0)) revert Utils__returnSigner__invalidSignature();
     }
 
     /**
