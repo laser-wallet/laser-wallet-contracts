@@ -2,13 +2,13 @@
 pragma solidity 0.8.15;
 
 import "../interfaces/IOwner.sol";
-import "./SelfAuthorized.sol";
+import "./Me.sol";
 
 /**
  * @title Owner
  * @notice Handles the owners addresses.
  */
-contract Owner is IOwner, SelfAuthorized {
+contract Owner is IOwner, Me {
     ///@dev owner should always bet at storage slot 1.
     address public owner;
 
@@ -16,7 +16,7 @@ contract Owner is IOwner, SelfAuthorized {
      * @dev Changes the owner of the wallet.
      * @param newOwner The address of the new owner.
      */
-    function changeOwner(address newOwner) external authorized {
+    function changeOwner(address newOwner) external onlyMe {
         if (newOwner.code.length != 0 || newOwner == address(0) || newOwner == owner) {
             revert Owner__changeOwner__invalidOwnerAddress();
         }

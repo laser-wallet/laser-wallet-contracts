@@ -10,7 +10,7 @@ import "./ssr/SSR.sol";
  * @title LaserWallet - EVM based smart contract wallet. Implementes smart social recovery mechanism.
  * @author Rodrigo Herrera I.
  */
-contract LaserWallet is Singleton, SSR, Handler, ILaserWallet {
+contract LaserWallet is ILaserWallet, Singleton, SSR, Handler {
     string public constant VERSION = "1.0.0";
 
     bytes32 private constant DOMAIN_SEPARATOR_TYPEHASH =
@@ -168,7 +168,7 @@ contract LaserWallet is Singleton, SSR, Handler, ILaserWallet {
      * @dev Executes a series of generic transactions. It can only be called from exec.
      * @param transactions Basic transactions array (to, value, calldata).
      */
-    function multiCall(Transaction[] calldata transactions) external authorized {
+    function multiCall(Transaction[] calldata transactions) external onlyMe {
         uint256 transactionsLength = transactions.length;
         for (uint256 i = 0; i < transactionsLength; ) {
             Transaction calldata transaction = transactions[i];

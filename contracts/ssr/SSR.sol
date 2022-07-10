@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 pragma solidity 0.8.15;
 
-import "../core/SelfAuthorized.sol";
 import "../core/Owner.sol";
 import "../interfaces/IEIP1271.sol";
 import "../interfaces/IERC165.sol";
@@ -13,7 +12,7 @@ import "../utils/Utils.sol";
  * @notice New wallet recovery mechanism.
  * @author Rodrigo Herrera I.
  */
-contract SSR is ISSR, SelfAuthorized, Owner, Utils {
+contract SSR is ISSR, Owner, Utils {
     ///@dev pointer address for the nested mapping.
     address internal constant pointer = address(0x1);
 
@@ -38,7 +37,7 @@ contract SSR is ISSR, SelfAuthorized, Owner, Utils {
     /**
      * @dev Locks the wallet. Can only be called by a guardian.
      */
-    function lock() external authorized {
+    function lock() external onlyMe {
         timeLock = block.timestamp;
         isLocked = true;
         emit WalletLocked();
@@ -47,7 +46,7 @@ contract SSR is ISSR, SelfAuthorized, Owner, Utils {
     /**
      * @dev Unlocks the wallet. Can only be called by a guardian + the owner.
      */
-    function unlock() external authorized {
+    function unlock() external onlyMe {
         timeLock = 0;
         isLocked = false;
         emit WalletUnlocked();
@@ -58,7 +57,7 @@ contract SSR is ISSR, SelfAuthorized, Owner, Utils {
      * This is to avoid the wallet being locked forever if a guardian misbehaves.
      * The guardians will be locked until the owner decides otherwise.
      */
-    function recoveryUnlock() external authorized {
+    function recoveryUnlock() external onlyMe {
         isLocked = false;
         guardiansLocked = true;
         emit RecoveryUnlocked();
@@ -67,7 +66,7 @@ contract SSR is ISSR, SelfAuthorized, Owner, Utils {
     /**
      * @dev Unlocks the guardians. Can only be called by the owner.
      */
-    function unlockGuardians() external authorized {
+    function unlockGuardians() external onlyMe {
         guardiansLocked = false;
     }
 
@@ -75,7 +74,7 @@ contract SSR is ISSR, SelfAuthorized, Owner, Utils {
      * @dev Can only recover with the signature of a recovery owner and guardian.
      * @param newOwner The new owner address. This is generated instantaneously.
      */
-    function recover(address newOwner) external authorized {
+    function recover(address newOwner) external onlyMe {
         timeLock = 0;
         isLocked = false;
         owner = newOwner;
@@ -87,7 +86,7 @@ contract SSR is ISSR, SelfAuthorized, Owner, Utils {
      * @param newGuardian Address of the new guardian.
      * @notice Can only be called by the owner.
      */
-    function addGuardian(address newGuardian) external authorized {
+    function addGuardian(address newGuardian) external onlyMe {
         verifyNewRecoveryOwnerOrGuardian(newGuardian);
         guardians[newGuardian] = guardians[pointer];
         guardians[pointer] = newGuardian;
@@ -105,7 +104,7 @@ contract SSR is ISSR, SelfAuthorized, Owner, Utils {
      * @param guardianToRemove Address of the guardian to be removed.
      * @notice Can only be called by the owner.
      */
-    function removeGuardian(address prevGuardian, address guardianToRemove) external authorized {
+    function removeGuardian(address prevGuardian, address guardianToRemove) external onlyMe {
         // There needs to be at least 2 guardian ...
         if (guardianCount - 2 < 1) revert SSR__removeGuardian__underflow();
 
@@ -133,7 +132,7 @@ contract SSR is ISSR, SelfAuthorized, Owner, Utils {
         address prevGuardian,
         address newGuardian,
         address oldGuardian
-    ) external authorized {
+    ) external onlyMe {
         verifyNewRecoveryOwnerOrGuardian(newGuardian);
         if (guardians[prevGuardian] != oldGuardian) revert SSR__swapGuardian__invalidPrevGuardian();
 
@@ -150,7 +149,7 @@ contract SSR is ISSR, SelfAuthorized, Owner, Utils {
      * @param newRecoveryOwner Address of the new recovery owner.
      * @notice Can only be called by the owner.
      */
-    function addRecoveryOwner(address newRecoveryOwner) external authorized {
+    function addRecoveryOwner(address newRecoveryOwner) external onlyMe {
         verifyNewRecoveryOwnerOrGuardian(newRecoveryOwner);
         recoveryOwners[newRecoveryOwner] = recoveryOwners[pointer];
         recoveryOwners[pointer] = newRecoveryOwner;
@@ -168,7 +167,7 @@ contract SSR is ISSR, SelfAuthorized, Owner, Utils {
      * @param recoveryOwnerToRemove Address of the recovery owner to be removed.
      * @notice Can only be called by the owner.
      */
-    function removeRecoveryOwner(address prevRecoveryOwner, address recoveryOwnerToRemove) external authorized {
+    function removeRecoveryOwner(address prevRecoveryOwner, address recoveryOwnerToRemove) external onlyMe {
         // There needs to be at least 2 recovery owners ...
         if (recoveryOwnerCount - 1 < 2) revert SSR__removeRecoveryOwner__underflow();
 
@@ -198,7 +197,7 @@ contract SSR is ISSR, SelfAuthorized, Owner, Utils {
         address prevRecoveryOwner,
         address newRecoveryOwner,
         address oldRecoveryOwner
-    ) external authorized {
+    ) external onlyMe {
         verifyNewRecoveryOwnerOrGuardian(newRecoveryOwner);
         if (recoveryOwners[prevRecoveryOwner] != oldRecoveryOwner) {
             revert SSR__swapRecoveryOwner__invalidPrevRecoveryOwner();
@@ -361,7 +360,7 @@ contract SSR is ISSR, SelfAuthorized, Owner, Utils {
         // Time elapsed since the recovery mechanism was activated.
         uint256 elapsedTime = block.timestamp - timeLock;
         address currentRecoveryOwner = recoveryOwners[pointer];
-        bool isAuthorized;
+        bool authorized;
         uint256 index;
 
         while (currentRecoveryOwner != pointer) {
@@ -369,7 +368,7 @@ contract SSR is ISSR, SelfAuthorized, Owner, Utils {
                 // Each recovery owner (index ordered) has access to sign the transaction after 1 week.
                 // e.g. The first recovery owner (indexed 0) can sign immediately, the second recovery owner needs to wait 1 week, the third 2 weeks, and so on ...
 
-                if (currentRecoveryOwner == signer) isAuthorized = true;
+                if (currentRecoveryOwner == signer) authorized = true;
             }
             currentRecoveryOwner = recoveryOwners[currentRecoveryOwner];
 
@@ -378,7 +377,7 @@ contract SSR is ISSR, SelfAuthorized, Owner, Utils {
             }
         }
 
-        if (!isAuthorized) revert SSR__validateRecoveryOwner__notAuthorized();
+        if (!authorized) revert SSR__validateRecoveryOwner__notAuthorized();
     }
 
     /**

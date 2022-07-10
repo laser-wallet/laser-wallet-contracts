@@ -39,7 +39,7 @@ describe("Laser Wallet (singleton)", () => {
         });
 
         it("should not be able to make operations", async () => {
-            await expect(singleton.changeOwner(mock)).to.be.revertedWith("SelfAuthorized__notWallet()");
+            await expect(singleton.changeOwner(mock)).to.be.revertedWith("Me__notMe()");
         });
     });
 });
