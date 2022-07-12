@@ -39,12 +39,6 @@ contract LaserWallet is ILaserWallet, Singleton, SSR, Handler {
      * @param _owner The owner of the wallet.
      * @param _recoveryOwners Array of recovery owners. Implementation of Sovereign Social Recovery.
      * @param _guardians Addresses that can activate the social recovery mechanism.
-     * @param maxFeePerGas Maximum amount that the user is willing to pay for a unit of gas.
-     * @param maxPriorityFeePerGas Miner's tip.
-     * @param gasLimit The transaction's gas limit. It needs to be the same as the actual transaction gas limit.
-     * @param relayer Address that forwards the transaction so it abstracts away the gas costs.
-     * @param signature The signature of the owner. We require the owner's signature for the refund amount and
-     * to be confirm the initial wallet configuration.
      * @notice It can't be called after initialization.
      */
     function init(
@@ -55,7 +49,7 @@ contract LaserWallet is ILaserWallet, Singleton, SSR, Handler {
         uint256 maxPriorityFeePerGas,
         uint256 gasLimit,
         address relayer,
-        bytes memory signature
+        bytes calldata ownerSignature
     ) external {
         // initOwner() requires that the current owner is address 0.
         // This is enough to protect init() from being called after initialization.
@@ -67,19 +61,18 @@ contract LaserWallet is ILaserWallet, Singleton, SSR, Handler {
         // We initialize the recovery owners ...
         initRecoveryOwners(_recoveryOwners);
 
-        // We check the correctness of the signature (belongs to the owner).
-        // This is so the wallet refunds the specified amount to the relayer.
+        {
+            // Scope to avoid stack too deep ...
 
-        // Check the signature of the owner.
-        // This is so the wallet refunds the specified amount to the relayer.
-        bytes32 signedHash = keccak256(abi.encodePacked(maxFeePerGas, maxPriorityFeePerGas, gasLimit));
+            bytes32 signedHash = keccak256(abi.encodePacked(maxFeePerGas, maxPriorityFeePerGas, gasLimit));
 
-        (bytes32 r, bytes32 s, uint8 v) = splitSigs(signature, 0);
+            (bytes32 r, bytes32 s, uint8 v) = splitSigs(ownerSignature, 0);
 
-        address signer = returnSigner(signedHash, r, s, v, signature);
+            address signer = returnSigner(signedHash, r, s, v, ownerSignature);
 
-        //@todo Optimize this.
-        if (signer != _owner) revert LW__init__notOwner();
+            //@todo Optimize this.
+            if (signer != _owner) revert LW__init__notOwner();
+        }
 
         if (gasLimit > 0) {
             // If gas limit is greater than 0, then the transaction was sent through a relayer.
@@ -90,14 +83,14 @@ contract LaserWallet is ILaserWallet, Singleton, SSR, Handler {
             // This is contemplating the initial callData cost, the main transaction,
             // and we add the surplus for what is left (refund the relayer).
             uint256 gasUsed = gasLimit - gasleft() + 7000;
-
+            uint256 initialGas = gasleft();
             uint256 refundAmount = gasUsed * gasPrice;
 
             // We refund the relayer ...
             bool success = _call(relayer == address(0) ? tx.origin : relayer, refundAmount, new bytes(0), gasleft());
 
             // If the transaction returns false, we revert ...
-            if (!success) revert LW__exec__refundFailure();
+            if (!success) revert LW__init__refundFailure();
         }
 
         emit Setup(_owner, _recoveryOwners, _guardians);
@@ -131,7 +124,6 @@ contract LaserWallet is ILaserWallet, Singleton, SSR, Handler {
     ) external {
         // We immediately increase the nonce to avoid replay attacks.
         unchecked {
-            // Won't overflow ...
             if (nonce++ != _nonce) revert LW__exec__invalidNonce();
         }
 
@@ -263,9 +255,7 @@ contract LaserWallet is ILaserWallet, Singleton, SSR, Handler {
      * @return chainId The chain id of this.
      */
     function getChainId() public view returns (uint256 chainId) {
-        assembly {
-            chainId := chainid()
-        }
+        return block.chainid;
     }
 
     function domainSeparator() public view returns (bytes32) {

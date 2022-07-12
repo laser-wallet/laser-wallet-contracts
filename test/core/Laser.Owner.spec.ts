@@ -1,7 +1,5 @@
 import { expect } from "chai";
-import { ethers, deployments, getNamedAccounts } from "hardhat";
-import { LaserProxyFactory } from "../../typechain-types";
-import { Signer } from "ethers";
+import { ethers, deployments } from "hardhat";
 import {
     walletSetup,
     encodeFunctionData,
@@ -12,7 +10,6 @@ import {
     signersForTest,
     sendTx,
 } from "../utils";
-import { Address } from "../types";
 import { addrZero } from "../constants/constants";
 import { fundWallet } from "../utils";
 import { sign } from "../utils/sign";
@@ -29,7 +26,7 @@ describe("Owner", () => {
 
     describe("Owner", async () => {
         it("should have the correct owner", async () => {
-            const { address, wallet } = await walletSetup();
+            const { wallet } = await walletSetup();
             const { owner } = addresses;
             expect(await wallet.owner()).to.equal(owner);
         });
@@ -37,33 +34,16 @@ describe("Owner", () => {
         it("should not allow to init with address0", async () => {
             const { factory } = await walletSetup();
             const { recoveryOwners, guardians, relayer } = addresses;
-            const initializer = encodeFunctionData(abi, "init", [
-                addrZero,
-                recoveryOwners,
-                guardians,
-                0,
-                0,
-                0,
-                relayer,
-                "0x",
-            ]);
-            await expect(factory.createProxy(initializer)).to.be.reverted;
+
+            await expect(factory.deployProxyAndRefund(addrZero, recoveryOwners, guardians, 0, 0, 0, addrZero, "0x")).to
+                .be.reverted;
         });
 
         it("should not allow to init with address with code", async () => {
             const { address, factory } = await walletSetup();
             const { recoveryOwners, guardians, relayer } = addresses;
-            const initializer = encodeFunctionData(abi, "init", [
-                address,
-                recoveryOwners,
-                guardians,
-                0,
-                0,
-                0,
-                relayer,
-                "0x",
-            ]);
-            await expect(factory.createProxy(initializer)).to.be.reverted;
+            await expect(factory.deployProxyAndRefund(address, recoveryOwners, guardians, 0, 0, 0, addrZero, "0x")).to
+                .be.reverted;
         });
 
         it("should revert by changing the owner to address0", async () => {

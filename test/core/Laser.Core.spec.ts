@@ -1,6 +1,6 @@
 import { expect } from "chai";
 import { deployments, ethers } from "hardhat";
-import { Contract, Signer, Wallet } from "ethers";
+import { Contract } from "ethers";
 import { walletSetup, addressesForTest, AddressesForTest, signersForTest } from "../utils";
 import { Address } from "../types";
 import { addrZero } from "../constants/constants";
@@ -18,10 +18,10 @@ describe("Core", () => {
 
     describe("init()", async () => {
         it("should not allow to call init after initialization", async () => {
-            const { address, wallet } = await walletSetup();
+            const { wallet } = await walletSetup();
             const random = ethers.Wallet.createRandom().address;
             const { recoveryOwners, guardians } = addresses;
-            await expect(wallet.init(random, recoveryOwners, guardians, 0, 0, 0, random, "0x")).to.be.revertedWith(
+            await expect(wallet.init(random, recoveryOwners, guardians, 0, 0, 0, addrZero, "0x")).to.be.revertedWith(
                 "Owner__initOwner__walletInitialized("
             );
         });
@@ -116,7 +116,7 @@ describe("Core", () => {
                 } else if (i > 1 && i < 5) recoveryOwners.push(randomSigner.address);
                 else guardians.push(randomSigner.address);
             }
-            const { address, wallet } = await walletSetup(
+            const { wallet } = await walletSetup(
                 owner,
                 recoveryOwners,
                 guardians,

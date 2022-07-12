@@ -1,8 +1,6 @@
 import { expect } from "chai";
 import { deployments, ethers } from "hardhat";
-import { Contract, Signer, Wallet } from "ethers";
 import { walletSetup, signersForTest, AddressesForTest, addressesForTest } from "../utils";
-import { Address } from "../types";
 
 const oneEth = ethers.utils.parseEther("1");
 
@@ -15,7 +13,7 @@ describe("Receive", () => {
     });
 
     it("should be able to receive eth via send transaction", async () => {
-        const { address, wallet } = await walletSetup();
+        const { wallet } = await walletSetup();
         const { owner } = addresses;
         const { ownerSigner } = await signersForTest();
         expect(

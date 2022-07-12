@@ -4,7 +4,7 @@ import { encodeFunctionData } from "./utils";
 import { sign } from "./sign";
 import { Address } from "../types";
 import { LaserWallet } from "../../typechain-types";
-import { LaserProxyFactory } from "../../typechain-types";
+import { LaserFactory } from "../../typechain-types";
 import { addrZero, ownerWallet } from "../constants/constants";
 
 interface ReturnWalletSetup {
@@ -12,7 +12,6 @@ interface ReturnWalletSetup {
     wallet: LaserWallet;
     factoryAddress: Address;
     factory: Contract;
-    initializer: string;
 }
 
 export interface AddressesForTest {
@@ -68,17 +67,19 @@ export async function walletSetup(
     _maxPriorityFeePerGas?: BigNumberish,
     _gasLimit?: BigNumberish,
     _relayer?: Address,
-    _signatures?: string,
-    _ownerSigner?: Signer
+    ownerSignature?: string,
+    _ownerSigner?: Signer,
+    saltNumber?: BigNumberish,
+    fundWallet?: boolean
 ): Promise<ReturnWalletSetup> {
     // deployments.fixture() needs to be called prior to the execution of this function.
     const _LaserWallet = await deployments.get("LaserWallet");
     const abi = _LaserWallet.abi;
     const singleton = (await ethers.getContractAt(abi, _LaserWallet.address)) as LaserWallet;
-    const Factory = await deployments.get("LaserProxyFactory");
+    const Factory = await deployments.get("LaserFactory");
     const factory = await ethers.getContractAt(Factory.abi, Factory.address);
 
-    let { owner, recoveryOwners, guardians } = await addressesForTest();
+    let { owner, recoveryOwners, guardians, relayer } = await addressesForTest();
     let { ownerSigner } = await signersForTest();
 
     const maxFeePerGas = _maxFeePerGas ? _maxFeePerGas : 0;
@@ -92,28 +93,41 @@ export async function walletSetup(
 
     owner = _owner ? _owner : owner;
     ownerSigner = _ownerSigner ? _ownerSigner : ownerSigner;
+    recoveryOwners = _recoveryOwners ? _recoveryOwners : recoveryOwners;
+    guardians = _guardians ? _guardians : guardians;
+    relayer = _relayer ? _relayer : relayer;
+    const salt = saltNumber ? saltNumber : 1111;
 
-    const signature = await sign(ownerSigner, dataHash);
+    const preComputedAddress = await factory.preComputeAddress(owner, recoveryOwners, guardians, salt);
 
-    const initializer = encodeFunctionData(abi, "init", [
+    if (fundWallet) {
+        await ownerSigner.sendTransaction({
+            to: preComputedAddress,
+            value: ethers.utils.parseEther("10"),
+        });
+    }
+    const signature = ownerSignature ? ownerSignature : await sign(ownerSigner, dataHash);
+    const transaction = await factory.deployProxyAndRefund(
         owner,
-        _recoveryOwners ? _recoveryOwners : recoveryOwners,
-        _guardians ? _guardians : guardians,
+        recoveryOwners,
+        guardians,
         maxFeePerGas,
         maxPriorityFeePerGas,
         gasLimit,
-        _relayer ? _relayer : addrZero,
+        relayer,
+        salt,
         signature,
-    ]);
-    const transaction = await factory.createProxy(initializer);
+        { gasLimit: gasLimit > 0 ? gasLimit : 10000000 }
+    );
+
     const receipt = await transaction.wait();
     const proxyAddress = receipt.events[1].args.proxy;
     const wallet = (await ethers.getContractAt(abi, proxyAddress)) as LaserWallet;
+
     return {
         address: proxyAddress,
         wallet: wallet,
         factoryAddress: Factory.address,
         factory: factory,
-        initializer: initializer,
     };
 }

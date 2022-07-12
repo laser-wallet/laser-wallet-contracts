@@ -35,7 +35,7 @@ contract Owner is IOwner, Me {
         // If owner is not address 0, the wallet was already initialized ...
         if (owner != address(0)) revert Owner__initOwner__walletInitialized();
 
-        if (_owner.code.length != 0) revert Owner__initOwner__invalidOwnerAddress();
+        if (_owner.code.length != 0 || _owner == address(0)) revert Owner__initOwner__invalidOwnerAddress();
 
         assembly {
             // We store the owner at storage slot 1 through inline assembly to save some gas and to be very explicit about slot positions.

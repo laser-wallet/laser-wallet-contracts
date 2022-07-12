@@ -21,11 +21,10 @@ contract Utils is IUtils {
     ) public view returns (address signer) {
         if (v == 0) {
             // If v is 0, then it is a contract signature.
-
             // The address of the contract is encoded into r.
             signer = address(uint160(uint256(r)));
 
-            // The actual signature.
+            // // The actual signature.
             bytes memory contractSignature;
 
             assembly {

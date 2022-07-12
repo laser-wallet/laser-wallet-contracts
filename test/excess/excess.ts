@@ -14,7 +14,7 @@ describe("Testing with a lot of signers", () => {
             recoveryOwners.push(recoveryOwner);
         }
 
-        const { address, wallet } = await walletSetup(undefined, recoveryOwners);
+        const { wallet } = await walletSetup(undefined, recoveryOwners);
         expect(JSON.stringify(await wallet.getRecoveryOwners())).to.equal(JSON.stringify(recoveryOwners));
     });
 
@@ -25,7 +25,7 @@ describe("Testing with a lot of signers", () => {
             recoveryOwners.push(recoveryOwner);
         }
 
-        const { address, wallet } = await walletSetup(undefined, recoveryOwners);
+        const { wallet } = await walletSetup(undefined, recoveryOwners);
         expect(JSON.stringify(await wallet.getRecoveryOwners())).to.equal(JSON.stringify(recoveryOwners));
     });
 
@@ -36,7 +36,7 @@ describe("Testing with a lot of signers", () => {
             recoveryOwners.push(recoveryOwner);
         }
 
-        const { address, wallet } = await walletSetup(undefined, recoveryOwners);
+        const { wallet } = await walletSetup(undefined, recoveryOwners);
         expect(JSON.stringify(await wallet.getRecoveryOwners())).to.equal(JSON.stringify(recoveryOwners));
     });
 
@@ -47,7 +47,7 @@ describe("Testing with a lot of signers", () => {
             recoveryOwners.push(recoveryOwner);
         }
 
-        const { address, wallet } = await walletSetup(undefined, recoveryOwners);
+        const { wallet } = await walletSetup(undefined, recoveryOwners);
         expect(JSON.stringify(await wallet.getRecoveryOwners())).to.equal(JSON.stringify(recoveryOwners));
     });
 
@@ -58,7 +58,7 @@ describe("Testing with a lot of signers", () => {
             guardians.push(guardian);
         }
 
-        const { address, wallet } = await walletSetup(undefined, undefined, guardians);
+        const { wallet } = await walletSetup(undefined, undefined, guardians);
         expect(JSON.stringify(await wallet.getGuardians())).to.equal(JSON.stringify(guardians));
     });
 
@@ -69,7 +69,7 @@ describe("Testing with a lot of signers", () => {
             guardians.push(guardian);
         }
 
-        const { address, wallet } = await walletSetup(undefined, undefined, guardians);
+        const { wallet } = await walletSetup(undefined, undefined, guardians);
         expect(JSON.stringify(await wallet.getGuardians())).to.equal(JSON.stringify(guardians));
     });
 
@@ -80,7 +80,7 @@ describe("Testing with a lot of signers", () => {
             guardians.push(guardian);
         }
 
-        const { address, wallet } = await walletSetup(undefined, undefined, guardians);
+        const { wallet } = await walletSetup(undefined, undefined, guardians);
         expect(JSON.stringify(await wallet.getGuardians())).to.equal(JSON.stringify(guardians));
     });
 
@@ -91,7 +91,7 @@ describe("Testing with a lot of signers", () => {
             guardians.push(guardian);
         }
 
-        const { address, wallet } = await walletSetup(undefined, undefined, guardians);
+        const { wallet } = await walletSetup(undefined, undefined, guardians);
         expect(JSON.stringify(await wallet.getGuardians())).to.equal(JSON.stringify(guardians));
     });
 });

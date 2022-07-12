@@ -1,10 +1,8 @@
 import { expect } from "chai";
 import { deployments, ethers } from "hardhat";
-import { Contract, Signer, Wallet } from "ethers";
 import {
     walletSetup,
     sign,
-    signTypedData,
     generateTransaction,
     addressesForTest,
     signersForTest,
@@ -43,9 +41,9 @@ describe("Smart Social Recovery", () => {
             it("should fail if we try to init after initialization", async () => {
                 const { address, wallet } = await walletSetup();
                 const { owner, recoveryOwners, guardians, relayer } = addresses;
-                await expect(wallet.init(owner, recoveryOwners, guardians, 0, 0, 0, relayer, "0x")).to.be.revertedWith(
-                    "'Owner__initOwner__walletInitialized()'"
-                );
+                await expect(
+                    wallet.init(owner, recoveryOwners, guardians, 0, 0, 0, ethers.Wallet.createRandom().address, "0x")
+                ).to.be.revertedWith("'Owner__initOwner__walletInitialized()'");
             });
         });
     });

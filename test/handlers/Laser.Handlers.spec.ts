@@ -1,8 +1,7 @@
 import { expect } from "chai";
 import { deployments, ethers } from "hardhat";
-import { Contract, providers, Signer, Wallet } from "ethers";
+import { Contract } from "ethers";
 import { walletSetup, AddressesForTest } from "../utils";
-import { Address } from "../types";
 
 describe("Handlers", () => {
     let addresses: AddressesForTest;

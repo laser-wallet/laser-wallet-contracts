@@ -1,6 +1,5 @@
 import { expect } from "chai";
 import { deployments, ethers } from "hardhat";
-import { Contract, Signer, Wallet } from "ethers";
 import {
     walletSetup,
     sign,
@@ -80,7 +79,7 @@ describe("Setup", () => {
         });
 
         it("should correctly split 'v', 'r', and 's' ", async () => {
-            const { address, wallet } = await walletSetup();
+            const { wallet } = await walletSetup();
             const { ownerSigner } = await signersForTest();
             const hash = ethers.utils.keccak256("0x1234");
             const sig = await sign(ownerSigner, hash);

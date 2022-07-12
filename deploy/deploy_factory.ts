@@ -9,13 +9,13 @@ const deploy: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
     const laserWalletAddress = (await deployments.get("LaserWallet")).address;
 
-    await deploy("LaserProxyFactory", {
+    await deploy("LaserFactory", {
         from: deployer,
         args: [laserWalletAddress],
         log: true,
     });
 };
 
-deploy.tags = ["LaserProxyFactory"];
+deploy.tags = ["LaserFactory"];
 deploy.runAtTheEnd = true;
 export default deploy;
