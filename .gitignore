@@ -7,3 +7,5 @@ node_modules/
 package-lock.json
 notes.md
 typechain-types/
+foundry-artifacts/
+foundry-cache/

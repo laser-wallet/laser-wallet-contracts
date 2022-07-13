@@ -113,7 +113,7 @@ contract LaserFactory is ILaserFactory {
             proxy := create2(0x0, add(0x20, deploymentData), mload(deploymentData), salt)
         }
         //@todo change the custom error name.
-        if (address(proxy) == address(0)) revert LaserFactory__deployProxyWithNonce__create2Failed();
+        if (address(proxy) == address(0)) revert LaserFactory__create2Failed();
     }
 
     /**

@@ -1,0 +1,11 @@
+[default]
+src = 'contracts'
+test = "foundry-test"
+out = 'foundry-artifacts'
+cache_path = "foundry-cache"
+optimizer = true 
+evm_version = "london"
+optimizer_runs = 800
+libs = ["lib"]
+solc_version = "0.8.15"
+gas_limit = 15_000_000

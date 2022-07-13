@@ -83,7 +83,6 @@ contract LaserWallet is ILaserWallet, Singleton, SSR, Handler {
             // This is contemplating the initial callData cost, the main transaction,
             // and we add the surplus for what is left (refund the relayer).
             uint256 gasUsed = gasLimit - gasleft() + 7000;
-            uint256 initialGas = gasleft();
             uint256 refundAmount = gasUsed * gasPrice;
 
             // We refund the relayer ...
@@ -146,7 +145,6 @@ contract LaserWallet is ILaserWallet, Singleton, SSR, Handler {
         // This is contemplating the initial callData cost, the main transaction,
         // and we add the surplus for what is left (refund the relayer).
         uint256 gasUsed = gasLimit - gasleft() + 7000;
-
         uint256 refundAmount = gasUsed * gasPrice;
 
         // We refund the relayer ...

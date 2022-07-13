@@ -15,7 +15,7 @@ interface ILaserFactory {
     error LaserFactory__constructor__invalidSingleton();
 
     ///@dev createProxyWithCreate2() custom error.
-    error LaserFactory__deployProxyWithNonce__create2Failed();
+    error LaserFactory__create2Failed();
 
     /**
      * @dev Creates a new proxy with create 2, initializes the wallet and refunds the relayer.
