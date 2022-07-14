@@ -92,7 +92,10 @@ contract Utils is IUtils {
         view
         returns (uint256 gasPrice)
     {
-        if (maxFeePerGas == maxPriorityFeePerGas) {
+        if (maxFeePerGas == 0 && maxPriorityFeePerGas == 0) {
+            // When guardians / recovery owners sign.
+            gasPrice = tx.gasprice;
+        } else if (maxFeePerGas == maxPriorityFeePerGas) {
             // Legacy mode.
             gasPrice = maxFeePerGas;
         } else {

@@ -41,6 +41,8 @@ export async function sendTx(wallet: Contract, transaction: Transaction, signer?
                 transaction.signatures,
                 {
                     gasLimit: transaction.gasLimit,
+                    maxFeePerGas: transaction.maxFeePerGas,
+                    maxPriorityFeePerGas: transaction.maxPriorityFeePerGas,
                 }
             );
         const receipt = await tx.wait();
@@ -58,6 +60,8 @@ export async function sendTx(wallet: Contract, transaction: Transaction, signer?
             transaction.signatures,
             {
                 gasLimit: transaction.gasLimit,
+                maxFeePerGas: transaction.maxFeePerGas,
+                maxPriorityFeePerGas: transaction.maxPriorityFeePerGas,
             }
         );
         const receipt = await tx.wait();

@@ -13,7 +13,7 @@
         "deploy-and-verify": "echo deploying the contracts and verifying them on Etherscan ... && hardhat deploy-and-verify --network",
         "coverage": "hardhat coverage", 
         "test:foundry": "echo running tests with Foundry for Laser core contracts ... && forge test", 
-        "test:all": "echo running tests with Foundry and Hardhat for Laser core contracts ... && npm run test:hardhat && npm run test:foundry"
+        "test": "echo running tests with Foundry and Hardhat for Laser core contracts ... && npm run test:hardhat && npm run test:foundry"
     },
     "keywords": [
         "Ethereum",

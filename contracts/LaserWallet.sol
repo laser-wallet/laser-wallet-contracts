@@ -26,7 +26,7 @@ contract LaserWallet is ILaserWallet, Singleton, SSR, Handler {
     uint256 public nonce;
 
     constructor() {
-        // This makes the singleton unusable. e.g. (parity wallet hack).
+        // This makes the singleton unusable. e.g. (parity wallet hack). (Even though there are no delegate calls ...)
         owner = address(this);
     }
 

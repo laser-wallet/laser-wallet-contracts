@@ -44,7 +44,7 @@ contract SSR is ISSR, Owner, Utils {
     }
 
     /**
-     * @dev Unlocks the wallet. Can only be called by a guardian + the owner.
+     * @dev Unlocks the wallet. Can only be called by the owner + a guardian.
      */
     function unlock() external onlyMe {
         timeLock = 0;
