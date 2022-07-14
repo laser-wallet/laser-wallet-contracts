@@ -87,8 +87,12 @@ export async function walletSetup(
     const gasLimit = _gasLimit ? _gasLimit : 0;
 
     const abiCoder = new ethers.utils.AbiCoder();
+    const chainId = (await ethers.provider.getNetwork()).chainId;
     const dataHash = ethers.utils.keccak256(
-        abiCoder.encode(["uint256", "uint256", "uint256"], [maxFeePerGas, maxPriorityFeePerGas, gasLimit])
+        abiCoder.encode(
+            ["uint256", "uint256", "uint256", "uint256"],
+            [maxFeePerGas, maxPriorityFeePerGas, gasLimit, chainId]
+        )
     );
 
     owner = _owner ? _owner : owner;

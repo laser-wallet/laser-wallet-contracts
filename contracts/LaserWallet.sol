@@ -64,7 +64,9 @@ contract LaserWallet is ILaserWallet, Singleton, SSR, Handler {
         {
             // Scope to avoid stack too deep ...
 
-            bytes32 signedHash = keccak256(abi.encodePacked(maxFeePerGas, maxPriorityFeePerGas, gasLimit));
+            bytes32 signedHash = keccak256(
+                abi.encodePacked(maxFeePerGas, maxPriorityFeePerGas, gasLimit, block.chainid)
+            );
 
             (bytes32 r, bytes32 s, uint8 v) = splitSigs(ownerSignature, 0);
 

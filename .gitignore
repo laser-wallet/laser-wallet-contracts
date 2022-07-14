@@ -9,3 +9,5 @@ notes.md
 typechain-types/
 foundry-artifacts/
 foundry-cache/
+deployments/
+.gitmodules
