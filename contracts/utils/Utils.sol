@@ -87,17 +87,8 @@ contract Utils is IUtils {
     /**
      * @dev Calculates the gas price.
      */
-    function calculateGasPrice(uint256 maxFeePerGas, uint256 maxPriorityFeePerGas)
-        internal
-        view
-        returns (uint256 gasPrice)
-    {
-        if (maxFeePerGas == maxPriorityFeePerGas) {
-            // Legacy mode.
-            gasPrice = maxFeePerGas;
-        } else {
-            gasPrice = min(maxFeePerGas, maxPriorityFeePerGas + block.basefee);
-        }
+    function calculateGasPrice(uint256 maxFeePerGas) internal view returns (uint256 gasPrice) {
+        return min(maxFeePerGas, tx.gasprice);
     }
 
     function min(uint256 a, uint256 b) internal pure returns (uint256) {

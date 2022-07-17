@@ -79,7 +79,7 @@ contract LaserWallet is ILaserWallet, Singleton, SSR, Handler {
         if (gasLimit > 0) {
             // If gas limit is greater than 0, then the transaction was sent through a relayer.
             // We calculate the gas price, as per the user's request ...
-            uint256 gasPrice = calculateGasPrice(maxFeePerGas, maxPriorityFeePerGas);
+            uint256 gasPrice = calculateGasPrice(maxFeePerGas);
 
             // gasUsed is the total amount of gas consumed for this transaction.
             // This is contemplating the initial callData cost, the main transaction,
@@ -141,7 +141,7 @@ contract LaserWallet is ILaserWallet, Singleton, SSR, Handler {
         else emit ExecFailure(to, value, nonce);
 
         // We calculate the gas price, as per the user's request ...
-        uint256 gasPrice = calculateGasPrice(maxFeePerGas, maxPriorityFeePerGas);
+        uint256 gasPrice = calculateGasPrice(maxFeePerGas);
 
         // gasUsed is the total amount of gas consumed for this transaction.
         // This is contemplating the initial callData cost, the main transaction,
@@ -208,7 +208,7 @@ contract LaserWallet is ILaserWallet, Singleton, SSR, Handler {
         verifyTransaction(to, value, callData, _nonce, maxFeePerGas, maxPriorityFeePerGas, gasLimit, signatures);
         bool success = _call(to, value, callData, gasleft());
         if (!success) revert LW__simulateTransaction__mainCallError();
-        uint256 gasPrice = calculateGasPrice(maxFeePerGas, maxPriorityFeePerGas);
+        uint256 gasPrice = calculateGasPrice(maxFeePerGas);
         uint256 gasUsed = gasLimit - gasleft() + 7000;
         uint256 refundAmount = gasUsed * gasPrice;
         success = _call(msg.sender, refundAmount, new bytes(0), gasleft());
