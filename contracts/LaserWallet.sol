@@ -26,7 +26,7 @@ contract LaserWallet is ILaserWallet, Singleton, SSR, Handler {
     uint256 public nonce;
 
     constructor() {
-        // This makes the singleton unusable. e.g. (parity wallet hack).
+        // This makes the master copy unusable (even though there are no delegatecalls ...)
         owner = address(this);
     }
 
@@ -37,8 +37,14 @@ contract LaserWallet is ILaserWallet, Singleton, SSR, Handler {
     /**
      * @dev Setup function, sets initial storage of contract.
      * @param _owner The owner of the wallet.
-     * @param _recoveryOwners Array of recovery owners. Implementation of Sovereign Social Recovery.
-     * @param _guardians Addresses that can activate the social recovery mechanism.
+     * @param _recoveryOwners Array of recovery owners. Implementation of smart social recovery.
+     * @param _guardians Array of guardians. Implementation of smart social recovery.
+     * @param maxFeePerGas Maximum amount of WEI to pay for a unit of gas.
+     * @param maxPriorityFeePerGas Miner's tip --> EIP 1559.
+     * @param gasLimit Maximum amount of units of gas to spend for this transaction.
+     * @param relayer Address to pay back for the relayed transaction (tx.origin if set to address 0).
+     * @param ownerSignature The signature of the owner that verifies the initial transaction payload.
+     * @notice If gasLimit = 0, there is no payback to the relayer.
      * @notice It can't be called after initialization.
      */
     function init(
@@ -103,10 +109,6 @@ contract LaserWallet is ILaserWallet, Singleton, SSR, Handler {
      * @param value Amount to send.
      * @param callData Data payload for the transaction.
      * @param _nonce Unsigned integer to avoid replay attacks. It needs to match the current wallet's nonce.
-     * @param maxFeePerGas Maximum amount that the user is willing to pay for a unit of gas.
-     * @param maxPriorityFeePerGas Miner's tip.
-     * @param gasLimit The transaction's gas limit. It needs to be the same as the actual transaction gas limit.
-     * @param relayer Address that forwards the transaction so it abstracts away the gas costs.
      * @param signatures The signatures of the transaction.
      * @notice If 'gasLimit' does not match the actual gas limit of the transaction, the relayer can incur losses.
      * It is the relayer's responsability to make sure that they are the same, the user does not get affected if a mistake is made.
@@ -189,7 +191,7 @@ contract LaserWallet is ILaserWallet, Singleton, SSR, Handler {
         }
     }
 
-    /**c
+    /**
      * @dev Simulates a transaction. This should be called from the relayer, to verify that the transaction will not revert.
      * This does not guarantees 100% that the transaction will succeed, the state will be different next block.
      * @notice Needs to be called off-chain from  address zero.
@@ -247,7 +249,7 @@ contract LaserWallet is ILaserWallet, Singleton, SSR, Handler {
 
         // The guardians and recovery owners should not be able to sign transactions that are out of scope from this wallet.
         // Only the owner should be able to sign external data.
-        if (recovered != owner) revert LaserWallet__invalidSignature();
+        if (recovered != owner || isLocked) revert LaserWallet__invalidSignature();
         return EIP1271_MAGIC_VALUE;
     }
 
@@ -303,7 +305,6 @@ contract LaserWallet is ILaserWallet, Singleton, SSR, Handler {
      * @dev Verifies that the signature(s) match the transaction type and sender.
      * @param _access Who has permission to invoke this transaction.
      * @param dataHash The keccak256 has of the transaction's data playload.
-     * @param signatures The signature(s) of the hash.
      */
     function verifySignatures(
         Access _access,
