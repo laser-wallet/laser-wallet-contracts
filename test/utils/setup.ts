@@ -1,4 +1,4 @@
-import { BigNumberish, Contract, Signer } from "ethers";
+import { BigNumberish, Contract, providers, Signer } from "ethers";
 import { ethers, deployments, getNamedAccounts } from "hardhat";
 import { encodeFunctionData } from "./utils";
 import { sign } from "./sign";
@@ -80,7 +80,7 @@ export async function walletSetup(
     const factory = await ethers.getContractAt(Factory.abi, Factory.address);
 
     let { owner, recoveryOwners, guardians, relayer } = await addressesForTest();
-    let { ownerSigner } = await signersForTest();
+    let { ownerSigner, relayerSigner } = await signersForTest();
 
     const maxFeePerGas = _maxFeePerGas ? _maxFeePerGas : 0;
     const maxPriorityFeePerGas = _maxPriorityFeePerGas ? _maxPriorityFeePerGas : 0;
@@ -101,9 +101,7 @@ export async function walletSetup(
     guardians = _guardians ? _guardians : guardians;
     relayer = _relayer ? _relayer : relayer;
     const salt = saltNumber ? saltNumber : 1111;
-
     const preComputedAddress = await factory.preComputeAddress(owner, recoveryOwners, guardians, salt);
-
     if (fundWallet) {
         await ownerSigner.sendTransaction({
             to: preComputedAddress,
@@ -125,7 +123,7 @@ export async function walletSetup(
     );
 
     const receipt = await transaction.wait();
-    const proxyAddress = receipt.events[1].args.proxy;
+    const proxyAddress = receipt.events[0].args.proxy;
     const wallet = (await ethers.getContractAt(abi, proxyAddress)) as LaserWallet;
 
     return {

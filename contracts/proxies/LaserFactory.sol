@@ -71,6 +71,7 @@ contract LaserFactory is ILaserFactory {
         emit ProxyCreation(address(proxy));
     }
 
+
     /**
      * @dev Precomputes the address of a proxy that is created through 'create2'.
      */

@@ -85,21 +85,20 @@ contract Utils is IUtils {
     }
 
     /**
-     * @dev Calculates the gas price.
+     * @dev Calculates the gas price according to eip 1559.
      */
     function calculateGasPrice(uint256 maxFeePerGas, uint256 maxPriorityFeePerGas)
         internal
         view
-        returns (uint256 gasPrice)
+        returns (uint256 effectiveGasPrice)
     {
-        if (maxFeePerGas == 0 && maxPriorityFeePerGas == 0) {
-            // When guardians / recovery owners sign.
-            gasPrice = tx.gasprice;
-        } else if (maxFeePerGas == maxPriorityFeePerGas) {
-            // Legacy mode.
-            gasPrice = maxFeePerGas;
+        if (maxFeePerGas == maxPriorityFeePerGas) {
+            // No EIP 1559 support.
+            effectiveGasPrice = min(maxFeePerGas, tx.gasprice);
         } else {
-            gasPrice = min(maxFeePerGas, maxPriorityFeePerGas + block.basefee);
+            uint256 priorityFeePerGas = min(maxPriorityFeePerGas, maxFeePerGas - block.basefee);
+
+            effectiveGasPrice = priorityFeePerGas + block.basefee;
         }
     }
 

@@ -1,7 +1,17 @@
 import { expect } from "chai";
 import { deployments, ethers } from "hardhat";
 import { BigNumber } from "ethers";
-import { walletSetup, addressesForTest, AddressesForTest, signersForTest, SignersForTest, sign } from "../utils";
+import {
+    walletSetup,
+    addressesForTest,
+    AddressesForTest,
+    signersForTest,
+    SignersForTest,
+    sign,
+    encodeFunctionData,
+} from "../utils";
+
+const { abi } = require("../../artifacts/contracts/LaserWallet.sol/LaserWallet.json");
 
 describe("Proxy Factory", () => {
     let addresses: AddressesForTest;
@@ -106,7 +116,7 @@ describe("Proxy Factory", () => {
                 signature
             );
             const receipt = await tx.wait();
-            const address = receipt.events[1].args.proxy;
+            const address = receipt.events[0].args.proxy;
 
             expect(address).to.equal(preComputedAddress);
         });
@@ -140,7 +150,7 @@ describe("Proxy Factory", () => {
                 signature
             );
             const receipt = await tx.wait();
-            const address = receipt.events[1].args.proxy;
+            const address = receipt.events[0].args.proxy;
 
             expect(address).to.not.equal(preComputedAddress);
         });
@@ -179,7 +189,7 @@ describe("Proxy Factory", () => {
                 signature
             );
             const receipt = await tx.wait();
-            const address = receipt.events[1].args.proxy;
+            const address = receipt.events[0].args.proxy;
 
             expect(address).to.not.equal(preComputedAddress);
         });
@@ -219,7 +229,7 @@ describe("Proxy Factory", () => {
                 signature
             );
             const receipt = await tx.wait();
-            const address = receipt.events[1].args.proxy;
+            const address = receipt.events[0].args.proxy;
 
             expect(address).to.not.equal(preComputedAddress);
         });
@@ -259,7 +269,7 @@ describe("Proxy Factory", () => {
                 signature
             );
             const receipt = await tx.wait();
-            const address = receipt.events[1].args.proxy;
+            const address = receipt.events[0].args.proxy;
 
             expect(address).to.not.equal(preComputedAddress);
         });
@@ -293,7 +303,7 @@ describe("Proxy Factory", () => {
                 signature
             );
             const receipt = await tx.wait();
-            const address = receipt.events[1].args.proxy;
+            const address = receipt.events[0].args.proxy;
 
             expect(address).to.equal(preComputedAddress);
         });

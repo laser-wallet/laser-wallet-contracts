@@ -36,9 +36,6 @@ contract LaserWallet is ILaserWallet, Singleton, SSR, Handler {
 
     /**
      * @dev Setup function, sets initial storage of contract.
-     * @param _owner The owner of the wallet.
-     * @param _recoveryOwners Array of recovery owners. Implementation of Sovereign Social Recovery.
-     * @param _guardians Addresses that can activate the social recovery mechanism.
      * @notice It can't be called after initialization.
      */
     function init(
@@ -55,10 +52,8 @@ contract LaserWallet is ILaserWallet, Singleton, SSR, Handler {
         // This is enough to protect init() from being called after initialization.
         initOwner(_owner);
 
-        // We initialize the guardians ...
         initGuardians(_guardians);
 
-        // We initialize the recovery owners ...
         initRecoveryOwners(_recoveryOwners);
 
         {
@@ -72,29 +67,21 @@ contract LaserWallet is ILaserWallet, Singleton, SSR, Handler {
 
             address signer = returnSigner(signedHash, r, s, v, ownerSignature);
 
-            //@todo Optimize this.
             if (signer != _owner) revert LW__init__notOwner();
         }
 
         if (gasLimit > 0) {
-            // If gas limit is greater than 0, then the transaction was sent through a relayer.
-            // We calculate the gas price, as per the user's request ...
             uint256 gasPrice = calculateGasPrice(maxFeePerGas, maxPriorityFeePerGas);
 
-            // gasUsed is the total amount of gas consumed for this transaction.
-            // This is contemplating the initial callData cost, the main transaction,
-            // and we add the surplus for what is left (refund the relayer).
-            uint256 gasUsed = gasLimit - gasleft() + 7000;
+            gasLimit = (gasLimit * 63) / 64;
+
+            uint256 gasUsed = gasLimit - gasleft() + 5000;
+
             uint256 refundAmount = gasUsed * gasPrice;
 
-            // We refund the relayer ...
             bool success = _call(relayer == address(0) ? tx.origin : relayer, refundAmount, new bytes(0), gasleft());
-
-            // If the transaction returns false, we revert ...
             if (!success) revert LW__init__refundFailure();
         }
-
-        emit Setup(_owner, _recoveryOwners, _guardians);
     }
 
     /**
@@ -137,22 +124,17 @@ contract LaserWallet is ILaserWallet, Singleton, SSR, Handler {
         bool success = _call(to, value, callData, gasleft() - 10000);
 
         // We do not revert the call if it fails, because the wallet needs to pay the relayer even in case of failure.
-        if (success) emit ExecSuccess(to, value, nonce);
-        else emit ExecFailure(to, value, nonce);
+        if (!success) emit ExecFailure(to, value, nonce);
 
-        // We calculate the gas price, as per the user's request ...
         uint256 gasPrice = calculateGasPrice(maxFeePerGas, maxPriorityFeePerGas);
 
-        // gasUsed is the total amount of gas consumed for this transaction.
-        // This is contemplating the initial callData cost, the main transaction,
-        // and we add the surplus for what is left (refund the relayer).
-        uint256 gasUsed = gasLimit - gasleft() + 7000;
+        gasLimit = (gasLimit * 63) / 64;
+
+        uint256 gasUsed = gasLimit - gasleft() + 7900;
+
         uint256 refundAmount = gasUsed * gasPrice;
 
-        // We refund the relayer ...
         success = _call(relayer == address(0) ? tx.origin : relayer, refundAmount, new bytes(0), gasleft());
-
-        // If the transaction returns false, we revert ..
         if (!success) revert LW__exec__refundFailure();
     }
 
@@ -247,7 +229,7 @@ contract LaserWallet is ILaserWallet, Singleton, SSR, Handler {
 
         // The guardians and recovery owners should not be able to sign transactions that are out of scope from this wallet.
         // Only the owner should be able to sign external data.
-        if (recovered != owner) revert LaserWallet__invalidSignature();
+        if (recovered != owner || isLocked) revert LaserWallet__invalidSignature();
         return EIP1271_MAGIC_VALUE;
     }
 

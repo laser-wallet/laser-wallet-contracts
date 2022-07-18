@@ -23,7 +23,7 @@ interface ILaser {
  * @title LaserHelper - Helper contract that outputs multiple results in a single call.
  */
 contract LaserHelper {
-    function getResults(address _laser)
+    function getWalletState(address laserWallet)
         external
         view
         returns (
@@ -34,10 +34,11 @@ contract LaserHelper {
             bool guardiansLocked,
             address[] memory guardians,
             address[] memory recoveryOwners,
-            uint256 nonce
+            uint256 nonce,
+            uint256 balance
         )
     {
-        ILaser laser = ILaser(_laser);
+        ILaser laser = ILaser(laserWallet);
         owner = laser.owner();
         singleton = laser.singleton();
         timeLock = laser.timeLock();
@@ -46,5 +47,6 @@ contract LaserHelper {
         guardians = laser.getGuardians();
         recoveryOwners = laser.getRecoveryOwners();
         nonce = laser.nonce();
+        balance = address(laserWallet).balance;
     }
 }

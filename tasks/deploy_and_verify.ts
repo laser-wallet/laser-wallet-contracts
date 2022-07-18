@@ -1,6 +1,5 @@
 import "hardhat-deploy";
 import { task } from "hardhat/config";
-import { LaserFactory__factory } from "../typechain-types";
 
 task("deploy-and-verify", "Deploys all Laser contracts and verifies them on Etherscan").setAction(async (_, hre) => {
     await hre.run("deploy");
