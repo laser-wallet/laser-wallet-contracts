@@ -217,22 +217,6 @@ contract SSR is ISSR, Me, Utils {
     }
 
     /**
-     * @param guardian Requested address.
-     * @return Boolean if the address is a guardian of the current wallet.
-     */
-    function isGuardian(address guardian) external view returns (bool) {
-        return guardian != pointer && guardians[guardian] != address(0);
-    }
-
-    /**
-     * @param recoveryOwner Requested address.
-     * @return Boolean if the address is a recovery owner of the current wallet.
-     */
-    function isRecoveryOwner(address recoveryOwner) external view returns (bool) {
-        return recoveryOwner != pointer && recoveryOwners[recoveryOwner] != address(0);
-    }
-
-    /**
      * @return Array of the guardians of this wallet.
      */
     function getGuardians() external view returns (address[] memory) {
