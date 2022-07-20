@@ -5,7 +5,7 @@ import "../interfaces/IHandler.sol";
 import "../interfaces/IERC165.sol";
 
 /**
- * @title TokenHandler - Supports token callbacks.
+ * @title Handler - Supports token callbacks.
  */
 contract Handler is IHandler, IERC165 {
     function onERC721Received(

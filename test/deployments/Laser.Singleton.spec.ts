@@ -25,7 +25,7 @@ describe("Laser Wallet (singleton)", () => {
         it("should not allow to init", async () => {
             await expect(
                 singleton.init(mock, [mock], [mock], 0, 0, 0, ethers.Wallet.createRandom().address, "0x")
-            ).to.be.revertedWith("Owner__initOwner__walletInitialized()");
+            ).to.be.revertedWith("SSR__initOwner__walletInitialized()");
         });
 
         it(`should be version ${VERSION}`, async () => {
@@ -39,7 +39,7 @@ describe("Laser Wallet (singleton)", () => {
         });
 
         it("should not be able to make operations", async () => {
-            await expect(singleton.changeOwner(mock)).to.be.revertedWith("Me__notMe()");
+            await expect(singleton.addGuardian(mock)).to.be.revertedWith("Me__notMe()");
         });
     });
 });
