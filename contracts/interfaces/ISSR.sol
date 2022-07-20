@@ -18,6 +18,7 @@ interface ISSR {
     event WalletLocked();
     event WalletUnlocked();
     event RecoveryUnlocked();
+    event OwnerChanged(address newOwner);
     event NewGuardian(address newGuardian);
     event GuardianRemoved(address removedGuardian);
     event GuardianSwapped(address newGuardian, address oldGuardian);
@@ -26,7 +27,10 @@ interface ISSR {
     event RecoveryOwnerSwapped(address newRecoveryOwner, address oldRecoveryOwner);
     event WalletRecovered(address newOwner);
 
-    ///@dev addGuardian() custom errors.
+    ///@dev changeOwner() custom error.
+    error SSR__changeOwner__invalidAddress();
+
+    ///@dev addGuardian() custom error.
     error SSR__addGuardian__invalidAddress();
 
     ///@dev removeGuardian() custom errors.
@@ -50,13 +54,17 @@ interface ISSR {
     error SSR__swapRecoveryOwner__invalidPrevRecoveryOwner();
     error SSR__swapRecoveryOwner__invalidOldRecoveryOwner();
 
-    ///@dev initRecoveryOwners() custom error.
-    error SSR__initRecoveryOwners__underflow();
-    error SSR__initRecoveryOwners__invalidAddress();
+    ///@dev initOwner() custom errors.
+    error SSR__initOwner__walletInitialized();
+    error SSR__initOwner__invalidAddress();
 
     ///@dev initGuardians() custom errors.
     error SSR__initGuardians__underflow();
     error SSR__initGuardians__invalidAddress();
+
+    ///@dev initRecoveryOwners() custom error.
+    error SSR__initRecoveryOwners__underflow();
+    error SSR__initRecoveryOwners__invalidAddress();
 
     ///@dev access() custom errors.
     error SSR__access__guardiansLocked();

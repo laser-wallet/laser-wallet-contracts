@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 pragma solidity 0.8.15;
 
-import "../core/Owner.sol";
+import "../core/Me.sol";
 import "../interfaces/IEIP1271.sol";
 import "../interfaces/IERC165.sol";
 import "../interfaces/ISSR.sol";
@@ -12,9 +12,12 @@ import "../utils/Utils.sol";
  * @notice Laser's recovery mechanism.
  * @author Rodrigo Herrera I.
  */
-contract SSR is ISSR, Owner, Utils {
+contract SSR is ISSR, Me, Utils {
     ///@dev pointer address for the nested mapping.
     address internal constant pointer = address(0x1);
+
+    ///@dev owner should always bet at storage slot 1.
+    address public owner;
 
     uint256 internal recoveryOwnerCount;
 
@@ -35,7 +38,7 @@ contract SSR is ISSR, Owner, Utils {
     mapping(address => address) internal guardians;
 
     /**
-     * @dev Locks the wallet. Can only be called by a guardian.
+     * @dev Locks the wallet. Can only be called by a guardian.
      */
     function lock() external onlyMe {
         timeLock = block.timestamp;
@@ -265,6 +268,22 @@ contract SSR is ISSR, Owner, Utils {
             }
         }
         return recoveryOwnersArray;
+    }
+
+    /**
+     * @dev Inits the owner. This can only be called at creation.
+     * @param _owner The owner of the wallet.
+     */
+    function initOwner(address _owner) internal {
+        // If owner is not address 0, the wallet was already initialized ...
+        if (owner != address(0)) revert SSR__initOwner__walletInitialized();
+
+        if (_owner.code.length != 0 || _owner == address(0)) revert SSR__initOwner__invalidAddress();
+
+        assembly {
+            // We store the owner at storage slot 1 through inline assembly to save some gas and to be very explicit about slot positions.
+            sstore(1, _owner)
+        }
     }
 
     /**

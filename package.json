@@ -8,12 +8,10 @@
         "lint:ts": "echo linting ts files ... && prettier --write test/**/*.ts && npx prettier --write hardhat.config.ts && npx prettier --write deploy/**/*.ts",
         "lint:sol": "echo liniting solidity files ... && prettier --write 'contracts/**/*.sol'",
         "lint:all": "echo linting everything ... && npm run lint:ts && npm run lint:sol",
-        "test:hardhat": "echo running tests with Hardhat for Laser core contracts ... && hardhat test",
+        "test": "echo running tests for Laser core contracts ... && hardhat test",
         "compile": "echo compiling Laser contracts ... && hardhat compile", 
         "deploy-and-verify": "echo deploying the contracts and verifying them on Etherscan ... && hardhat deploy-and-verify --network",
-        "coverage": "hardhat coverage", 
-        "test:foundry": "echo running tests with Foundry for Laser core contracts ... && forge test", 
-        "test": "echo running tests with Foundry and Hardhat for Laser core contracts ... && npm run test:hardhat && npm run test:foundry"
+        "coverage": "hardhat coverage"
     },
     "keywords": [
         "Ethereum",

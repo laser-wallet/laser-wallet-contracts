@@ -26,25 +26,34 @@ describe("Smart Social Recovery", () => {
         addresses = await addressesForTest();
     });
 
-    describe("Owner", () => {
-        describe("init()", () => {
-            it("should fail by providing address 0", async () => {
-                await expect(walletSetup(addrZero)).to.be.reverted;
-            });
+    describe("Owner", async () => {
+        it("should have the correct owner", async () => {
+            const { wallet } = await walletSetup();
+            const { owner } = addresses;
+            expect(await wallet.owner()).to.equal(owner);
+        });
 
-            it("should fail by providing an address with code", async () => {
-                const Caller = await ethers.getContractFactory("Caller");
-                const caller = await Caller.deploy();
-                await expect(walletSetup(caller.address)).to.be.reverted;
-            });
+        it("should not allow to init with address0", async () => {
+            const { factory } = await walletSetup();
+            const { recoveryOwners, guardians, relayer } = addresses;
 
-            it("should fail if we try to init after initialization", async () => {
-                const { address, wallet } = await walletSetup();
-                const { owner, recoveryOwners, guardians, relayer } = addresses;
-                await expect(
-                    wallet.init(owner, recoveryOwners, guardians, 0, 0, 0, ethers.Wallet.createRandom().address, "0x")
-                ).to.be.revertedWith("'Owner__initOwner__walletInitialized()'");
-            });
+            await expect(factory.deployProxyAndRefund(addrZero, recoveryOwners, guardians, 0, 0, 0, addrZero, "0x")).to
+                .be.reverted;
+        });
+
+        it("should fail if we try to init after initialization", async () => {
+            const { address, wallet } = await walletSetup();
+            const { owner, recoveryOwners, guardians, relayer } = addresses;
+            await expect(
+                wallet.init(owner, recoveryOwners, guardians, 0, 0, 0, ethers.Wallet.createRandom().address, "0x")
+            ).to.be.revertedWith("'SSR__initOwner__walletInitialized()'");
+        });
+
+        it("should not allow to init with address with code", async () => {
+            const { address, factory } = await walletSetup();
+            const { recoveryOwners, guardians, relayer } = addresses;
+            await expect(factory.deployProxyAndRefund(address, recoveryOwners, guardians, 0, 0, 0, addrZero, "0x")).to
+                .be.reverted;
         });
     });
 
