@@ -24,7 +24,7 @@ contract Utils is IUtils {
             // The address of the contract is encoded into r.
             signer = address(uint160(uint256(r)));
 
-            // // The actual signature.
+            // The actual signature.
             bytes memory contractSignature;
 
             assembly {
@@ -79,7 +79,7 @@ contract Utils is IUtils {
         uint256 txGas
     ) internal returns (bool success) {
         assembly {
-            // We execute a call to the target address and return boolean...
+            // We execute a call to the target address and return a boolean (success, false).
             success := call(txGas, to, value, add(data, 0x20), mload(data), 0, 0)
         }
     }
