@@ -24,7 +24,7 @@ contract Utils is IUtils {
             // The address of the contract is encoded into r.
             signer = address(uint160(uint256(r)));
 
-            // The actual signature.
+            // The signature(s) of the EOA's that control the target contract.
             bytes memory contractSignature;
 
             assembly {
