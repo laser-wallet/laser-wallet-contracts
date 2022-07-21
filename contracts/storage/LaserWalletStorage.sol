@@ -17,7 +17,6 @@ abstract contract LaserWalletStorage {
     uint256 internal guardianCount;
     uint256 public timeLock;
     bool public isLocked;
-    bool public guardiansLocked;
     mapping(address => address) internal recoveryOwners;
     mapping(address => address) internal guardians;
 

@@ -352,9 +352,7 @@ contract LaserWallet is ILaserWallet, Singleton, SSR, Handler {
                 // We do not need further checks, they were done in 'access'.
                 if (i == 0) {
                     // The first signer needs to be a recovery owner.
-
-                    // validateRecoveryOwner() handles all the necessary checks.
-                    validateRecoveryOwner(signer);
+                    if (recoveryOwners[signer] == address(0)) revert LW__verifySignatures__notRecoveryOwner();
                 } else {
                     // The second signer needs to be a guardian.
                     if (guardians[signer] == address(0)) revert LW__verifySignatures__notGuardian();
@@ -366,9 +364,7 @@ contract LaserWallet is ILaserWallet, Singleton, SSR, Handler {
                     if (owner != signer) revert LW__verifySignatures__notOwner();
                 } else {
                     // The second signer needs to be the recovery owner.
-
-                    // validateRecoveryOwner() handles all the necessary checks.
-                    validateRecoveryOwner(signer);
+                    if (recoveryOwners[signer] == address(0)) revert LW__verifySignatures__notRecoveryOwner();
                 }
             } else {
                 // This else statement should never reach.
@@ -376,7 +372,7 @@ contract LaserWallet is ILaserWallet, Singleton, SSR, Handler {
             }
 
             unchecked {
-                // Won't overflow ...
+                // Won't overflow, it would require more than 30m gas (full block).
                 ++i;
             }
         }

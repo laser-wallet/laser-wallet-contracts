@@ -41,6 +41,7 @@ interface ILaserWallet {
     error LW__verifySignatures__invalidSignatureLength();
     error LW__verifySignatures__notOwner();
     error LW__verifySignatures__notGuardian();
+    error LW__verifySignatures__notRecoveryOwner();
 
     /**
      * @dev Setup function, sets initial storage of contract.

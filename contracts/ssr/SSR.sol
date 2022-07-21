@@ -27,10 +27,6 @@ contract SSR is ISSR, Me, Utils {
 
     bool public isLocked;
 
-    ///@dev If guardians are locked, they cannot do any transaction.
-    ///This is to completely prevent from guardians misbehaving.
-    bool public guardiansLocked;
-
     // Recovery owners in a link list.
     mapping(address => address) internal recoveryOwners;
 
@@ -57,24 +53,32 @@ contract SSR is ISSR, Me, Utils {
 
     /**
      * @dev Unlocks the wallet. Can only be called by the owner + a recovery owner.
-     * This is to avoid the wallet being locked forever if a guardian misbehaves.
-     * The guardians will be locked until the owner decides otherwise.
+     * This is to avoid the wallet being locked forever if guardians misbehave.
      */
-    function recoveryUnlock() external onlyMe {
+    function recoveryUnlock(
+        address[] calldata prevGuardians,
+        address[] calldata guardiansToRemove,
+        address[] calldata newGuardians
+    ) external onlyMe {
+        // We first add the new guardians.
+        initGuardians(newGuardians);
+
+        uint256 arrLength = guardiansToRemove.length;
+        for (uint256 i = 0; i < arrLength; ) {
+            removeGuardian(prevGuardians[i], guardiansToRemove[i]);
+
+            unchecked {
+                ++i;
+            }
+        }
+
+        timeLock = 0;
         isLocked = false;
-        guardiansLocked = true;
         emit RecoveryUnlocked();
     }
 
     /**
-     * @dev Unlocks the guardians. Can only be called by the owner.
-     */
-    function unlockGuardians() external onlyMe {
-        guardiansLocked = false;
-    }
-
-    /**
-     * @dev Can only recover with the signature of a recovery owner and guardian.
+     * @dev Can only recover with the signature of a recovery owner + a guardian.
      * @param newOwner The new owner address. This is generated instantaneously.
      */
     function recover(address newOwner) external onlyMe {
@@ -107,9 +111,9 @@ contract SSR is ISSR, Me, Utils {
      * @param guardianToRemove Address of the guardian to be removed.
      * @notice Can only be called by the owner.
      */
-    function removeGuardian(address prevGuardian, address guardianToRemove) external onlyMe {
+    function removeGuardian(address prevGuardian, address guardianToRemove) public onlyMe {
         // There needs to be at least 2 guardian ...
-        if (guardianCount - 2 < 1) revert SSR__removeGuardian__underflow();
+        if (guardianCount < 3) revert SSR__removeGuardian__underflow();
 
         if (guardianToRemove == pointer) revert SSR__removeGuardian__invalidAddress();
 
@@ -171,8 +175,8 @@ contract SSR is ISSR, Me, Utils {
      * @notice Can only be called by the owner.
      */
     function removeRecoveryOwner(address prevRecoveryOwner, address recoveryOwnerToRemove) external onlyMe {
-        // There needs to be at least 2 recovery owners ...
-        if (recoveryOwnerCount - 1 < 2) revert SSR__removeRecoveryOwner__underflow();
+        // There needs to be at least 1 recovery owner.
+        if (recoveryOwnerCount < 2) revert SSR__removeRecoveryOwner__underflow();
 
         if (recoveryOwnerToRemove == pointer) revert SSR__removeRecoveryOwner__invalidAddress();
 
@@ -184,7 +188,7 @@ contract SSR is ISSR, Me, Utils {
         recoveryOwners[recoveryOwnerToRemove] = address(0);
 
         unchecked {
-            // Can't underflow, there needs to be more than 2 recovery owners to reach here.
+            // Can't underflow, there needs to be at least 1 recovery owner.
             --recoveryOwnerCount;
         }
         emit RecoveryOwnerRemoved(recoveryOwnerToRemove);
@@ -219,7 +223,7 @@ contract SSR is ISSR, Me, Utils {
     /**
      * @return Array of the guardians of this wallet.
      */
-    function getGuardians() external view returns (address[] memory) {
+    function getGuardians() public view returns (address[] memory) {
         address[] memory guardiansArray = new address[](guardianCount);
         address currentGuardian = guardians[pointer];
 
@@ -228,7 +232,6 @@ contract SSR is ISSR, Me, Utils {
             guardiansArray[index] = currentGuardian;
             currentGuardian = guardians[currentGuardian];
             unchecked {
-                //Even if it is a view function, we reduce gas costs if it is called by another contract.
                 ++index;
             }
         }
@@ -238,7 +241,7 @@ contract SSR is ISSR, Me, Utils {
     /**
      * @return Array of the recovery owners of this wallet.
      */
-    function getRecoveryOwners() external view returns (address[] memory) {
+    function getRecoveryOwners() public view returns (address[] memory) {
         address[] memory recoveryOwnersArray = new address[](recoveryOwnerCount);
         address currentRecoveryOwner = recoveryOwners[pointer];
 
@@ -247,7 +250,6 @@ contract SSR is ISSR, Me, Utils {
             recoveryOwnersArray[index] = currentRecoveryOwner;
             currentRecoveryOwner = recoveryOwners[currentRecoveryOwner];
             unchecked {
-                // Even if it is a view function, we reduce gas costs if it is called by another contract.
                 ++index;
             }
         }
@@ -276,20 +278,22 @@ contract SSR is ISSR, Me, Utils {
      */
     function initGuardians(address[] calldata _guardians) internal {
         uint256 guardiansLength = _guardians.length;
-        // There needs to be at least 2 guardians.
-        if (guardiansLength < 2) revert SSR__initGuardians__underflow();
+
+        if (guardiansLength < 1) revert SSR__initGuardians__underflow();
 
         address currentGuardian = pointer;
 
         for (uint256 i = 0; i < guardiansLength; ) {
             address guardian = _guardians[i];
-            unchecked {
-                // If this overflows, this bug would be the least of the problems ...
-                ++i;
-            }
+
             guardians[currentGuardian] = guardian;
             currentGuardian = guardian;
+
             verifyNewRecoveryOwnerOrGuardian(guardian);
+
+            unchecked {
+                ++i;
+            }
         }
 
         guardians[currentGuardian] = pointer;
@@ -303,18 +307,21 @@ contract SSR is ISSR, Me, Utils {
      */
     function initRecoveryOwners(address[] calldata _recoveryOwners) internal {
         uint256 recoveryOwnersLength = _recoveryOwners.length;
-        // There needs to be at least 2 recovery owners.
-        if (recoveryOwnersLength < 2) revert SSR__initRecoveryOwners__underflow();
+
+        if (recoveryOwnersLength < 1) revert SSR__initRecoveryOwners__underflow();
 
         address currentRecoveryOwner = pointer;
+
         for (uint256 i = 0; i < recoveryOwnersLength; ) {
             address recoveryOwner = _recoveryOwners[i];
+
             recoveryOwners[currentRecoveryOwner] = recoveryOwner;
             currentRecoveryOwner = recoveryOwner;
+
             verifyNewRecoveryOwnerOrGuardian(recoveryOwner);
 
             unchecked {
-                // If this overflows, this bug would be the least of the problems ...
+                // If it overflows, this bug would be the least of the problems ...
                 ++i;
             }
         }
@@ -329,58 +336,31 @@ contract SSR is ISSR, Me, Utils {
      */
     function access(bytes4 funcSelector) internal view returns (Access) {
         if (funcSelector == this.lock.selector) {
-            // Only a guardian can lock the wallet ...
+            // Only a guardian can lock the wallet.
 
-            // If  guardians are locked, we revert ...
-            if (guardiansLocked) revert SSR__access__guardiansLocked();
-            else return Access.Guardian;
+            return Access.Guardian;
         } else if (funcSelector == this.unlock.selector) {
-            // Only a guardian + the owner can unlock the wallet ...
+            // Only the owner + a guardian can unlock the wallet to its current state.
 
             return Access.OwnerAndGuardian;
         } else if (funcSelector == this.recoveryUnlock.selector) {
-            // This is in case a guardian is misbehaving ...
+            // Only the owner + a recovery owner can recoveryUnlock the wallet.
 
-            //Only the owner + a recovery owner can trigger this ...
+            // This is in case a guardian is misbehaving.
             return Access.OwnerAndRecoveryOwner;
         } else if (funcSelector == this.recover.selector) {
-            // Only the recovery owner + the guardian can recover the wallet (change the owner keys) ...
+            // Only the recovery owner + a guardian can recover the wallet (change the owner key).
+
+            // We need to make sure that the 1 week delay has passed.
+            timeLockVerifier();
 
             return Access.RecoveryOwnerAndGuardian;
         } else {
-            // Else is the owner ... If the the wallet is locked, we revert ...
+            // Else is the owner. If the the wallet is locked, we revert.
 
             if (isLocked) revert SSR__access__walletLocked();
             else return Access.Owner;
         }
-    }
-
-    /**
-     * @dev Validates that a recovery owner can execute an operation 'now'.
-     * @param signer The returned address from the provided signature and hash.
-     */
-    function validateRecoveryOwner(address signer) internal view {
-        // Time elapsed since the recovery mechanism was activated.
-        uint256 elapsedTime = block.timestamp - timeLock;
-        address currentRecoveryOwner = recoveryOwners[pointer];
-        bool authorized;
-        uint256 index;
-
-        while (currentRecoveryOwner != pointer) {
-            if (elapsedTime > 1 weeks * index) {
-                // Each recovery owner (index ordered) has access to sign the transaction after 1 week.
-                // e.g. The first recovery owner (indexed 0) can sign immediately, the second recovery owner needs to wait 1 week, the third 2 weeks, and so on ...
-
-                if (currentRecoveryOwner == signer) authorized = true;
-            }
-            currentRecoveryOwner = recoveryOwners[currentRecoveryOwner];
-
-            unchecked {
-                ++index;
-            }
-        }
-
-        if (!authorized) revert SSR__validateRecoveryOwner__notAuthorized();
     }
 
     /**
@@ -401,5 +381,13 @@ contract SSR is ISSR, Me, Utils {
             guardians[toVerify] != address(0) ||
             recoveryOwners[toVerify] != address(0)
         ) revert SSR__verifyNewRecoveryOwnerOrGuardian__invalidAddress();
+    }
+
+    function timeLockVerifier() internal view {
+        // We make sure that 1 week has passed.
+        if (timeLock + 1 weeks > block.timestamp) revert SSR__timeLockVerifier__lessThanOneWeek();
+
+        // We make sure that timeLock was activated.
+        if (timeLock == 0) revert SSR__timeLockVerifier__notActivated();
     }
 }

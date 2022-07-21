@@ -67,7 +67,6 @@ interface ISSR {
     error SSR__initRecoveryOwners__invalidAddress();
 
     ///@dev access() custom errors.
-    error SSR__access__guardiansLocked();
     error SSR__access__walletLocked();
 
     ///@dev validateRecoveryOwner() custom error.
@@ -75,6 +74,10 @@ interface ISSR {
 
     ///@dev verifyNewRecoveryOwnerOrGuardian() custom error.
     error SSR__verifyNewRecoveryOwnerOrGuardian__invalidAddress();
+
+    ///@dev timeLockVerifier() custom error.
+    error SSR__timeLockVerifier__lessThanOneWeek();
+    error SSR__timeLockVerifier__notActivated();
 
     /**
      * @dev Locks the wallet. Can only be called by a guardian.
@@ -86,17 +89,11 @@ interface ISSR {
      */
     function unlock() external;
 
-    /**
-     * @dev Unlocks the wallet. Can only be called by the owner + a recovery owner.
-     * This is to avoid the wallet being locked forever if a guardian misbehaves.
-     * The guardians will be locked until the owner decides otherwise.
-     */
-    function recoveryUnlock() external;
-
-    /**
-     * @dev Unlocks the guardians. Can only be called by the owner.
-     */
-    function unlockGuardians() external;
+    function recoveryUnlock(
+        address[] calldata prevGuardians,
+        address[] calldata guardiansToRemove,
+        address[] calldata newGuardians
+    ) external;
 
     /**
      * @dev Can only recover with the signature of a recovery owner and guardian.
@@ -157,18 +154,6 @@ interface ISSR {
         address newRecoveryOwner,
         address oldRecoveryOwner
     ) external;
-
-    /**
-     * @param guardian Requested address.
-     * @return Boolean if the address is a guardian of the current wallet.
-     */
-    function isGuardian(address guardian) external view returns (bool);
-
-    /**
-     * @param recoveryOwner Requested address.
-     * @return Boolean if the address is a recovery owner of the current wallet.
-     */
-    function isRecoveryOwner(address recoveryOwner) external view returns (bool);
 
     /**
      * @return Array of the guardians of this wallet.
