@@ -22,9 +22,9 @@ npm i
 
 ### 3. Testing: 
 
-#### This command will run the tests from Hardhat and Foundry
+#### This command will run all the tests:
 ```
-npm run test:all
+npm run test
 ```
 
 #### Apart from the conventional unit and integration tests, the contracts were also extensively tested with echidna, a propery-based smart contract fuzzer: https://github.com/crytic/echidna
