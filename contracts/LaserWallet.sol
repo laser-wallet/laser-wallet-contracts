@@ -103,10 +103,6 @@ contract LaserWallet is ILaserWallet, Singleton, SSR, Handler {
         emit Setup(_owner, _recoveryOwners, _guardians);
     }
 
-    function hello() external view returns (uint256) {
-        return block.timestamp;
-    }
-
     /**
      * @dev Executes a generic transaction. It does not support 'delegatecall' for security reasons.
      * @param to Destination address.
