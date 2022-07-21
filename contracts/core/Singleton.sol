@@ -6,7 +6,7 @@ import "../interfaces/ISingleton.sol";
 import "./Me.sol";
 
 /**
- * @title Singleton - Master copy contract. 
+ * @title Singleton - Master copy contract.
  */
 contract Singleton is ISingleton, Me {
     ///@dev Singleton always needs to be first declared variable, to ensure that it is at the same location as in the Proxy contract.

@@ -37,9 +37,9 @@ describe("Core", () => {
             await expect(walletSetup(addrZero, recoveryOwners, guardians)).to.be.reverted;
         });
 
-        it("should revert if we provide 1 recovery owner", async () => {
-            const { owner, recoveryOwners, guardians } = addresses;
-            await expect(walletSetup(owner, [recoveryOwners[0]], guardians)).to.be.reverted;
+        it("should revert if we provide 0 recovery owners", async () => {
+            const { owner, guardians } = addresses;
+            await expect(walletSetup(owner, [""], guardians)).to.be.reverted;
         });
 
         it("should revert if recovery owner is a contract that doesn't support 1271", async () => {
@@ -70,8 +70,8 @@ describe("Core", () => {
         });
 
         it("should revert if we provide 1 guardian", async () => {
-            const { owner, recoveryOwners, guardians } = addresses;
-            await expect(walletSetup(owner, recoveryOwners, [guardians[0]])).to.be.reverted;
+            const { owner, recoveryOwners } = addresses;
+            await expect(walletSetup(owner, recoveryOwners, [""])).to.be.reverted;
         });
 
         it("should revert if the guardian is a contract and doesn't support 1271", async () => {

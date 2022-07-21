@@ -99,3 +99,15 @@ export async function lockWallet(wallet: Contract, guardian: Signer) {
     tx.signatures = await sign(guardian, hash);
     await sendTx(wallet, tx);
 }
+
+export function isAddress(addresses: Address[], address: Address): boolean {
+    let _isAddress = false;
+
+    addresses.map((_address) => {
+        if (_address.toLowerCase() === address.toLowerCase()) {
+            _isAddress = true;
+        }
+    });
+
+    return _isAddress;
+}
