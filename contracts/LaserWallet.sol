@@ -142,7 +142,7 @@ contract LaserWallet is ILaserWallet, Singleton, SSR, Handler {
         if (success) emit ExecSuccess(to, value, nonce);
         else emit ExecFailure(to, value, nonce);
 
-        // We calculate the gas price, as per the user's request ...
+        // We calculate the gas price, as per the user's request.
         uint256 gasPrice = calculateGasPrice(maxFeePerGas);
 
         // gasUsed is the total amount of gas consumed for this transaction.
