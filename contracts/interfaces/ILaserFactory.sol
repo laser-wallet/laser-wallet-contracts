@@ -30,12 +30,12 @@ interface ILaserFactory {
      */
     function deployProxyAndRefund(
         address owner,
-        address[] calldata recoveryOwners,
-        address[] calldata guardians,
         uint256 maxFeePerGas,
         uint256 maxPriorityFeePerGas,
         uint256 gasLimit,
         address relayer,
+        address laserModule,
+        bytes calldata laserModuleData,
         uint256 saltNumber,
         bytes calldata ownerSignature
     ) external returns (LaserProxy proxy);
@@ -45,8 +45,8 @@ interface ILaserFactory {
      */
     function preComputeAddress(
         address owner,
-        address[] calldata recoveryOwners,
-        address[] calldata guardians,
+        address laserModule,
+        bytes calldata laserModuleData,
         uint256 saltNumber
     ) external view returns (address);
 

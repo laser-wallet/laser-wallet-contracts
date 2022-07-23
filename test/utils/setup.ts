@@ -59,6 +59,12 @@ export async function signersForTest(): Promise<SignersForTest> {
     };
 }
 
+export async function initSSR(guardians: Address[], recoveryOwners: Address[]): Promise<string> {
+    const abi = (await deployments.get("LaserModuleSSR")).abi;
+
+    return encodeFunctionData(abi, "initSSR", [guardians, recoveryOwners]);
+}
+
 export async function walletSetup(
     _owner?: Address,
     _recoveryOwners?: Address[],
@@ -102,7 +108,10 @@ export async function walletSetup(
     relayer = _relayer ? _relayer : relayer;
     const salt = saltNumber ? saltNumber : 1111;
 
-    const preComputedAddress = await factory.preComputeAddress(owner, recoveryOwners, guardians, salt);
+    const ssrInitData = initSSR(guardians, recoveryOwners);
+    const LaserSSRModuleAddress = (await deployments.get("LaserModuleSSR")).address;
+
+    const preComputedAddress = await factory.preComputeAddress(owner, LaserSSRModuleAddress, ssrInitData, salt);
 
     if (fundWallet) {
         await ownerSigner.sendTransaction({
@@ -110,22 +119,25 @@ export async function walletSetup(
             value: ethers.utils.parseEther("10"),
         });
     }
+
     const signature = ownerSignature ? ownerSignature : await sign(ownerSigner, dataHash);
+
     const transaction = await factory.deployProxyAndRefund(
         owner,
-        recoveryOwners,
-        guardians,
         maxFeePerGas,
         maxPriorityFeePerGas,
         gasLimit,
         relayer,
+        LaserSSRModuleAddress,
+        ssrInitData,
         salt,
         signature,
         { gasLimit: gasLimit > 0 ? gasLimit : 10000000 }
     );
 
     const receipt = await transaction.wait();
-    const proxyAddress = receipt.events[1].args.proxy;
+    const proxyAddress = receipt.events[0].args.proxy;
+
     const wallet = (await ethers.getContractAt(abi, proxyAddress)) as LaserWallet;
 
     return {

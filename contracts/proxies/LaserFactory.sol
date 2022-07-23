@@ -7,13 +7,13 @@ import "../interfaces/ILaserFactory.sol";
 interface ILaser {
     function init(
         address _owner,
-        address[] calldata _recoveryOwners,
-        address[] calldata _guardians,
         uint256 maxFeePerGas,
         uint256 maxPriorityFeePerGas,
         uint256 gasLimit,
         address relayer,
-        bytes calldata signature
+        address laserModule,
+        bytes calldata laserModuleData,
+        bytes calldata ownerSignature
     ) external;
 }
 
@@ -45,26 +45,26 @@ contract LaserFactory is ILaserFactory {
      */
     function deployProxyAndRefund(
         address owner,
-        address[] calldata recoveryOwners,
-        address[] calldata guardians,
         uint256 maxFeePerGas,
         uint256 maxPriorityFeePerGas,
         uint256 gasLimit,
         address relayer,
+        address laserModule,
+        bytes calldata laserModuleData,
         uint256 saltNumber,
         bytes calldata ownerSignature
     ) external returns (LaserProxy proxy) {
-        bytes32 salt = getSalt(owner, recoveryOwners, guardians, saltNumber);
+        bytes32 salt = getSalt(owner, laserModule, laserModuleData, saltNumber);
         proxy = createProxyWithCreate2(salt);
 
         ILaser(address(proxy)).init(
             owner,
-            recoveryOwners,
-            guardians,
             maxFeePerGas,
             maxPriorityFeePerGas,
             gasLimit,
             relayer,
+            laserModule,
+            laserModuleData,
             ownerSignature
         );
 
@@ -76,14 +76,14 @@ contract LaserFactory is ILaserFactory {
      */
     function preComputeAddress(
         address owner,
-        address[] calldata recoveryOwners,
-        address[] calldata guardians,
+        address laserModule,
+        bytes calldata laserModuleData,
         uint256 saltNumber
     ) external view returns (address) {
         bytes memory creationCode = proxyCreationCode();
         bytes memory data = abi.encodePacked(creationCode, uint256(uint160(singleton)));
 
-        bytes32 salt = getSalt(owner, recoveryOwners, guardians, saltNumber);
+        bytes32 salt = getSalt(owner, laserModule, laserModuleData, saltNumber);
         bytes32 hash = keccak256(abi.encodePacked(bytes1(0xff), address(this), salt, keccak256(data)));
 
         return address(uint160(uint256(hash)));
@@ -121,10 +121,10 @@ contract LaserFactory is ILaserFactory {
      */
     function getSalt(
         address owner,
-        address[] calldata recoveryOwners,
-        address[] calldata guardians,
+        address laserModule,
+        bytes calldata laserModuleData,
         uint256 saltNumber
     ) internal pure returns (bytes32 salt) {
-        salt = keccak256(abi.encodePacked(owner, recoveryOwners, guardians, saltNumber));
+        salt = keccak256(abi.encodePacked(owner, laserModule, laserModuleData, saltNumber));
     }
 }
