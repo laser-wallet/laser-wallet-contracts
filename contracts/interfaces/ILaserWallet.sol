@@ -18,6 +18,8 @@ interface ILaserWallet {
 
     ///@dev exec() custom errors.
     error LW__exec__invalidNonce();
+    error LW__exec__walletLocked();
+    error LW__exec__notOwner();
     error LW__exec__refundFailure();
 
     ///@dev isValidSignature() Laser custom error.

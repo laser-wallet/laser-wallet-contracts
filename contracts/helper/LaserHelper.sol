@@ -10,10 +10,6 @@ interface ILaser {
 
     function isLocked() external view returns (bool);
 
-    function getGuardians() external view returns (address[] memory);
-
-    function getRecoveryOwners() external view returns (address[] memory);
-
     function nonce() external view returns (uint256);
 }
 
@@ -27,10 +23,7 @@ contract LaserHelper {
         returns (
             address owner,
             address singleton,
-            uint256 timeLock,
             bool isLocked,
-            address[] memory guardians,
-            address[] memory recoveryOwners,
             uint256 nonce,
             uint256 balance
         )
@@ -38,10 +31,7 @@ contract LaserHelper {
         ILaser laser = ILaser(laserWallet);
         owner = laser.owner();
         singleton = laser.singleton();
-        timeLock = laser.timeLock();
         isLocked = laser.isLocked();
-        guardians = laser.getGuardians();
-        recoveryOwners = laser.getRecoveryOwners();
         nonce = laser.nonce();
         balance = address(laserWallet).balance;
     }

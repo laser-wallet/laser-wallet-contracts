@@ -6,20 +6,16 @@ pragma solidity 0.8.15;
  * @dev Contract that maps the storage of Laser wallet.
  */
 abstract contract LaserWalletStorage {
-    // core/Singleton.sol
+    // LaserState.sol
     address public singleton;
 
-    // core/Owner.sol
     address public owner;
 
-    // ssr/SSR.sol
-    uint256 internal recoveryOwnerCount;
-    uint256 internal guardianCount;
-    uint256 public timeLock;
-    bool public isLocked;
-    mapping(address => address) internal recoveryOwners;
-    mapping(address => address) internal guardians;
+    address public laserGuard;
 
-    // LaserWallet.sol
+    bool public isLocked;
+
     uint256 public nonce;
+
+    mapping(address => address) internal laserModules;
 }

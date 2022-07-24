@@ -6,6 +6,8 @@ import "./handlers/Handler.sol";
 import "./interfaces/ILaserWallet.sol";
 import "./state/LaserState.sol";
 
+import "hardhat/console.sol";
+
 interface ILaserGuard {
     function checkTransaction(address to) external;
 }
@@ -89,7 +91,7 @@ contract LaserWallet is ILaserWallet, Common, LaserState, Handler {
         address to,
         uint256 value,
         bytes calldata callData,
-        uint256 nonce,
+        uint256 _nonce,
         uint256 maxFeePerGas,
         uint256 maxPriorityFeePerGas,
         uint256 gasLimit,
@@ -98,28 +100,28 @@ contract LaserWallet is ILaserWallet, Common, LaserState, Handler {
     ) external {
         // We immediately increase the nonce to avoid replay attacks.
         unchecked {
-            nonce++;
+            if (nonce++ != _nonce) revert LW__exec__invalidNonce();
         }
 
-        require(!isLocked, "wallet locked");
+        if (isLocked) revert LW__exec__walletLocked();
 
         bytes32 signedHash = keccak256(
-            encodeOperation(to, value, callData, nonce, maxFeePerGas, maxPriorityFeePerGas, gasLimit)
+            encodeOperation(to, value, callData, _nonce, maxFeePerGas, maxPriorityFeePerGas, gasLimit)
         );
 
         address signer = Utils.returnSigner(signedHash, ownerSignature, 0);
 
-        require(signer == owner, "nop");
+        if (signer != owner) revert LW__exec__notOwner();
 
         bool success = Utils.call(to, value, callData, gasleft() - 10000);
+
+        // We do not revert the call if it fails, because the wallet needs to pay the relayer even in case of failure.
+        if (success) emit ExecSuccess(to, value, nonce);
+        else emit ExecFailure(to, value, nonce);
 
         if (laserGuard != address(0)) {
             ILaserGuard(laserGuard).checkTransaction(to);
         }
-
-        // We do not revert the call if it fails, because the wallet needs to pay the relayer even in case of failure.
-        // if (success) emit ExecSuccess(to, value, nonce);
-        // else emit ExecFailure(to, value, nonce);
 
         uint256 gasPrice = Utils.calculateGasPrice(maxFeePerGas);
 
@@ -129,7 +131,7 @@ contract LaserWallet is ILaserWallet, Common, LaserState, Handler {
 
         success = Utils.call(relayer == address(0) ? tx.origin : relayer, refundAmount, new bytes(0), gasleft());
 
-        // if (!success) revert LW__exec__refundFailure();
+        if (!success) revert LW__exec__refundFailure();
     }
 
     /**
@@ -144,12 +146,14 @@ contract LaserWallet is ILaserWallet, Common, LaserState, Handler {
         uint256 gasLimit,
         address relayer
     ) external {
-        require(laserModules[msg.sender] != address(0), "nop");
+        require(laserModules[msg.sender] != address(0), "nop module");
         unchecked {
             nonce++;
         }
 
         bool success = Utils.call(to, value, callData, gasleft() - 10000);
+
+        require(success);
     }
 
     function lock() external access {

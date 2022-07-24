@@ -12,6 +12,7 @@ interface ReturnWalletSetup {
     wallet: LaserWallet;
     factoryAddress: Address;
     factory: Contract;
+    SSR: Address;
 }
 
 export interface AddressesForTest {
@@ -145,5 +146,18 @@ export async function walletSetup(
         wallet: wallet,
         factoryAddress: Factory.address,
         factory: factory,
+        SSR: LaserSSRModuleAddress,
     };
+}
+
+export async function getRecoveryOwners(module: Address, wallet: Address): Promise<Address[]> {
+    const abi = ["function getRecoveryOwners(address) external view returns (address[] memory)"];
+    const contract = new ethers.Contract(module, abi, ethers.provider);
+    return contract.getRecoveryOwners(wallet);
+}
+
+export async function getGuardians(module: Address, wallet: Address): Promise<Address[]> {
+    const abi = ["function getGuardians(address) external view returns (address[] memory)"];
+    const contract = new ethers.Contract(module, abi, ethers.provider);
+    return contract.getGuardians(wallet);
 }

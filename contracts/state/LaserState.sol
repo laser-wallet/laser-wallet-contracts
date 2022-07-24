@@ -6,6 +6,8 @@ import "../common/Utils.sol";
 import "../interfaces/IERC165.sol";
 import "../interfaces/ILaserState.sol";
 
+import "hardhat/console.sol";
+
 contract LaserState is ILaserState, Access {
     address internal constant pointer = address(0x1);
 
@@ -26,7 +28,8 @@ contract LaserState is ILaserState, Access {
     }
 
     function addLaserModule(address newModule) external access {
-        laserModules[newModule] = newModule;
+        laserModules[newModule] = laserModules[pointer];
+        laserModules[pointer] = newModule;
     }
 
     function changeLaserGuard(address newLaserGuard) external access {
@@ -39,9 +42,9 @@ contract LaserState is ILaserState, Access {
         if (!IERC165(_singleton).supportsInterface(0xae029e0b)) {
             //bytes4(keccak256("I_AM_LASER")))
             revert LaserState__upgradeSingleton__notLaser();
-        } else {
-            singleton = _singleton;
         }
+
+        singleton = _singleton;
     }
 
     function activateWallet(

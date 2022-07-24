@@ -47,4 +47,16 @@ contract Common {
 
         return abi.encodePacked(bytes1(0x19), bytes1(0x01), domainSeparator(), opHash);
     }
+
+    function operationHash(
+        address to,
+        uint256 value,
+        bytes calldata callData,
+        uint256 _nonce,
+        uint256 maxFeePerGas,
+        uint256 maxPriorityFeePerGas,
+        uint256 gasLimit
+    ) external view returns (bytes32) {
+        return keccak256(encodeOperation(to, value, callData, _nonce, maxFeePerGas, maxPriorityFeePerGas, gasLimit));
+    }
 }

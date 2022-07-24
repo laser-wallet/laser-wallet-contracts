@@ -1,12 +1,22 @@
 import { expect } from "chai";
 import { deployments, ethers } from "hardhat";
 import { BigNumber } from "ethers";
-import { walletSetup, addressesForTest, AddressesForTest, signersForTest, SignersForTest, sign } from "../utils";
+import {
+    walletSetup,
+    addressesForTest,
+    AddressesForTest,
+    signersForTest,
+    SignersForTest,
+    sign,
+    initSSR,
+} from "../utils";
+import { Address } from "../types";
 
 describe("Proxy Factory", () => {
     let addresses: AddressesForTest;
     let signers: SignersForTest;
     let chainId: number;
+    let laserModule: Address;
 
     beforeEach(async () => {
         await deployments.fixture();
@@ -14,6 +24,8 @@ describe("Proxy Factory", () => {
         signers = await signersForTest();
         const network = await ethers.provider.getNetwork();
         chainId = network.chainId;
+
+        laserModule = (await deployments.get("LaserModuleSSR")).address;
     });
 
     describe("Proxy Factory creation and interaction", () => {
@@ -50,10 +62,11 @@ describe("Proxy Factory", () => {
                 abiCoder.encode(["uint256", "uint256", "uint256", "uint256"], [0, 0, 0, invalidChainId])
             );
 
+            const initData = await initSSR(guardians, recoveryOwners);
             const signature = await sign(ownerSigner, dataHash);
 
             await expect(
-                factory.deployProxyAndRefund(owner, recoveryOwners, guardians, 0, 0, 0, relayer, saltNumber, signature)
+                factory.deployProxyAndRefund(owner, 0, 0, 0, relayer, laserModule, initData, saltNumber, signature)
             ).to.be.reverted;
         });
 
@@ -70,10 +83,11 @@ describe("Proxy Factory", () => {
                 abiCoder.encode(["uint256", "uint256", "uint256", "uint256"], [0, 0, 0, chainId])
             );
 
+            const initData = await initSSR(guardians, recoveryOwners);
             const signature = await sign(ownerSigner, dataHash);
 
             await expect(
-                factory.deployProxyAndRefund(owner, recoveryOwners, guardians, 0, 0, 0, relayer, saltNumber, signature)
+                factory.deployProxyAndRefund(owner, 0, 0, 0, relayer, laserModule, initData, saltNumber, signature)
             ).to.emit(factory, "ProxyCreation");
         });
 
@@ -83,8 +97,6 @@ describe("Proxy Factory", () => {
 
             const saltNumber = Math.floor(Math.random() * 100000);
 
-            const preComputedAddress = await factory.preComputeAddress(owner, recoveryOwners, guardians, saltNumber);
-
             const { ownerSigner } = signers;
 
             const abiCoder = new ethers.utils.AbiCoder();
@@ -92,21 +104,24 @@ describe("Proxy Factory", () => {
                 abiCoder.encode(["uint256", "uint256", "uint256", "uint256"], [0, 0, 0, chainId])
             );
 
+            const initData = await initSSR(guardians, recoveryOwners);
             const signature = await sign(ownerSigner, dataHash);
 
             const tx = await factory.deployProxyAndRefund(
                 owner,
-                recoveryOwners,
-                guardians,
                 0,
                 0,
                 0,
                 relayer,
+                laserModule,
+                initData,
                 saltNumber,
                 signature
             );
             const receipt = await tx.wait();
-            const address = receipt.events[1].args.proxy;
+            const address = receipt.events[0].args.proxy;
+
+            const preComputedAddress = await factory.preComputeAddress(owner, laserModule, initData, saltNumber);
 
             expect(address).to.equal(preComputedAddress);
         });
@@ -117,7 +132,8 @@ describe("Proxy Factory", () => {
 
             const saltNumber = Math.floor(Math.random() * 100000);
 
-            const preComputedAddress = await factory.preComputeAddress(owner, recoveryOwners, guardians, saltNumber);
+            const initData = await initSSR(guardians, recoveryOwners);
+            const preComputedAddress = await factory.preComputeAddress(owner, laserModule, initData, saltNumber);
 
             const { ownerSigner } = signers;
 
@@ -130,17 +146,17 @@ describe("Proxy Factory", () => {
 
             const tx = await factory.deployProxyAndRefund(
                 owner,
-                recoveryOwners,
-                guardians,
                 0,
                 0,
                 0,
                 relayer,
+                laserModule,
+                initData,
                 BigNumber.from(saltNumber).add(1),
                 signature
             );
             const receipt = await tx.wait();
-            const address = receipt.events[1].args.proxy;
+            const address = receipt.events[0].args.proxy;
 
             expect(address).to.not.equal(preComputedAddress);
         });
@@ -151,10 +167,11 @@ describe("Proxy Factory", () => {
 
             const saltNumber = Math.floor(Math.random() * 100000);
 
+            const initData = await initSSR(guardians, recoveryOwners);
             const preComputedAddress = await factory.preComputeAddress(
                 ethers.Wallet.createRandom().address,
-                recoveryOwners,
-                guardians,
+                laserModule,
+                initData,
                 saltNumber
             );
 
@@ -169,17 +186,17 @@ describe("Proxy Factory", () => {
 
             const tx = await factory.deployProxyAndRefund(
                 owner,
-                recoveryOwners,
-                guardians,
                 0,
                 0,
                 0,
                 relayer,
+                laserModule,
+                initData,
                 saltNumber,
                 signature
             );
             const receipt = await tx.wait();
-            const address = receipt.events[1].args.proxy;
+            const address = receipt.events[0].args.proxy;
 
             expect(address).to.not.equal(preComputedAddress);
         });
@@ -190,13 +207,9 @@ describe("Proxy Factory", () => {
 
             const saltNumber = Math.floor(Math.random() * 100000);
 
-            const otherGuardians = [ethers.Wallet.createRandom().address, ethers.Wallet.createRandom().address];
-            const preComputedAddress = await factory.preComputeAddress(
-                owner,
-                recoveryOwners,
-                otherGuardians,
-                saltNumber
-            );
+            const initData = await initSSR(guardians, recoveryOwners);
+            const initData2 = await initSSR([ethers.Wallet.createRandom().address], recoveryOwners);
+            const preComputedAddress = await factory.preComputeAddress(owner, laserModule, initData2, saltNumber);
 
             const { ownerSigner } = signers;
 
@@ -209,17 +222,17 @@ describe("Proxy Factory", () => {
 
             const tx = await factory.deployProxyAndRefund(
                 owner,
-                recoveryOwners,
-                guardians,
                 0,
                 0,
                 0,
                 relayer,
+                laserModule,
+                initData,
                 saltNumber,
                 signature
             );
             const receipt = await tx.wait();
-            const address = receipt.events[1].args.proxy;
+            const address = receipt.events[0].args.proxy;
 
             expect(address).to.not.equal(preComputedAddress);
         });
@@ -230,13 +243,9 @@ describe("Proxy Factory", () => {
 
             const saltNumber = Math.floor(Math.random() * 100000);
 
-            const otherRecoveryOwners = [ethers.Wallet.createRandom().address, ethers.Wallet.createRandom().address];
-            const preComputedAddress = await factory.preComputeAddress(
-                owner,
-                otherRecoveryOwners,
-                guardians,
-                saltNumber
-            );
+            const initData = await initSSR(guardians, recoveryOwners);
+            const initData2 = await initSSR(guardians, [ethers.Wallet.createRandom().address]);
+            const preComputedAddress = await factory.preComputeAddress(owner, laserModule, initData2, saltNumber);
 
             const { ownerSigner } = signers;
 
@@ -249,53 +258,19 @@ describe("Proxy Factory", () => {
 
             const tx = await factory.deployProxyAndRefund(
                 owner,
-                recoveryOwners,
-                guardians,
                 0,
                 0,
                 0,
                 relayer,
+                laserModule,
+                initData,
                 saltNumber,
                 signature
             );
             const receipt = await tx.wait();
-            const address = receipt.events[1].args.proxy;
+            const address = receipt.events[0].args.proxy;
 
             expect(address).to.not.equal(preComputedAddress);
-        });
-
-        it("should return the same address if we change the max fee ", async () => {
-            const { factory } = await walletSetup();
-            const { owner, recoveryOwners, guardians, relayer } = await addressesForTest();
-
-            const saltNumber = Math.floor(Math.random() * 100000);
-
-            const preComputedAddress = await factory.preComputeAddress(owner, recoveryOwners, guardians, saltNumber);
-
-            const { ownerSigner } = signers;
-
-            const abiCoder = new ethers.utils.AbiCoder();
-            const dataHash = ethers.utils.keccak256(
-                abiCoder.encode(["uint256", "uint256", "uint256", "uint256"], [1000, 0, 0, chainId])
-            );
-
-            const signature = await sign(ownerSigner, dataHash);
-
-            const tx = await factory.deployProxyAndRefund(
-                owner,
-                recoveryOwners,
-                guardians,
-                1000,
-                0,
-                0,
-                relayer,
-                saltNumber,
-                signature
-            );
-            const receipt = await tx.wait();
-            const address = receipt.events[1].args.proxy;
-
-            expect(address).to.equal(preComputedAddress);
         });
 
         it("should revert by deploying the same address twice", async () => {
@@ -306,7 +281,8 @@ describe("Proxy Factory", () => {
 
             const saltNumber = Math.floor(Math.random() * 100000);
 
-            const preComputedAddress = await factory.preComputeAddress(owner, recoveryOwners, guardians, saltNumber);
+            const initData = await initSSR(guardians, recoveryOwners);
+            const preComputedAddress = await factory.preComputeAddress(owner, laserModule, initData, saltNumber);
 
             const { ownerSigner } = signers;
 
@@ -318,21 +294,11 @@ describe("Proxy Factory", () => {
             const signature = await sign(ownerSigner, dataHash);
 
             // first transaction
-            await factory.deployProxyAndRefund(
-                owner,
-                recoveryOwners,
-                guardians,
-                0,
-                0,
-                0,
-                relayer,
-                saltNumber,
-                signature
-            );
+            await factory.deployProxyAndRefund(owner, 0, 0, 0, relayer, laserModule, initData, saltNumber, signature);
 
             // second transaction
             await expect(
-                factory.deployProxyAndRefund(owner, recoveryOwners, guardians, 0, 0, 0, relayer, saltNumber, signature)
+                factory.deployProxyAndRefund(owner, 0, 0, 0, relayer, laserModule, initData, saltNumber, signature)
             ).to.be.reverted;
         });
     });
