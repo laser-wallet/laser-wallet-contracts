@@ -11,7 +11,6 @@ import {
     getHash,
     sendTx,
     fundWallet,
-    lockWallet,
     isAddress,
     initSSR,
     SignersForTest,
@@ -1275,17 +1274,113 @@ describe("Smart Social Recovery", () => {
     //         });
     //     });
 
-    describe("lock()", () => {});
+    describe("lock()", () => {
+        it("should fail by providing incorrect calldata", async () => {});
 
-    describe("unlock()", () => {});
+        it("should lock the wallet", async () => {
+            const { address, wallet, SSR } = await walletSetup();
 
-    describe("recoveryUnlock()", () => {});
+            const txData = encodeFunctionData(abi, "lock", []);
+            const { recoveryOwner1Signer, guardian1Signer } = await signersForTest();
 
-    describe("unlockGuardians()", () => {});
+            const module = new ethers.Contract(SSR, moduleAbi, recoveryOwner1Signer);
+            const hash = await module.operationHash(address, txData, await wallet.nonce(), 0, 0, 0);
 
-    describe("recover()", () => {});
+            const sig = await sign(recoveryOwner1Signer, hash);
+            const sig2 = await sign(guardian1Signer, hash);
+            const sigs = sig + sig2.slice(2);
 
-    describe("scenarios", () => {});
+            // wallet is not locked.
+            expect(await wallet.isLocked()).to.equal(false);
+
+            await module.lock(address, txData, 0, 0, 0, addrZero, sigs);
+
+            // wallet is locked.
+            expect(await wallet.isLocked()).to.equal(true);
+        });
+    });
+
+    describe("unlock()", () => {
+        it("should unlock the wallet (owner + guardian)", async () => {
+            const { address, wallet, SSR } = await walletSetup();
+
+            const txData = encodeFunctionData(abi, "lock", []);
+            const { ownerSigner, recoveryOwner1Signer, guardian1Signer } = await signersForTest();
+
+            const module = new ethers.Contract(SSR, moduleAbi, recoveryOwner1Signer);
+            const hash = await module.operationHash(address, txData, await wallet.nonce(), 0, 0, 0);
+
+            const sig = await sign(recoveryOwner1Signer, hash);
+            const sig2 = await sign(guardian1Signer, hash);
+            const sigs = sig + sig2.slice(2);
+
+            // wallet is not locked.
+            expect(await wallet.isLocked()).to.equal(false);
+
+            await module.lock(address, txData, 0, 0, 0, addrZero, sigs);
+
+            // Wallet is locked.
+            expect(await wallet.isLocked()).to.equal(true);
+
+            // Now we need to unlock the wallet.
+            const unlockTxData = encodeFunctionData(abi, "unlock", []);
+            const hash2 = await module.operationHash(address, unlockTxData, await wallet.nonce(), 0, 0, 0);
+
+            const unlockSig = await sign(ownerSigner, hash2);
+            const unlockSig2 = await sign(guardian1Signer, hash2);
+            const unlockSigs = unlockSig + unlockSig2.slice(2);
+
+            await module.unlock(address, unlockTxData, 0, 0, 0, addrZero, unlockSigs);
+
+            expect(await wallet.isLocked()).to.equal(false);
+        });
+    });
+
+    describe("recover()", () => {
+        it("should not allow to recover the wallet..", async () => {});
+
+        it("should recover the wallet", async () => {
+            const { address, wallet, SSR } = await walletSetup();
+
+            const newOwner = ethers.Wallet.createRandom().address;
+
+            const txData = encodeFunctionData(abi, "lock", []);
+            const { recoveryOwner1Signer, guardian1Signer } = await signersForTest();
+
+            const module = new ethers.Contract(SSR, moduleAbi, recoveryOwner1Signer);
+            const hash = await module.operationHash(address, txData, await wallet.nonce(), 0, 0, 0);
+
+            const sig = await sign(recoveryOwner1Signer, hash);
+            const sig2 = await sign(guardian1Signer, hash);
+            const sigs = sig + sig2.slice(2);
+
+            // wallet is not locked.
+            expect(await wallet.isLocked()).to.equal(false);
+
+            await module.lock(address, txData, 0, 0, 0, addrZero, sigs);
+
+            // Wallet is locked.
+            expect(await wallet.isLocked()).to.equal(true);
+
+            // Now we need to recover the wallet.
+            const unlockTxData = encodeFunctionData(abi, "changeOwner", [newOwner]);
+            const hash2 = await module.operationHash(address, unlockTxData, await wallet.nonce(), 0, 0, 0);
+
+            const unlockSig = await sign(recoveryOwner1Signer, hash2);
+            const unlockSig2 = await sign(guardian1Signer, hash2);
+            const unlockSigs = unlockSig + unlockSig2.slice(2);
+
+            //we increase the time by 1 week + 1 second '604801 seconds'
+            await hre.network.provider.request({
+                method: "evm_increaseTime",
+                params: [604801],
+            });
+            await hre.network.provider.send("evm_mine");
+            await module.recover(address, unlockTxData, 0, 0, 0, addrZero, unlockSigs);
+
+            expect(await wallet.owner()).to.equal(newOwner);
+        });
+    });
 
     describe("multi call", () => {
         // Repeat the process.

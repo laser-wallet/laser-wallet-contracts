@@ -7,29 +7,29 @@ import { LaserWallet } from "../../typechain-types";
 import { LaserFactory } from "../../typechain-types";
 import { addrZero, ownerWallet } from "../constants/constants";
 
-interface ReturnWalletSetup {
+type ReturnWalletSetup = {
     address: Address;
     wallet: LaserWallet;
     factoryAddress: Address;
     factory: Contract;
     SSR: Address;
-}
+};
 
-export interface AddressesForTest {
+export type AddressesForTest = {
     owner: Address;
     recoveryOwners: Address[];
     guardians: Address[];
     relayer: Address;
-}
+};
 
-export interface SignersForTest {
+export type SignersForTest = {
     ownerSigner: Signer;
     recoveryOwner1Signer: Signer;
     recoveryOwner2Signer: Signer;
     guardian1Signer: Signer;
     guardian2Signer: Signer;
     relayerSigner: Signer;
-}
+};
 
 export async function addressesForTest(): Promise<AddressesForTest> {
     const [owner, recoveryOwner1, recoveryOwner2, guardian1, guardian2, relayer] = await ethers.getSigners();

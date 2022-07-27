@@ -8,14 +8,9 @@ pragma solidity 0.8.15;
 abstract contract LaserWalletStorage {
     // LaserState.sol
     address public singleton;
-
     address public owner;
-
     address public laserGuard;
-
     bool public isLocked;
-
     uint256 public nonce;
-
     mapping(address => address) internal laserModules;
 }

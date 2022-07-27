@@ -6,8 +6,6 @@ import "../common/Utils.sol";
 import "../interfaces/IERC165.sol";
 import "../interfaces/ILaserState.sol";
 
-import "hardhat/console.sol";
-
 contract LaserState is ILaserState, Access {
     address internal constant pointer = address(0x1);
 

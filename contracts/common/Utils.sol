@@ -89,7 +89,6 @@ library Utils {
         uint256 txGas
     ) internal returns (bool success) {
         assembly {
-            // We execute a call to the target address and return a boolean (success, false).
             success := call(txGas, to, value, add(data, 0x20), mload(data), 0, 0)
         }
     }
@@ -97,8 +96,8 @@ library Utils {
     /**
      * @dev Calculates the gas price.
      */
-    function calculateGasPrice(uint256 maxFeePerGas) internal view returns (uint256 gasPrice) {
-        return min(maxFeePerGas, tx.gasprice);
+    function calculateGasPrice(uint256 maxFeePerGas, uint256 gasPrice) internal pure returns (uint256) {
+        return min(maxFeePerGas, gasPrice);
     }
 
     function min(uint256 a, uint256 b) internal pure returns (uint256) {

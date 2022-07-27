@@ -1,11 +1,8 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 pragma solidity 0.8.15;
 
-import "../../common/Common.sol";
 import "../../common/Utils.sol";
 import "../../interfaces/ILaserModuleSSR.sol";
-
-import "hardhat/console.sol";
 
 interface ILaser {
     function nonce() external view returns (uint256);
@@ -26,9 +23,17 @@ interface ILaser {
 /**
  * @dev Implementation of Smart Social Recovery.
  */
-contract LaserModuleSSR is ILaserModuleSSR, Common {
+contract LaserModuleSSR is ILaserModuleSSR {
+    bytes32 private constant DOMAIN_SEPARATOR_TYPEHASH =
+        keccak256("EIP712Domain(uint256 chainId,address verifyingContract)");
+
+    bytes32 private constant LASER_MODULE_SSR_TYPE_STRUCTURE =
+        keccak256(
+            "LaserModuleSSR(address wallet,bytes callData,uint256 walletNonce,uint256 maxPriorityFeePerGas,uint256 gasLimit"
+        );
     address internal constant pointer = address(0x1);
 
+    mapping(address => uint256) public timeLock;
     mapping(address => uint256) internal recoveryOwnerCount;
     mapping(address => uint256) internal guardianCount;
     mapping(address => mapping(address => address)) internal recoveryOwners;
@@ -51,8 +56,40 @@ contract LaserModuleSSR is ILaserModuleSSR, Common {
     }
 
     /**
+     * @dev Locks the target wallet.
+     * Can only be called by the recovery owner + guardian.
+     */
+    function lock(
+        address wallet,
+        bytes calldata callData,
+        uint256 maxFeePerGas,
+        uint256 maxPriorityFeePerGas,
+        uint256 gasLimit,
+        address relayer,
+        bytes memory signatures
+    ) external {
+        uint256 walletNonce = ILaser(wallet).nonce();
+
+        bytes32 signedHash = keccak256(
+            encodeOperation(wallet, callData, walletNonce, maxFeePerGas, maxPriorityFeePerGas, gasLimit)
+        );
+
+        require(bytes4(callData) == bytes4(keccak256("lock()")), "should be the same!");
+
+        address signer1 = Utils.returnSigner(signedHash, signatures, 0);
+        require(recoveryOwners[wallet][signer1] != address(0));
+
+        address signer2 = Utils.returnSigner(signedHash, signatures, 1);
+        require(guardians[wallet][signer2] != address(0));
+
+        timeLock[wallet] = block.timestamp;
+
+        ILaser(wallet).execFromModule(wallet, 0, callData, maxFeePerGas, maxPriorityFeePerGas, gasLimit, relayer);
+    }
+
+    /**
      * @dev Unlocks the target wallet.
-     * @notice Can only be called with the signature of the wallet's owner + a guardian.
+     * @notice Can only be called with the signature of the wallet's owner + recovery owner or  owner + guardian.
      */
     function unlock(
         address wallet,
@@ -63,11 +100,13 @@ contract LaserModuleSSR is ILaserModuleSSR, Common {
         address relayer,
         bytes memory signatures
     ) external {
-        require(msg.sender == wallet);
         uint256 walletNonce = ILaser(wallet).nonce();
+
         bytes32 signedHash = keccak256(
-            encodeOperation(wallet, 0, callData, walletNonce + 1, maxFeePerGas, maxPriorityFeePerGas, gasLimit)
+            encodeOperation(wallet, callData, walletNonce, maxFeePerGas, maxPriorityFeePerGas, gasLimit)
         );
+
+        require(bytes4(callData) == bytes4(keccak256("unlock()")), "should be the same!");
 
         address walletOwner = ILaser(wallet).owner();
         require(walletOwner != address(0));
@@ -75,9 +114,41 @@ contract LaserModuleSSR is ILaserModuleSSR, Common {
         address signer1 = Utils.returnSigner(signedHash, signatures, 0);
         require(signer1 == walletOwner);
 
-        address signer2 = Utils.returnSigner(signedHash, signatures, 0);
-        require(guardians[wallet][signer2] != address(0));
+        address signer2 = Utils.returnSigner(signedHash, signatures, 1);
+        require(
+            guardians[wallet][signer2] != address(0) || recoveryOwners[wallet][signer2] != address(0),
+            "nop signer2"
+        );
 
+        timeLock[wallet] = 0;
+        ILaser(wallet).execFromModule(wallet, 0, callData, maxFeePerGas, maxPriorityFeePerGas, gasLimit, relayer);
+    }
+
+    function recover(
+        address wallet,
+        bytes calldata callData,
+        uint256 maxFeePerGas,
+        uint256 maxPriorityFeePerGas,
+        uint256 gasLimit,
+        address relayer,
+        bytes memory signatures
+    ) external {
+        uint256 walletNonce = ILaser(wallet).nonce();
+
+        bytes32 signedHash = keccak256(
+            encodeOperation(wallet, callData, walletNonce, maxFeePerGas, maxPriorityFeePerGas, gasLimit)
+        );
+
+        require(bytes4(callData) == bytes4(keccak256("changeOwner(address)")), "should be change owner.");
+
+        address signer1 = Utils.returnSigner(signedHash, signatures, 0);
+        require(recoveryOwners[wallet][signer1] != address(0));
+
+        address signer2 = Utils.returnSigner(signedHash, signatures, 1);
+        require(guardians[wallet][signer2] != address(0), "nop signer2");
+
+        require(timeLock[wallet] + 1 weeks < block.timestamp, "incorrect time");
+        timeLock[wallet] = 0;
         ILaser(wallet).execFromModule(wallet, 0, callData, maxFeePerGas, maxPriorityFeePerGas, gasLimit, relayer);
     }
 
@@ -276,5 +347,47 @@ contract LaserModuleSSR is ILaserModuleSSR, Common {
             guardians[wallet][toVerify] != address(0) ||
             recoveryOwners[wallet][toVerify] != address(0)
         ) revert SSR__verifyNewRecoveryOwnerOrGuardian__invalidAddress();
+    }
+
+    function getChainId() public view returns (uint256 chainId) {
+        return block.chainid;
+    }
+
+    function domainSeparator() public view returns (bytes32) {
+        return keccak256(abi.encode(DOMAIN_SEPARATOR_TYPEHASH, getChainId(), address(this)));
+    }
+
+    function encodeOperation(
+        address wallet,
+        bytes calldata callData,
+        uint256 walletNonce,
+        uint256 maxFeePerGas,
+        uint256 maxPriorityFeePerGas,
+        uint256 gasLimit
+    ) internal view returns (bytes memory) {
+        bytes32 opHash = keccak256(
+            abi.encode(
+                LASER_MODULE_SSR_TYPE_STRUCTURE,
+                wallet,
+                keccak256(callData),
+                walletNonce,
+                maxFeePerGas,
+                maxPriorityFeePerGas,
+                gasLimit
+            )
+        );
+
+        return abi.encodePacked(bytes1(0x19), bytes1(0x01), domainSeparator(), opHash);
+    }
+
+    function operationHash(
+        address wallet,
+        bytes calldata callData,
+        uint256 walletNonce,
+        uint256 maxFeePerGas,
+        uint256 maxPriorityFeePerGas,
+        uint256 gasLimit
+    ) external view returns (bytes32) {
+        return keccak256(encodeOperation(wallet, callData, walletNonce, maxFeePerGas, maxPriorityFeePerGas, gasLimit));
     }
 }
