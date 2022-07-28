@@ -77,7 +77,7 @@ export async function generateTransaction(): Promise<Transaction> {
         nonce: 0,
         maxFeePerGas: _maxFeePerGas,
         maxPriorityFeePerGas: _maxPriorityFeePerGas,
-        gasLimit: 200000,
+        gasLimit: 500000,
         relayer: relayer,
         signatures: "0x",
     };
@@ -89,15 +89,6 @@ export async function fundWallet(sender: Signer, address: Address): Promise<void
         to: address,
         value: oneEth,
     });
-}
-
-export async function lockWallet(wallet: Contract, guardian: Signer) {
-    const tx = await generateTransaction();
-    tx.to = wallet.address;
-    tx.callData = encodeFunctionData(abi, "lock", []);
-    const hash = await getHash(wallet, tx);
-    tx.signatures = await sign(guardian, hash);
-    await sendTx(wallet, tx);
 }
 
 export function isAddress(addresses: Address[], address: Address): boolean {

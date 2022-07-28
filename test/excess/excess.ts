@@ -1,6 +1,6 @@
 import { expect } from "chai";
 import { deployments, ethers } from "hardhat";
-import { walletSetup } from "../utils";
+import { walletSetup, getRecoveryOwners, getGuardians } from "../utils";
 
 describe("Testing with a lot of signers", () => {
     beforeEach(async () => {
@@ -14,8 +14,8 @@ describe("Testing with a lot of signers", () => {
             recoveryOwners.push(recoveryOwner);
         }
 
-        const { wallet } = await walletSetup(undefined, recoveryOwners);
-        expect(JSON.stringify(await wallet.getRecoveryOwners())).to.equal(JSON.stringify(recoveryOwners));
+        const { address, wallet, SSR } = await walletSetup(undefined, recoveryOwners);
+        expect(JSON.stringify(await getRecoveryOwners(SSR, address))).to.equal(JSON.stringify(recoveryOwners));
     });
 
     it("should init with 50 recovery owners", async () => {
@@ -25,8 +25,8 @@ describe("Testing with a lot of signers", () => {
             recoveryOwners.push(recoveryOwner);
         }
 
-        const { wallet } = await walletSetup(undefined, recoveryOwners);
-        expect(JSON.stringify(await wallet.getRecoveryOwners())).to.equal(JSON.stringify(recoveryOwners));
+        const { address, wallet, SSR } = await walletSetup(undefined, recoveryOwners);
+        expect(JSON.stringify(await getRecoveryOwners(SSR, address))).to.equal(JSON.stringify(recoveryOwners));
     });
 
     it("should init with 100 recovery owners", async () => {
@@ -36,8 +36,9 @@ describe("Testing with a lot of signers", () => {
             recoveryOwners.push(recoveryOwner);
         }
 
-        const { wallet } = await walletSetup(undefined, recoveryOwners);
-        expect(JSON.stringify(await wallet.getRecoveryOwners())).to.equal(JSON.stringify(recoveryOwners));
+        const { address, wallet, SSR } = await walletSetup(undefined, recoveryOwners);
+
+        expect(JSON.stringify(await getRecoveryOwners(SSR, address))).to.equal(JSON.stringify(recoveryOwners));
     });
 
     it("should init with 200 recovery owners", async () => {
@@ -47,8 +48,8 @@ describe("Testing with a lot of signers", () => {
             recoveryOwners.push(recoveryOwner);
         }
 
-        const { wallet } = await walletSetup(undefined, recoveryOwners);
-        expect(JSON.stringify(await wallet.getRecoveryOwners())).to.equal(JSON.stringify(recoveryOwners));
+        const { address, wallet, SSR } = await walletSetup(undefined, recoveryOwners);
+        expect(JSON.stringify(await getRecoveryOwners(SSR, address))).to.equal(JSON.stringify(recoveryOwners));
     });
 
     it("should init with 10 guardians", async () => {
@@ -58,8 +59,8 @@ describe("Testing with a lot of signers", () => {
             guardians.push(guardian);
         }
 
-        const { wallet } = await walletSetup(undefined, undefined, guardians);
-        expect(JSON.stringify(await wallet.getGuardians())).to.equal(JSON.stringify(guardians));
+        const { address, wallet, SSR } = await walletSetup(undefined, undefined, guardians);
+        expect(JSON.stringify(await getGuardians(SSR, address))).to.equal(JSON.stringify(guardians));
     });
 
     it("should init with 50 guardians", async () => {
@@ -69,8 +70,8 @@ describe("Testing with a lot of signers", () => {
             guardians.push(guardian);
         }
 
-        const { wallet } = await walletSetup(undefined, undefined, guardians);
-        expect(JSON.stringify(await wallet.getGuardians())).to.equal(JSON.stringify(guardians));
+        const { address, wallet, SSR } = await walletSetup(undefined, undefined, guardians);
+        expect(JSON.stringify(await getGuardians(SSR, address))).to.equal(JSON.stringify(guardians));
     });
 
     it("should init with 100 guardians", async () => {
@@ -80,8 +81,8 @@ describe("Testing with a lot of signers", () => {
             guardians.push(guardian);
         }
 
-        const { wallet } = await walletSetup(undefined, undefined, guardians);
-        expect(JSON.stringify(await wallet.getGuardians())).to.equal(JSON.stringify(guardians));
+        const { address, wallet, SSR } = await walletSetup(undefined, undefined, guardians);
+        expect(JSON.stringify(await getGuardians(SSR, address))).to.equal(JSON.stringify(guardians));
     });
 
     it("should init with 200 guardians", async () => {
@@ -91,7 +92,7 @@ describe("Testing with a lot of signers", () => {
             guardians.push(guardian);
         }
 
-        const { wallet } = await walletSetup(undefined, undefined, guardians);
-        expect(JSON.stringify(await wallet.getGuardians())).to.equal(JSON.stringify(guardians));
+        const { address, wallet, SSR } = await walletSetup(undefined, undefined, guardians);
+        expect(JSON.stringify(await getGuardians(SSR, address))).to.equal(JSON.stringify(guardians));
     });
 });

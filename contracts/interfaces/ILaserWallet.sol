@@ -7,14 +7,8 @@ pragma solidity 0.8.15;
  * @notice Has all the external functions, structs, events and errors for LaserWallet.sol.
  */
 interface ILaserWallet {
-    struct Transaction {
-        address to;
-        uint256 value;
-        bytes callData;
-    }
-
     event Received(address indexed sender, uint256 amount);
-    event Setup(address owner, address[] recoveryOwners, address[] guardians);
+    event Setup(address owner, address laserModule);
     event ExecSuccess(address to, uint256 value, uint256 nonce);
     event ExecFailure(address to, uint256 value, uint256 nonce);
 
@@ -24,40 +18,32 @@ interface ILaserWallet {
 
     ///@dev exec() custom errors.
     error LW__exec__invalidNonce();
+    error LW__exec__walletLocked();
+    error LW__exec__notOwner();
     error LW__exec__refundFailure();
-
-    ///@dev multiCall() custom error.
-    error LW__multiCall__notOwner();
-
-    ///@dev simulateTransaction() custom errors.
-    error LW__simulateTransaction__invalidNonce();
-    error LW__simulateTransaction__mainCallError();
-    error LW__simulateTransaction__refundFailure();
 
     ///@dev isValidSignature() Laser custom error.
     error LaserWallet__invalidSignature();
 
-    ///@dev verifySignatures() custom errors.
-    error LW__verifySignatures__invalidSignatureLength();
-    error LW__verifySignatures__notOwner();
-    error LW__verifySignatures__notGuardian();
-    error LW__verifySignatures__notRecoveryOwner();
-
     /**
-     * @dev Setup function, sets initial storage of contract.
+     * @dev Setup function, sets initial storage of the wallet.
      * @param _owner The owner of the wallet.
-     * @param _recoveryOwners Array of recovery owners. Implementation of Sovereign Social Recovery.
-     * @param _guardians Addresses that can activate the social recovery mechanism.
+     * @param maxFeePerGas The maximum amount of WEI the user is willing to pay per unit of gas.
+     * @param maxPriorityFeePerGas Miner's tip.
+     * @param gasLimit Maximum units of gas the user is willing to use for the transaction.
+     * @param relayer Address of the relayer to pay back for the transaction inclusion.
+     * @param laserModule Authorized Laser module that can execute transactions for this wallet.
+     * @param ownerSignature The signature of the owner to make sure that it approved the transaction.
      * @notice It can't be called after initialization.
      */
     function init(
         address _owner,
-        address[] calldata _recoveryOwners,
-        address[] calldata _guardians,
         uint256 maxFeePerGas,
         uint256 maxPriorityFeePerGas,
         uint256 gasLimit,
         address relayer,
+        address laserModule,
+        bytes calldata laserGuardData,
         bytes calldata ownerSignature
     ) external;
 
@@ -70,7 +56,7 @@ interface ILaserWallet {
      * @param maxFeePerGas Maximum amount that the user is willing to pay for a unit of gas.
      * @param maxPriorityFeePerGas Miner's tip.
      * @param gasLimit The transaction's gas limit. It needs to be the same as the actual transaction gas limit.
-     * @param signatures The signatures of the transaction.
+     * @param ownerSignature The signatures of the transaction.
      * @notice If 'gasLimit' does not match the actual gas limit of the transaction, the relayer can incur losses.
      * It is the relayer's responsability to make sure that they are the same, the user does not get affected if a mistake is made.
      * We prefer to prioritize the user's safety (not overpay) over the relayer.
@@ -84,43 +70,8 @@ interface ILaserWallet {
         uint256 maxPriorityFeePerGas,
         uint256 gasLimit,
         address relayer,
-        bytes calldata signatures
+        bytes calldata ownerSignature
     ) external;
-
-    /**
-     * @dev Executes a series of generic transactions. It can only be called from exec.
-     * @param transactions Basic transactions array (to, value, calldata).
-     */
-    function multiCall(Transaction[] calldata transactions) external;
-
-    /**
-     * @dev Simulates a transaction. This should be called from the relayer, to verify that the transaction will not revert.
-     * This does not guarantees 100% that the transaction will succeed, the state will be different next block.
-     * @notice Needs to be called off-chain from  address zero.
-     */
-    function simulateTransaction(
-        address to,
-        uint256 value,
-        bytes calldata callData,
-        uint256 _nonce,
-        uint256 maxFeePerGas,
-        uint256 maxPriorityFeePerGas,
-        uint256 gasLimit,
-        bytes calldata signatures
-    ) external returns (uint256 totalGas);
-
-    /**
-     * @dev The transaction's hash. This is necessary to check that the signatures are correct and to avoid replay attacks.
-     */
-    function operationHash(
-        address to,
-        uint256 value,
-        bytes calldata callData,
-        uint256 _nonce,
-        uint256 maxFeePerGas,
-        uint256 maxPriorityFeePerGas,
-        uint256 gasLimit
-    ) external view returns (bytes32);
 
     /**
      * @dev Implementation of EIP 1271: https://eips.ethereum.org/EIPS/eip-1271.
@@ -129,15 +80,4 @@ interface ILaserWallet {
      * @return Magic value  or reverts with an error message.
      */
     function isValidSignature(bytes32 hash, bytes memory signature) external returns (bytes4);
-
-    /**
-     * @dev Returns the chain id of this.
-     */
-    function getChainId() external view returns (uint256);
-
-    /**
-     * @dev Returns the domain separator of this.
-     * @notice This is done to avoid replay attacks.
-     */
-    function domainSeparator() external view returns (bytes32);
 }

@@ -2,6 +2,7 @@ import { expect } from "chai";
 import { deployments, ethers } from "hardhat";
 import { Contract, Signer, Wallet } from "ethers";
 import { LaserWallet } from "../../typechain-types";
+import { addrZero } from "../constants/constants";
 
 const mock = Wallet.createRandom().address;
 
@@ -23,9 +24,9 @@ describe("Laser Wallet (singleton)", () => {
         });
 
         it("should not allow to init", async () => {
-            await expect(
-                singleton.init(mock, [mock], [mock], 0, 0, 0, ethers.Wallet.createRandom().address, "0x")
-            ).to.be.revertedWith("SSR__initOwner__walletInitialized()");
+            await expect(singleton.init(mock, 0, 0, 0, addrZero, addrZero, "0x", "0x")).to.be.revertedWith(
+                "LaserState__initOwner__walletInitialized()"
+            );
         });
 
         it(`should be version ${VERSION}`, async () => {
@@ -36,10 +37,6 @@ describe("Laser Wallet (singleton)", () => {
         it("should have a nonce of 0", async () => {
             const nonce = await singleton.nonce();
             expect(nonce).to.equal(0);
-        });
-
-        it("should not be able to make operations", async () => {
-            await expect(singleton.addGuardian(mock)).to.be.revertedWith("Me__notMe()");
         });
     });
 });

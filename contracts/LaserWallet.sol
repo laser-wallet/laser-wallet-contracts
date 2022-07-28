@@ -1,17 +1,20 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 pragma solidity 0.8.15;
 
-import "./core/Singleton.sol";
 import "./handlers/Handler.sol";
 import "./interfaces/ILaserWallet.sol";
-import "./ssr/SSR.sol";
+import "./state/LaserState.sol";
 
-/**
- * @title LaserWallet - EVM based smart contract wallet. Implementes smart social recovery mechanism.
- * @author Rodrigo Herrera I.
- */
-contract LaserWallet is ILaserWallet, Singleton, SSR, Handler {
+interface ILaserGuard {
+    function checkTransaction(address to) external;
+}
+
+///@title LaserWallet - Modular EVM based smart contract wallet.
+///@author Rodrigo Herrera I.
+contract LaserWallet is ILaserWallet, LaserState, Handler {
     string public constant VERSION = "1.0.0";
+
+    bytes4 private constant EIP1271_MAGIC_VALUE = bytes4(keccak256("isValidSignature(bytes32,bytes)"));
 
     bytes32 private constant DOMAIN_SEPARATOR_TYPEHASH =
         keccak256("EIP712Domain(uint256 chainId,address verifyingContract)");
@@ -21,86 +24,52 @@ contract LaserWallet is ILaserWallet, Singleton, SSR, Handler {
             "LaserOperation(address to,uint256 value,bytes callData,uint256 nonce,uint256 maxFeePerGas,uint256 maxPriorityFeePerGas,uint256 gasLimit)"
         );
 
-    bytes4 private constant EIP1271_MAGIC_VALUE = bytes4(keccak256("isValidSignature(bytes32,bytes)"));
-
-    uint256 public nonce;
-
     constructor() {
-        // This makes the master copy unusable (even though there are no delegatecalls ...)
         owner = address(this);
     }
 
-    receive() external payable {
-        emit Received(msg.sender, msg.value);
-    }
+    receive() external payable {}
 
-    /**
-     * @dev Setup function, sets initial storage of contract.
-     * @param _owner The owner of the wallet.
-     * @param _recoveryOwners Array of recovery owners. Implementation of smart social recovery.
-     * @param _guardians Array of guardians. Implementation of smart social recovery.
-     * @param maxFeePerGas Maximum amount of WEI to pay for a unit of gas.
-     * @param maxPriorityFeePerGas Miner's tip --> EIP 1559.
-     * @param gasLimit Maximum amount of units of gas to spend for this transaction.
-     * @param relayer Address to pay back for the relayed transaction (tx.origin if set to address 0).
-     * @param ownerSignature The signature of the owner that verifies the initial transaction payload.
-     * @notice If gasLimit = 0, there is no payback to the relayer.
-     * @notice It can't be called after initialization.
-     */
+    ///@dev Setup function, sets initial storage of the wallet.
+    ///@notice It can't be called after initialization.
     function init(
         address _owner,
-        address[] calldata _recoveryOwners,
-        address[] calldata _guardians,
         uint256 maxFeePerGas,
         uint256 maxPriorityFeePerGas,
         uint256 gasLimit,
         address relayer,
+        address laserModule,
+        bytes calldata laserModuleData,
         bytes calldata ownerSignature
     ) external {
-        // initOwner() requires that the current owner is address 0.
-        // This is enough to protect init() from being called after initialization.
-        initOwner(_owner);
+        activateWallet(_owner, laserModule, laserModuleData);
 
-        // We initialize the guardians ...
-        initGuardians(_guardians);
+        bytes32 signedHash = keccak256(abi.encodePacked(maxFeePerGas, maxPriorityFeePerGas, gasLimit, block.chainid));
 
-        // We initialize the recovery owners ...
-        initRecoveryOwners(_recoveryOwners);
+        address signer = Utils.returnSigner(signedHash, ownerSignature, 0);
 
-        {
-            // Scope to avoid stack too deep ...
-
-            bytes32 signedHash = keccak256(
-                abi.encodePacked(maxFeePerGas, maxPriorityFeePerGas, gasLimit, block.chainid)
-            );
-
-            (bytes32 r, bytes32 s, uint8 v) = splitSigs(ownerSignature, 0);
-
-            address signer = returnSigner(signedHash, r, s, v, ownerSignature);
-
-            //@todo Optimize this.
-            if (signer != _owner) revert LW__init__notOwner();
-        }
+        if (signer != _owner) revert LW__init__notOwner();
 
         if (gasLimit > 0) {
-            // If gas limit is greater than 0, then the transaction was sent through a relayer.
-            // We calculate the gas price, as per the user's request ...
-            uint256 gasPrice = calculateGasPrice(maxFeePerGas);
+            // Using infura relayer for now ...
+            uint256 fee = (tx.gasprice / 100) * 6;
+            uint256 gasPrice = tx.gasprice + fee;
 
-            // gasUsed is the total amount of gas consumed for this transaction.
-            // This is contemplating the initial callData cost, the main transaction,
-            // and we add the surplus for what is left (refund the relayer).
-            uint256 gasUsed = gasLimit - gasleft() + 7000;
+            gasLimit = (gasLimit * 3150) / 3200;
+            uint256 gasUsed = gasLimit - gasleft() + 8000;
+
             uint256 refundAmount = gasUsed * gasPrice;
 
-            // We refund the relayer ...
-            bool success = _call(relayer == address(0) ? tx.origin : relayer, refundAmount, new bytes(0), gasleft());
+            bool success = Utils.call(
+                relayer == address(0) ? tx.origin : relayer,
+                refundAmount,
+                new bytes(0),
+                gasleft()
+            );
 
-            // If the transaction returns false, we revert ...
             if (!success) revert LW__init__refundFailure();
         }
-
-        emit Setup(_owner, _recoveryOwners, _guardians);
+        // emit Setup(_owner, laserModule);
     }
 
     /**
@@ -108,8 +77,7 @@ contract LaserWallet is ILaserWallet, Singleton, SSR, Handler {
      * @param to Destination address.
      * @param value Amount to send.
      * @param callData Data payload for the transaction.
-     * @param _nonce Unsigned integer to avoid replay attacks. It needs to match the current wallet's nonce.
-     * @param signatures The signatures of the transaction.
+     * @param ownerSignature The signatures of the transaction.
      * @notice If 'gasLimit' does not match the actual gas limit of the transaction, the relayer can incur losses.
      * It is the relayer's responsability to make sure that they are the same, the user does not get affected if a mistake is made.
      * We prefer to prioritize the user's safety (not overpay) over the relayer.
@@ -123,129 +91,92 @@ contract LaserWallet is ILaserWallet, Singleton, SSR, Handler {
         uint256 maxPriorityFeePerGas,
         uint256 gasLimit,
         address relayer,
-        bytes calldata signatures
+        bytes calldata ownerSignature
     ) external {
         // We immediately increase the nonce to avoid replay attacks.
         unchecked {
             if (nonce++ != _nonce) revert LW__exec__invalidNonce();
         }
 
-        // Verifies the correctness of the transaction. It checks that the signatures are
-        // correct and that the signer has access for the transaction.
-        verifyTransaction(to, value, callData, _nonce, maxFeePerGas, maxPriorityFeePerGas, gasLimit, signatures);
+        if (isLocked) revert LW__exec__walletLocked();
 
-        // Once we verified that the transaction is correct, we execute the main call.
-        // We subtract 10_000 to have enough gas to complete the function.
-        bool success = _call(to, value, callData, gasleft() - 10000);
+        bytes32 signedHash = keccak256(
+            encodeOperation(to, value, callData, _nonce, maxFeePerGas, maxPriorityFeePerGas, gasLimit)
+        );
+
+        address signer = Utils.returnSigner(signedHash, ownerSignature, 0);
+
+        if (signer != owner) revert LW__exec__notOwner();
+
+        bool success = Utils.call(to, value, callData, gasleft() - 10000);
 
         // We do not revert the call if it fails, because the wallet needs to pay the relayer even in case of failure.
         if (success) emit ExecSuccess(to, value, nonce);
         else emit ExecFailure(to, value, nonce);
 
-        // We calculate the gas price, as per the user's request.
-        uint256 gasPrice = calculateGasPrice(maxFeePerGas);
+        if (laserGuard != address(0)) {
+            ILaserGuard(laserGuard).checkTransaction(to);
+        }
 
-        // gasUsed is the total amount of gas consumed for this transaction.
-        // This is contemplating the initial callData cost, the main transaction,
-        // and we add the surplus for what is left (refund the relayer).
+        // Using infura relayer for now ...
+        uint256 fee = (tx.gasprice / 100) * 6;
+        uint256 gasPrice = tx.gasprice + fee;
         uint256 gasUsed = gasLimit - gasleft() + 7000;
         uint256 refundAmount = gasUsed * gasPrice;
 
-        // We refund the relayer ...
-        success = _call(relayer == address(0) ? tx.origin : relayer, refundAmount, new bytes(0), gasleft());
+        success = Utils.call(relayer == address(0) ? tx.origin : relayer, refundAmount, new bytes(0), gasleft());
 
-        // If the transaction returns false, we revert ..
         if (!success) revert LW__exec__refundFailure();
     }
 
-    /**
-     * @dev Executes a series of generic transactions. It can only be called from exec.
-     * @param transactions Basic transactions array (to, value, calldata).
-     */
-    function multiCall(Transaction[] calldata transactions) external onlyMe {
-        uint256 transactionsLength = transactions.length;
-        for (uint256 i = 0; i < transactionsLength; ) {
-            Transaction calldata transaction = transactions[i];
-
-            // We get the actual function selector to determine access ...
-            bytes4 funcSelector = bytes4(transaction.callData);
-
-            // access() checks if the wallet is locked for the owner or guardians and returns who has access ...
-            Access access = access(funcSelector);
-
-            // Only the owner is allowed to trigger a multiCall.
-            // The signatures were already verified in 'exec', here we just need to make sure that access == owner.
-            if (access != Access.Owner) revert LW__multiCall__notOwner();
-
-            bool success = _call(transaction.to, transaction.value, transaction.callData, gasleft());
-
-            // We do not revert the call if it fails, because the wallet needs to pay the relayer even in case of failure.
-            (success);
-
-            //@todo Return the success transactions and return data in an array.
-
-            unchecked {
-                // Won't overflow .... You would need way more gas usage than current available block gas (30m) to overflow it.
-                ++i;
-            }
-        }
-    }
-
-    /**
-     * @dev Simulates a transaction. This should be called from the relayer, to verify that the transaction will not revert.
-     * This does not guarantees 100% that the transaction will succeed, the state will be different next block.
-     * @notice Needs to be called off-chain from  address zero.
-     */
-    function simulateTransaction(
+    ///@dev Allows to execute a transaction from an authorized module.
+    function execFromModule(
         address to,
         uint256 value,
         bytes calldata callData,
-        uint256 _nonce,
         uint256 maxFeePerGas,
         uint256 maxPriorityFeePerGas,
         uint256 gasLimit,
-        bytes calldata signatures
-    ) external returns (uint256 totalGas) {
-        if (nonce++ != _nonce) revert LW__simulateTransaction__invalidNonce();
-        verifyTransaction(to, value, callData, _nonce, maxFeePerGas, maxPriorityFeePerGas, gasLimit, signatures);
-        bool success = _call(to, value, callData, gasleft());
-        if (!success) revert LW__simulateTransaction__mainCallError();
-        uint256 gasPrice = calculateGasPrice(maxFeePerGas);
-        uint256 gasUsed = gasLimit - gasleft() + 7000;
-        uint256 refundAmount = gasUsed * gasPrice;
-        success = _call(msg.sender, refundAmount, new bytes(0), gasleft());
-        if (!success) revert LW__simulateTransaction__refundFailure();
-        totalGas = gasLimit - gasleft();
-        require(msg.sender == address(0), "Must be called off-chain from address zero.");
+        address relayer
+    ) external {
+        unchecked {
+            nonce++;
+        }
+        ///@todo custom errors instead of require statement.
+        require(laserModules[msg.sender] != address(0), "nop module");
+
+        bool success = Utils.call(to, value, callData, gasleft() - 10000);
+
+        require(success, "main call failed");
+
+        if (gasLimit > 0) {
+            // Using infura relayer for now ...
+            uint256 fee = (tx.gasprice / 100) * 6;
+            uint256 gasPrice = tx.gasprice + fee;
+            gasLimit = (gasLimit * 63) / 64;
+            uint256 gasUsed = gasLimit - gasleft() + 7000;
+            uint256 refundAmount = gasUsed * gasPrice;
+
+            success = Utils.call(relayer == address(0) ? tx.origin : relayer, refundAmount, new bytes(0), gasleft());
+
+            require(success, "refund failed");
+        }
     }
 
-    /**
-     * @dev The transaction's hash. This is necessary to check that the signatures are correct and to avoid replay attacks.
-     */
-    function operationHash(
-        address to,
-        uint256 value,
-        bytes calldata callData,
-        uint256 _nonce,
-        uint256 maxFeePerGas,
-        uint256 maxPriorityFeePerGas,
-        uint256 gasLimit
-    ) external view returns (bytes32) {
-        return keccak256(encodeOperation(to, value, callData, _nonce, maxFeePerGas, maxPriorityFeePerGas, gasLimit));
+    ///@dev Locks the wallet. Once locked, only the SSR module can unlock it or recover it.
+    function lock() external access {
+        isLocked = true;
     }
 
-    /**
-     * @dev Implementation of EIP 1271: https://eips.ethereum.org/EIPS/eip-1271.
-     * @param hash Hash of a message signed on behalf of address(this).
-     * @param signature Signature byte array associated with _msgHash.
-     * @return Magic value  or reverts with an error message.
-     */
+    ///@dev Unlocks the wallet. Can only be unlocked or recovered from the SSR module.
+    function unlock() external access {
+        isLocked = false;
+    }
+
+    ///@dev Implementation of EIP 1271: https://eips.ethereum.org/EIPS/eip-1271.
+    ///@return Magic value  or reverts with an error message.
     function isValidSignature(bytes32 hash, bytes memory signature) external view returns (bytes4) {
-        bytes32 r;
-        bytes32 s;
-        uint8 v;
-        (r, s, v) = splitSigs(signature, 0);
-        address recovered = returnSigner(hash, r, s, v, signature);
+        address recovered = Utils.returnSigner(hash, signature, 0);
 
         // The guardians and recovery owners should not be able to sign transactions that are out of scope from this wallet.
         // Only the owner should be able to sign external data.
@@ -253,129 +184,12 @@ contract LaserWallet is ILaserWallet, Singleton, SSR, Handler {
         return EIP1271_MAGIC_VALUE;
     }
 
-    /**
-     * @return chainId The chain id of this.
-     */
     function getChainId() public view returns (uint256 chainId) {
         return block.chainid;
     }
 
     function domainSeparator() public view returns (bytes32) {
         return keccak256(abi.encode(DOMAIN_SEPARATOR_TYPEHASH, getChainId(), address(this)));
-    }
-
-    /**
-     * @dev Verifies that the transaction is correct (signatures match the parameters).
-     */
-    function verifyTransaction(
-        address to,
-        uint256 value,
-        bytes calldata callData,
-        uint256 _nonce,
-        uint256 maxFeePerGas,
-        uint256 maxPriorityFeePerGas,
-        uint256 gasLimit,
-        bytes calldata signatures
-    ) internal view {
-        // We encode the transaction data.
-        bytes memory encodedData = encodeOperation(
-            to,
-            value,
-            callData,
-            _nonce,
-            maxFeePerGas,
-            maxPriorityFeePerGas,
-            gasLimit
-        );
-
-        // Now we hash it ...
-        bytes32 dataHash = keccak256(encodedData);
-
-        // We get the actual function selector to determine access ...
-        bytes4 funcSelector = bytes4(callData);
-
-        // access() checks if the wallet is locked for the owner or guardians and returns who has access ...
-        Access access = access(funcSelector);
-
-        // We verify that the signatures are correct depending on the transaction type ...
-        verifySignatures(access, dataHash, signatures);
-    }
-
-    /**
-     * @dev Verifies that the signature(s) match the transaction type and sender.
-     * @param _access Who has permission to invoke this transaction.
-     * @param dataHash The keccak256 has of the transaction's data playload.
-     */
-    function verifySignatures(
-        Access _access,
-        bytes32 dataHash,
-        bytes calldata signatures
-    ) internal view {
-        // If it is the owner or guardian, then only 1 signature is required.
-        // For all other operations, 2 signatures are required.
-        uint256 requiredSignatures = _access == Access.Owner || _access == Access.Guardian ? 1 : 2;
-
-        if (signatures.length < requiredSignatures * 65) revert LW__verifySignatures__invalidSignatureLength();
-
-        address signer;
-        bytes32 r;
-        bytes32 s;
-        uint8 v;
-
-        for (uint256 i = 0; i < requiredSignatures; ) {
-            (r, s, v) = splitSigs(signatures, i);
-
-            signer = returnSigner(dataHash, r, s, v, signatures);
-
-            if (_access == Access.Owner) {
-                // If access == owner, the signer needs to be the owner.
-
-                // We do not need further checks e.g 'is the wallet locked', they were done in 'access'.
-                if (owner != signer) revert LW__verifySignatures__notOwner();
-            } else if (_access == Access.Guardian) {
-                // If access == guardian, the signer needs to be a guardian.
-
-                // The guardian by itself can only lock the wallet, additional checks were done in 'access'.
-                if (guardians[signer] == address(0)) revert LW__verifySignatures__notGuardian();
-            } else if (_access == Access.OwnerAndGuardian) {
-                // If access == owner and guardian, the first signer needs to be the owner.
-                if (i == 0) {
-                    // The first signer needs to be the owner.
-                    if (owner != signer) revert LW__verifySignatures__notOwner();
-                } else {
-                    // The second signer needs to be a guardian.
-                    if (guardians[signer] == address(0)) revert LW__verifySignatures__notGuardian();
-                }
-            } else if (_access == Access.RecoveryOwnerAndGuardian) {
-                // If access == recovery owner and guardian, the first signer needs to be the recovery owner.
-
-                // We do not need further checks, they were done in 'access'.
-                if (i == 0) {
-                    // The first signer needs to be a recovery owner.
-                    if (recoveryOwners[signer] == address(0)) revert LW__verifySignatures__notRecoveryOwner();
-                } else {
-                    // The second signer needs to be a guardian.
-                    if (guardians[signer] == address(0)) revert LW__verifySignatures__notGuardian();
-                }
-            } else if (_access == Access.OwnerAndRecoveryOwner) {
-                // If access == owner and recovery owner, the first signer needs to be the owner.
-
-                if (i == 0) {
-                    if (owner != signer) revert LW__verifySignatures__notOwner();
-                } else {
-                    // The second signer needs to be the recovery owner.
-                    if (recoveryOwners[signer] == address(0)) revert LW__verifySignatures__notRecoveryOwner();
-                }
-            } else {
-                // This else statement should never reach.
-                revert();
-            }
-
-            unchecked {
-                // Won't overflow, it would require more than 30m gas (full block).
-                ++i;
-            }
-        }
     }
 
     function encodeOperation(
@@ -401,5 +215,17 @@ contract LaserWallet is ILaserWallet, Singleton, SSR, Handler {
         );
 
         return abi.encodePacked(bytes1(0x19), bytes1(0x01), domainSeparator(), opHash);
+    }
+
+    function operationHash(
+        address to,
+        uint256 value,
+        bytes calldata callData,
+        uint256 _nonce,
+        uint256 maxFeePerGas,
+        uint256 maxPriorityFeePerGas,
+        uint256 gasLimit
+    ) external view returns (bytes32) {
+        return keccak256(encodeOperation(to, value, callData, _nonce, maxFeePerGas, maxPriorityFeePerGas, gasLimit));
     }
 }

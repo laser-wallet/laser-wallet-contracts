@@ -1,24 +1,29 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 pragma solidity 0.8.15;
 
-import "../interfaces/IUtils.sol";
 import "../interfaces/IEIP1271.sol";
 
 /**
- * @title Utils - Helper functions for Laser wallet.
+ * @title MockUtils - Mocks utils library for testing.
  */
-contract Utils is IUtils {
+contract MockUtils {
+    error Utils__returnSigner__invalidSignature();
+    error Utils__returnSigner__invalidContractSignature();
+
     /**
      * @dev Returns the signer of the hash.
-     * @param dataHash The hash that was signed.
+     * @param signedHash The hash that was signed.
      */
     function returnSigner(
-        bytes32 dataHash,
-        bytes32 r,
-        bytes32 s,
-        uint8 v,
-        bytes memory signatures
+        bytes32 signedHash,
+        bytes memory signatures,
+        uint256 pos
     ) public view returns (address signer) {
+        bytes32 r;
+        bytes32 s;
+        uint8 v;
+        (r, s, v) = splitSigs(signatures, pos);
+
         if (v == 0) {
             // If v is 0, then it is a contract signature.
             // The address of the contract is encoded into r.
@@ -31,13 +36,18 @@ contract Utils is IUtils {
                 contractSignature := add(add(signatures, s), 0x20)
             }
 
-            if (IEIP1271(signer).isValidSignature(dataHash, contractSignature) != 0x1626ba7e) {
+            if (IEIP1271(signer).isValidSignature(signedHash, contractSignature) != 0x1626ba7e) {
                 revert Utils__returnSigner__invalidContractSignature();
             }
         } else if (v > 30) {
-            signer = ecrecover(keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", dataHash)), v - 4, r, s);
+            signer = ecrecover(
+                keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", signedHash)),
+                v - 4,
+                r,
+                s
+            );
         } else {
-            signer = ecrecover(dataHash, v, r, s);
+            signer = ecrecover(signedHash, v, r, s);
         }
 
         if (signer == address(0)) revert Utils__returnSigner__invalidSignature();
@@ -72,12 +82,12 @@ contract Utils is IUtils {
      * @param data Data payload.
      * @param txGas Amount of gas to forward.
      */
-    function _call(
+    function call(
         address to,
         uint256 value,
         bytes memory data,
         uint256 txGas
-    ) internal returns (bool success) {
+    ) public returns (bool success) {
         assembly {
             // We execute a call to the target address and return a boolean (success, false).
             success := call(txGas, to, value, add(data, 0x20), mload(data), 0, 0)
@@ -87,11 +97,11 @@ contract Utils is IUtils {
     /**
      * @dev Calculates the gas price.
      */
-    function calculateGasPrice(uint256 maxFeePerGas) internal view returns (uint256 gasPrice) {
+    function calculateGasPrice(uint256 maxFeePerGas) public view returns (uint256 gasPrice) {
         return min(maxFeePerGas, tx.gasprice);
     }
 
-    function min(uint256 a, uint256 b) internal pure returns (uint256) {
+    function min(uint256 a, uint256 b) public pure returns (uint256) {
         return a < b ? a : b;
     }
 }
