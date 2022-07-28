@@ -1,12 +1,19 @@
 # Laser Wallet Contracts
 
-## Laser is a non-custodial smart contract wallet made for the EVM.
+## Laser is a modular non-custodial smart contract wallet made for the EVM.
 
-### It implements the following features:
+### Laser has a plugin-based architecture which makes it extremely programmable by creating modules. 
 
-#### 1. Smart Social Recovery: A new recovery mechanism that evolves from the traditional social recovery. It provides the same benefits --> abstracts away the seed phrase and implements guardians in case that the main device is lost. The main difference is that this mechanism is more bullet-proof in the sense that the guardians can never freeze or take the users funds.
+#### It comes with a built-in recovery mechanism module called 'Smart Social Recovery', which was created by Laser.
 
-#### 2. It is primarily made so the transactions are sent through a relayer, so it abstracts away the need to pay gas through an EOA.
+#### The plugin-based model allows for all types of features, for example: 
+
+##### - Recovery Mechanisms
+##### - Multi-Sig
+##### - Spending Limits
+##### - Inheritance
+
+#### etc... The limit is the creativity here.
 
 
 
@@ -37,8 +44,6 @@ npm run test
 npm run deploy-and-verify --network <network-name>
 ```
 
-
-### The contracts are deployed deterministically, any minor change will output a different address
 
 ## License
 

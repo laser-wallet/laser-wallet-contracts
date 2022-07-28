@@ -43,6 +43,14 @@ const config: HardhatUserConfig = {
             url: `https://rinkeby.infura.io/v3/${INFURA_KEY}`,
             accounts: [`0x${DEPLOYER_PRIVATE_KEY}`],
         },
+        kovan: {
+            url: `https://kovan.infura.io/v3/${INFURA_KEY}`,
+            accounts: [`0x${DEPLOYER_PRIVATE_KEY}`],
+        },
+        ropsten: {
+            url: `https://ropsten.infura.io/v3/${INFURA_KEY}`,
+            accounts: [`0x${DEPLOYER_PRIVATE_KEY}`],
+        },
         hardhat: {
             forking: {
                 enabled: process.env.FORKING === "true",
