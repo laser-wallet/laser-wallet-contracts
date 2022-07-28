@@ -9,10 +9,8 @@ interface ILaserGuard {
     function checkTransaction(address to) external;
 }
 
-/**
- * @title LaserWallet - EVM based smart contract wallet. Implementes smart social recovery mechanism.
- * @author Rodrigo Herrera I.
- */
+///@title LaserWallet - Modular EVM based smart contract wallet.
+///@author Rodrigo Herrera I.
 contract LaserWallet is ILaserWallet, LaserState, Handler {
     string public constant VERSION = "1.0.0";
 
@@ -32,17 +30,8 @@ contract LaserWallet is ILaserWallet, LaserState, Handler {
 
     receive() external payable {}
 
-    /**
-     * @dev Setup function, sets initial storage of the wallet.
-     * @param _owner The owner of the wallet.
-     * @param maxFeePerGas The maximum amount of WEI the user is willing to pay per unit of gas.
-     * @param maxPriorityFeePerGas Miner's tip.
-     * @param gasLimit Maximum units of gas the user is willing to use for the transaction.
-     * @param relayer Address of the relayer to pay back for the transaction inclusion.
-     * @param laserModule Authorized Laser modules that can execute transactions for this wallet.
-     * @param ownerSignature The signature of the owner to make sure that it approved the transaction.
-     * @notice It can't be called after initialization.
-     */
+    ///@dev Setup function, sets initial storage of the wallet.
+    ///@notice It can't be called after initialization.
     function init(
         address _owner,
         uint256 maxFeePerGas,
@@ -62,9 +51,9 @@ contract LaserWallet is ILaserWallet, LaserState, Handler {
         if (signer != _owner) revert LW__init__notOwner();
 
         if (gasLimit > 0) {
-            // If gas limit is greater than 0, then the transaction was sent through a relayer.
-            // We calculate the gas price, as per the user's request.
-            uint256 gasPrice = Utils.calculateGasPrice(maxFeePerGas, tx.gasprice);
+            // Using infura relayer for now ...
+            uint256 fee = (tx.gasprice / 100) * 6;
+            uint256 gasPrice = tx.gasprice + fee;
 
             gasLimit = (gasLimit * 3150) / 3200;
             uint256 gasUsed = gasLimit - gasleft() + 8000;
@@ -129,10 +118,9 @@ contract LaserWallet is ILaserWallet, LaserState, Handler {
             ILaserGuard(laserGuard).checkTransaction(to);
         }
 
-        uint256 gasPrice = Utils.calculateGasPrice(maxFeePerGas, tx.gasprice);
-
-        // We get the gas used and add the surplus for what is left (refund the relayer).
-        gasLimit = (gasLimit * 63) / 64;
+        // Using infura relayer for now ...
+        uint256 fee = (tx.gasprice / 100) * 6;
+        uint256 gasPrice = tx.gasprice + fee;
         uint256 gasUsed = gasLimit - gasleft() + 7000;
         uint256 refundAmount = gasUsed * gasPrice;
 
@@ -141,9 +129,7 @@ contract LaserWallet is ILaserWallet, LaserState, Handler {
         if (!success) revert LW__exec__refundFailure();
     }
 
-    /**
-     * @dev Allows to execute a transaction from an authorized module.
-     */
+    ///@dev Allows to execute a transaction from an authorized module.
     function execFromModule(
         address to,
         uint256 value,
@@ -153,18 +139,20 @@ contract LaserWallet is ILaserWallet, LaserState, Handler {
         uint256 gasLimit,
         address relayer
     ) external {
-        ///@todo custom errors instead of require statement.
-        require(laserModules[msg.sender] != address(0), "nop module");
         unchecked {
             nonce++;
         }
+        ///@todo custom errors instead of require statement.
+        require(laserModules[msg.sender] != address(0), "nop module");
 
         bool success = Utils.call(to, value, callData, gasleft() - 10000);
 
         require(success, "main call failed");
 
         if (gasLimit > 0) {
-            uint256 gasPrice = Utils.calculateGasPrice(maxFeePerGas, tx.gasprice);
+            // Using infura relayer for now ...
+            uint256 fee = (tx.gasprice / 100) * 6;
+            uint256 gasPrice = tx.gasprice + fee;
             gasLimit = (gasLimit * 63) / 64;
             uint256 gasUsed = gasLimit - gasleft() + 7000;
             uint256 refundAmount = gasUsed * gasPrice;
@@ -175,20 +163,18 @@ contract LaserWallet is ILaserWallet, LaserState, Handler {
         }
     }
 
+    ///@dev Locks the wallet. Once locked, only the SSR module can unlock it or recover it.
     function lock() external access {
         isLocked = true;
     }
 
+    ///@dev Unlocks the wallet. Can only be unlocked or recovered from the SSR module.
     function unlock() external access {
         isLocked = false;
     }
 
-    /**
-     * @dev Implementation of EIP 1271: https://eips.ethereum.org/EIPS/eip-1271.
-     * @param hash Hash of a message signed on behalf of address(this).
-     * @param signature Signature byte array associated with _msgHash.
-     * @return Magic value  or reverts with an error message.
-     */
+    ///@dev Implementation of EIP 1271: https://eips.ethereum.org/EIPS/eip-1271.
+    ///@return Magic value  or reverts with an error message.
     function isValidSignature(bytes32 hash, bytes memory signature) external view returns (bytes4) {
         address recovered = Utils.returnSigner(hash, signature, 0);
 
@@ -198,9 +184,6 @@ contract LaserWallet is ILaserWallet, LaserState, Handler {
         return EIP1271_MAGIC_VALUE;
     }
 
-    /**
-     * @return chainId The chain id of this.
-     */
     function getChainId() public view returns (uint256 chainId) {
         return block.chainid;
     }

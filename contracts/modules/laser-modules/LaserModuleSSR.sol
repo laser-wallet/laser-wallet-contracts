@@ -20,22 +20,25 @@ interface ILaser {
     ) external;
 }
 
-/**
- * @dev Implementation of Smart Social Recovery.
- */
+///@dev Laser module implementation of Smart Social Recovery.
 contract LaserModuleSSR is ILaserModuleSSR {
     bytes32 private constant DOMAIN_SEPARATOR_TYPEHASH =
         keccak256("EIP712Domain(uint256 chainId,address verifyingContract)");
 
     bytes32 private constant LASER_MODULE_SSR_TYPE_STRUCTURE =
         keccak256(
-            "LaserModuleSSR(address wallet,bytes callData,uint256 walletNonce,uint256 maxPriorityFeePerGas,uint256 gasLimit"
+            "LaserModuleSSR(address wallet,bytes callData,uint256 walletNonce,uint256 maxFeePerGas,uint256 maxPriorityFeePerGas,uint256 gasLimit"
         );
+
+    ///@dev pointer to create a mapping link list.
     address internal constant pointer = address(0x1);
 
+    ///@dev timeLock keeps track of the recovery time delay. It gets set to 'block.timestamp' when 'lock' is triggered.
     mapping(address => uint256) public timeLock;
+
     mapping(address => uint256) internal recoveryOwnerCount;
     mapping(address => uint256) internal guardianCount;
+
     mapping(address => mapping(address => address)) internal recoveryOwners;
     mapping(address => mapping(address => address)) internal guardians;
 
@@ -45,9 +48,8 @@ contract LaserModuleSSR is ILaserModuleSSR {
         _;
     }
 
-    /**
-     * @dev Inits the module.
-     */
+    ///@dev Inits the module.
+    ///@notice The target wallet is the 'msg.sender'.
     function initSSR(address[] calldata _guardians, address[] calldata _recoveryOwners) external {
         address wallet = msg.sender;
 
@@ -55,10 +57,8 @@ contract LaserModuleSSR is ILaserModuleSSR {
         initRecoveryOwners(wallet, _recoveryOwners);
     }
 
-    /**
-     * @dev Locks the target wallet.
-     * Can only be called by the recovery owner + guardian.
-     */
+    ///@dev Locks the target wallet.
+    ///Can only be called by the recovery owner + guardian.
     function lock(
         address wallet,
         bytes calldata callData,
@@ -308,6 +308,9 @@ contract LaserModuleSSR is ILaserModuleSSR {
         guardianCount[wallet] = guardiansLength;
     }
 
+    ///@dev Inits the recovery owners for the target wallet.
+    ///@param wallet The target wallet address.
+    ///@param _recoveryOwners Array of the recovery owners addresses.
     function initRecoveryOwners(address wallet, address[] calldata _recoveryOwners) internal {
         uint256 recoveryOwnersLength = _recoveryOwners.length;
 
@@ -349,6 +352,7 @@ contract LaserModuleSSR is ILaserModuleSSR {
         ) revert SSR__verifyNewRecoveryOwnerOrGuardian__invalidAddress();
     }
 
+    ///@dev Returns the chain id of this.
     function getChainId() public view returns (uint256 chainId) {
         return block.chainid;
     }
