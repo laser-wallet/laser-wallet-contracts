@@ -34,7 +34,7 @@ contract LaserModuleSSR is ILaserModuleSSR {
     address internal constant pointer = address(0x1);
 
     ///@dev timeLock keeps track of the recovery time delay. It gets set to 'block.timestamp' when 'lock' is triggered.
-    mapping(address => uint256) public timeLock;
+    mapping(address => uint256) internal timeLock;
 
     mapping(address => uint256) internal recoveryOwnerCount;
     mapping(address => uint256) internal guardianCount;
@@ -153,7 +153,6 @@ contract LaserModuleSSR is ILaserModuleSSR {
     }
 
     function addGuardian(address wallet, address newGuardian) external onlyWallet(wallet) {
-        require(wallet == msg.sender);
         verifyNewRecoveryOwnerOrGuardian(wallet, newGuardian);
         guardians[wallet][newGuardian] = guardians[wallet][pointer];
         guardians[wallet][pointer] = newGuardian;
@@ -282,6 +281,10 @@ contract LaserModuleSSR is ILaserModuleSSR {
             }
         }
         return recoveryOwnersArray;
+    }
+
+    function getWalletTimeLock(address wallet) external view returns (uint256) {
+        return timeLock[wallet];
     }
 
     function initGuardians(address wallet, address[] calldata _guardians) internal {

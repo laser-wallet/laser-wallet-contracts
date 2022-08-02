@@ -5,11 +5,25 @@ interface ILaserState {
     ///@dev upgradeSingleton() custom error.
     error LaserState__upgradeSingleton__notLaser();
 
-    ///@dev initOwner() custom error.
+    ///@dev initOwner() custom errors.
     error LaserState__initOwner__walletInitialized();
-    error LaserState__initOwner__addressWithCode();
+    error LaserState__initOwner__invalidAddress();
 
+    function singleton() external view returns (address);
+
+    function owner() external view returns (address);
+
+    function masterGuard() external view returns (address);
+
+    function laserRegistry() external view returns (address);
+
+    function isLocked() external view returns (bool);
+
+    function nonce() external view returns (uint256);
+
+    ///@notice Restricted, can only be called by the wallet or module.
     function changeOwner(address newOwner) external;
 
+    ///@notice Restricted, can only be called by the wallet.
     function addLaserModule(address newModule) external;
 }

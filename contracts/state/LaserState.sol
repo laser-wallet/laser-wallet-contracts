@@ -5,15 +5,20 @@ import "../access/Access.sol";
 import "../common/Utils.sol";
 import "../interfaces/IERC165.sol";
 import "../interfaces/ILaserState.sol";
+import "../interfaces/ILaserModuleRegistry.sol";
 
-contract LaserState is ILaserState, Access {
+import "hardhat/console.sol";
+
+contract LaserState is Access, ILaserState {
     address internal constant pointer = address(0x1);
 
     address public singleton;
 
     address public owner;
 
-    address public laserGuard;
+    address public masterGuard;
+
+    address public laserRegistry;
 
     bool public isLocked;
 
@@ -21,17 +26,16 @@ contract LaserState is ILaserState, Access {
 
     mapping(address => address) internal laserModules;
 
+    ///@notice Restricted, can only be called by the wallet or module.
     function changeOwner(address newOwner) external access {
         owner = newOwner;
     }
 
+    ///@notice Restricted, can only be called by the wallet.
     function addLaserModule(address newModule) external access {
+        // require(ILaserModuleRegistry(laserModuleRegistry).isModule(newModule), "Module not authorized");
         laserModules[newModule] = laserModules[pointer];
         laserModules[pointer] = newModule;
-    }
-
-    function changeLaserGuard(address newLaserGuard) external access {
-        laserGuard = newLaserGuard;
     }
 
     function upgradeSingleton(address _singleton) external access {
@@ -50,13 +54,16 @@ contract LaserState is ILaserState, Access {
         address laserModule,
         bytes calldata laserModuleData
     ) internal {
-        // If owner is not address 0, the wallet was already initialized ...
+        // If owner is not address 0, the wallet was already initialized.
         if (owner != address(0)) revert LaserState__initOwner__walletInitialized();
 
-        if (_owner.code.length != 0 || _owner == address(0)) revert LaserState__initOwner__addressWithCode();
+        if (_owner.code.length != 0 || _owner == address(0)) revert LaserState__initOwner__invalidAddress();
+
+        // We set the owner.
         owner = _owner;
 
         if (laserModule != address(0)) {
+            // require(ILaserModuleRegistry(laserModuleRegistry).isModule(laserModule), "Module not authorized");
             bool success = Utils.call(laserModule, 0, laserModuleData, gasleft());
             require(success);
             laserModules[laserModule] = pointer;

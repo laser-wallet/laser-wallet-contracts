@@ -22,7 +22,6 @@ contract LaserFactory is ILaserFactory {
     address public immutable singleton;
 
     /// @param _singleton Master copy of the proxy.
-
     constructor(address _singleton) {
         // Laser Wallet contract: bytes4(keccak256("I_AM_LASER"))
         if (!IERC165(_singleton).supportsInterface(0xae029e0b)) revert LaserFactory__constructor__invalidSingleton();
