@@ -12,6 +12,8 @@ interface ILaser {
         uint256 gasLimit,
         address relayer,
         address laserModule,
+        address _masterGuard,
+        address _laserRegistry,
         bytes calldata laserModuleData,
         bytes calldata ownerSignature
     ) external;
@@ -44,25 +46,31 @@ contract LaserFactory is ILaserFactory {
         uint256 gasLimit,
         address relayer,
         address laserModule,
+        address masterGuard,
+        address laserRegistry,
         bytes calldata laserModuleData,
         uint256 saltNumber,
-        bytes calldata ownerSignature
+        bytes memory ownerSignature
     ) external returns (LaserProxy proxy) {
-        bytes32 salt = getSalt(owner, laserModule, laserModuleData, saltNumber);
-        proxy = createProxyWithCreate2(salt);
+        {
+            bytes32 salt = getSalt(owner, laserModule, laserModuleData, saltNumber);
+            proxy = createProxyWithCreate2(salt);
 
-        ILaser(address(proxy)).init(
-            owner,
-            maxFeePerGas,
-            maxPriorityFeePerGas,
-            gasLimit,
-            relayer,
-            laserModule,
-            laserModuleData,
-            ownerSignature
-        );
+            ILaser(address(proxy)).init(
+                owner,
+                maxFeePerGas,
+                maxPriorityFeePerGas,
+                gasLimit,
+                relayer,
+                laserModule,
+                masterGuard,
+                laserRegistry,
+                laserModuleData,
+                ownerSignature
+            );
 
-        emit ProxyCreation(address(proxy));
+            emit ProxyCreation(address(proxy));
+        }
     }
 
     ///@dev Precomputes the address of a proxy that is created through 'create2'.

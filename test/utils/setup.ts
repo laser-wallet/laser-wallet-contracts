@@ -112,6 +112,9 @@ export async function walletSetup(
     const ssrInitData = initSSR(guardians, recoveryOwners);
     const LaserSSRModuleAddress = (await deployments.get("LaserModuleSSR")).address;
 
+    const LaserMasterGuardAddress = (await deployments.get("LaserMasterGuard")).address;
+    const LaserRegistry = (await deployments.get("LaserRegistry")).address;
+
     const preComputedAddress = await factory.preComputeAddress(owner, LaserSSRModuleAddress, ssrInitData, salt);
 
     if (fundWallet) {
@@ -130,6 +133,8 @@ export async function walletSetup(
         gasLimit,
         relayer,
         LaserSSRModuleAddress,
+        LaserMasterGuardAddress,
+        LaserRegistry,
         ssrInitData,
         salt,
         signature,

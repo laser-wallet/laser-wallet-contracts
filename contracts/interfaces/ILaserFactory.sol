@@ -22,6 +22,8 @@ interface ILaserFactory {
         uint256 gasLimit,
         address relayer,
         address laserModule,
+        address masterGuard,
+        address laserRegistry,
         bytes calldata laserModuleData,
         uint256 saltNumber,
         bytes calldata ownerSignature

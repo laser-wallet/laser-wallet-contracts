@@ -69,17 +69,23 @@ contract LaserWallet is ILaserWallet, LaserState, Handler {
         uint256 gasLimit,
         address relayer,
         address laserModule,
+        address _masterGuard,
+        address _laserRegistry,
         bytes calldata laserModuleData,
         bytes calldata ownerSignature
     ) external {
         // activateWallet verifies that the current owner is address 0, reverts otherwise.
         // This is more than enough to avoid being called after initialization.
-        activateWallet(_owner, laserModule, laserModuleData);
+        activateWallet(_owner, laserModule, _masterGuard, _laserRegistry, laserModuleData);
 
         // This is to ensure that the owner authorized the amount of gas.
-        bytes32 signedHash = keccak256(abi.encodePacked(maxFeePerGas, maxPriorityFeePerGas, gasLimit, block.chainid));
-        address signer = Utils.returnSigner(signedHash, ownerSignature, 0);
-        if (signer != _owner) revert LW__init__notOwner();
+        {
+            bytes32 signedHash = keccak256(
+                abi.encodePacked(maxFeePerGas, maxPriorityFeePerGas, gasLimit, block.chainid)
+            );
+            address signer = Utils.returnSigner(signedHash, ownerSignature, 0);
+            if (signer != _owner) revert LW__init__notOwner();
+        }
 
         if (gasLimit > 0) {
             // Using infura relayer for now ...
@@ -159,19 +165,19 @@ contract LaserWallet is ILaserWallet, LaserState, Handler {
         }
 
         // If the guard module is activated, we call it with the transaction information.
-        if (laserGuard != address(0)) {
-            ILaserGuard(laserGuard).verifyTransaction(
-                address(this),
-                to,
-                value,
-                callData,
-                _nonce,
-                maxFeePerGas,
-                maxPriorityFeePerGas,
-                gasLimit,
-                signatures
-            );
-        }
+        // if (masterGuard != address(0)) {
+        //     ILaserGuard(masterGuard).verifyTransaction(
+        //         address(this),
+        //         to,
+        //         value,
+        //         callData,
+        //         _nonce,
+        //         maxFeePerGas,
+        //         maxPriorityFeePerGas,
+        //         gasLimit,
+        //         signatures
+        //     );
+        // }
 
         if (gasLimit > 0) {
             // If gas limit is greater than 0, it means that the call was relayed.
@@ -276,8 +282,8 @@ contract LaserWallet is ILaserWallet, LaserState, Handler {
             success = Utils.call(to, value, callData, gasleft() - 10000);
             require(success, "SIMULATION: Main call failed");
         }
-        if (laserGuard != address(0)) {
-            ILaserGuard(laserGuard).verifyTransaction(
+        if (masterGuard != address(0)) {
+            ILaserGuard(masterGuard).verifyTransaction(
                 address(this),
                 to,
                 value,

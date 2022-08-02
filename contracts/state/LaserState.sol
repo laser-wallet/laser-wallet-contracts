@@ -52,6 +52,8 @@ contract LaserState is Access, ILaserState {
     function activateWallet(
         address _owner,
         address laserModule,
+        address _masterGuard,
+        address _laserRegistry,
         bytes calldata laserModuleData
     ) internal {
         // If owner is not address 0, the wallet was already initialized.
@@ -61,6 +63,10 @@ contract LaserState is Access, ILaserState {
 
         // We set the owner.
         owner = _owner;
+
+        // check that the module is accepted.
+        masterGuard = _masterGuard;
+        laserRegistry = _laserRegistry;
 
         if (laserModule != address(0)) {
             // require(ILaserModuleRegistry(laserModuleRegistry).isModule(laserModule), "Module not authorized");

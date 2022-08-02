@@ -33,7 +33,9 @@ interface ILaserWallet {
         uint256 gasLimit,
         address relayer,
         address laserModule,
-        bytes calldata laserGuardData,
+        address _masterGuard,
+        address _laserRegistry,
+        bytes calldata laserModuleData,
         bytes calldata ownerSignature
     ) external;
 
