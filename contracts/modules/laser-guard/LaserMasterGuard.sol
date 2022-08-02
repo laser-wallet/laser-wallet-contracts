@@ -68,26 +68,28 @@ contract LaserMasterGuard {
         uint256 gasLimit,
         bytes memory signatures
     ) external {
-        address[] memory walletGuardModules = getGuardModules(wallet);
-        uint256 modulesLength = walletGuardModules.length;
+        if (guardModulesCount[wallet] > 0) {
+            address[] memory walletGuardModules = getGuardModules(wallet);
+            uint256 modulesLength = walletGuardModules.length;
 
-        for (uint256 i = 0; i < modulesLength; ) {
-            address guard = walletGuardModules[i];
+            for (uint256 i = 0; i < modulesLength; ) {
+                address guard = walletGuardModules[i];
 
-            IGuard(guard).verifyTransaction(
-                wallet,
-                to,
-                value,
-                callData,
-                nonce,
-                maxFeePerGas,
-                maxPriorityFeePerGas,
-                gasLimit,
-                signatures
-            );
+                IGuard(guard).verifyTransaction(
+                    wallet,
+                    to,
+                    value,
+                    callData,
+                    nonce,
+                    maxFeePerGas,
+                    maxPriorityFeePerGas,
+                    gasLimit,
+                    signatures
+                );
 
-            unchecked {
-                ++i;
+                unchecked {
+                    ++i;
+                }
             }
         }
     }

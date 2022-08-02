@@ -59,8 +59,8 @@ contract LaserWallet is ILaserWallet, LaserState, Handler {
      * @param maxPriorityFeePerGas  Miner's tip.
      * @param gasLimit              Maximum amount of gas the owner is willing to use for this transaction.
      * @param relayer               Address to refund for the inclusion of this transaction.
-     * @param laserModule           Address of the initial module to setup -> Smart Social Recovery.
-     * @param laserModuleData       Initialization data for the provided module.
+     * @param SSRModule             Address of the initial module to setup -> Smart Social Recovery.
+     * @param SSRInitData       Initialization data for the provided module.
      */
     function init(
         address _owner,
@@ -68,15 +68,15 @@ contract LaserWallet is ILaserWallet, LaserState, Handler {
         uint256 maxPriorityFeePerGas,
         uint256 gasLimit,
         address relayer,
-        address laserModule,
+        address SSRModule,
         address _masterGuard,
         address _laserRegistry,
-        bytes calldata laserModuleData,
+        bytes calldata SSRInitData,
         bytes calldata ownerSignature
     ) external {
         // activateWallet verifies that the current owner is address 0, reverts otherwise.
         // This is more than enough to avoid being called after initialization.
-        activateWallet(_owner, laserModule, _masterGuard, _laserRegistry, laserModuleData);
+        activateWallet(_owner, SSRModule, _masterGuard, _laserRegistry, SSRInitData);
 
         // This is to ensure that the owner authorized the amount of gas.
         {
@@ -88,10 +88,11 @@ contract LaserWallet is ILaserWallet, LaserState, Handler {
         }
 
         if (gasLimit > 0) {
-            // Using infura relayer for now ...
+            // Using Infura's relayer for now ...
             uint256 fee = (tx.gasprice / 100) * 6;
             uint256 gasPrice = tx.gasprice + fee;
 
+            // 2 call depths.
             gasLimit = (gasLimit * 3150) / 3200;
             uint256 gasUsed = gasLimit - gasleft() + 8000;
 
@@ -165,19 +166,19 @@ contract LaserWallet is ILaserWallet, LaserState, Handler {
         }
 
         // If the guard module is activated, we call it with the transaction information.
-        // if (masterGuard != address(0)) {
-        //     ILaserGuard(masterGuard).verifyTransaction(
-        //         address(this),
-        //         to,
-        //         value,
-        //         callData,
-        //         _nonce,
-        //         maxFeePerGas,
-        //         maxPriorityFeePerGas,
-        //         gasLimit,
-        //         signatures
-        //     );
-        // }
+        if (masterGuard != address(0)) {
+            ILaserGuard(masterGuard).verifyTransaction(
+                address(this),
+                to,
+                value,
+                callData,
+                _nonce,
+                maxFeePerGas,
+                maxPriorityFeePerGas,
+                gasLimit,
+                signatures
+            );
+        }
 
         if (gasLimit > 0) {
             // If gas limit is greater than 0, it means that the call was relayed.
