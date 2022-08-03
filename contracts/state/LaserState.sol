@@ -5,15 +5,18 @@ import "../access/Access.sol";
 import "../common/Utils.sol";
 import "../interfaces/IERC165.sol";
 import "../interfaces/ILaserState.sol";
+import "../interfaces/ILaserRegistry.sol";
 
-contract LaserState is ILaserState, Access {
+contract LaserState is Access, ILaserState {
     address internal constant pointer = address(0x1);
 
     address public singleton;
 
     address public owner;
 
-    address public laserGuard;
+    address public laserMasterGuard;
+
+    address public laserRegistry;
 
     bool public isLocked;
 
@@ -21,42 +24,46 @@ contract LaserState is ILaserState, Access {
 
     mapping(address => address) internal laserModules;
 
+    ///@notice Restricted, can only be called by the wallet or module.
     function changeOwner(address newOwner) external access {
         owner = newOwner;
     }
 
+    ///@notice Restricted, can only be called by the wallet.
     function addLaserModule(address newModule) external access {
+        require(ILaserRegistry(laserRegistry).isModule(newModule), "Invalid new module");
         laserModules[newModule] = laserModules[pointer];
         laserModules[pointer] = newModule;
     }
 
-    function changeLaserGuard(address newLaserGuard) external access {
-        laserGuard = newLaserGuard;
-    }
-
     function upgradeSingleton(address _singleton) external access {
-        // if (_singleton == address(this)) revert Singleton__upgradeSingleton__incorrectAddress();
-
-        if (!IERC165(_singleton).supportsInterface(0xae029e0b)) {
-            //bytes4(keccak256("I_AM_LASER")))
-            revert LaserState__upgradeSingleton__notLaser();
-        }
-
+        //@todo Change require for custom errrors.
+        require(_singleton != address(this), "Invalid singleton");
+        require(ILaserRegistry(laserRegistry).isSingleton(_singleton), "Invalid master copy");
         singleton = _singleton;
     }
 
     function activateWallet(
         address _owner,
         address laserModule,
+        address _masterGuard,
+        address _laserRegistry,
         bytes calldata laserModuleData
     ) internal {
-        // If owner is not address 0, the wallet was already initialized ...
+        // If owner is not address 0, the wallet was already initialized.
         if (owner != address(0)) revert LaserState__initOwner__walletInitialized();
 
-        if (_owner.code.length != 0 || _owner == address(0)) revert LaserState__initOwner__addressWithCode();
+        if (_owner.code.length != 0 || _owner == address(0)) revert LaserState__initOwner__invalidAddress();
+
+        // We set the owner.
         owner = _owner;
 
+        // check that the module is accepted.
+        laserMasterGuard = _masterGuard;
+        laserRegistry = _laserRegistry;
+
         if (laserModule != address(0)) {
+            require(ILaserRegistry(laserRegistry).isModule(laserModule), "Module not authorized");
             bool success = Utils.call(laserModule, 0, laserModuleData, gasleft());
             require(success);
             laserModules[laserModule] = pointer;

@@ -78,9 +78,9 @@ describe("Smart Social Recovery", () => {
         it("should fail if we try to init after initialization", async () => {
             const { address, wallet } = await walletSetup();
             const { owner, recoveryOwners, guardians, relayer } = addresses;
-            await expect(wallet.init(owner, 0, 0, 0, addrZero, laserModule, initData, "0x")).to.be.revertedWith(
-                "'LaserState__initOwner__walletInitialized()'"
-            );
+            await expect(
+                wallet.init(owner, 0, 0, 0, addrZero, laserModule, addrZero, addrZero, initData, "0x")
+            ).to.be.revertedWith("'LaserState__initOwner__walletInitialized()'");
         });
     });
 

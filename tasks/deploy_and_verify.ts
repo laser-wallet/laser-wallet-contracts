@@ -4,8 +4,8 @@ import { task } from "hardhat/config";
 task("deploy-and-verify", "Deploys all Laser contracts and verifies them on Etherscan").setAction(async (_, hre) => {
     await hre.run("deploy");
 
-    const { LaserWallet, LaserFactory, LaserHelper } = await hre.deployments.all();
-    const networkName = hre.network.name;
+    const { LaserWallet, LaserFactory, LaserHelper, LaserRegistry, LaserModuleSSR, LaserMasterGuard } =
+        await hre.deployments.all();
 
     await hre.run("verify:verify", {
         address: LaserWallet.address,
@@ -18,5 +18,17 @@ task("deploy-and-verify", "Deploys all Laser contracts and verifies them on Ethe
 
     await hre.run("verify:verify", {
         address: LaserHelper.address,
+    });
+
+    await hre.run("verify:verify", {
+        address: LaserRegistry.address,
+    });
+
+    await hre.run("verify:verify", {
+        address: LaserModuleSSR.address,
+    });
+
+    await hre.run("verify:verify", {
+        address: LaserMasterGuard.address,
     });
 });

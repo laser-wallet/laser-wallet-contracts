@@ -27,7 +27,7 @@ describe("Core", () => {
         it("shoculd not allow to call init after initialization", async () => {
             const { wallet } = await walletSetup();
             const random = ethers.Wallet.createRandom().address;
-            await expect(wallet.init(random, 0, 0, 0, random, random, "0x", "0x")).to.be.revertedWith(
+            await expect(wallet.init(random, 0, 0, 0, random, random, random, random, "0x", "0x")).to.be.revertedWith(
                 "'LaserState__initOwner__walletInitialized()'"
             );
         });

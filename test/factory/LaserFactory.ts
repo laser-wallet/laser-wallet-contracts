@@ -11,12 +11,15 @@ import {
     initSSR,
 } from "../utils";
 import { Address } from "../types";
+import { addrZero } from "../constants/constants";
 
 describe("Proxy Factory", () => {
     let addresses: AddressesForTest;
     let signers: SignersForTest;
     let chainId: number;
     let laserModule: Address;
+    let laserMasterGuard: Address;
+    let laserRegistry: Address;
 
     beforeEach(async () => {
         await deployments.fixture();
@@ -26,6 +29,8 @@ describe("Proxy Factory", () => {
         chainId = network.chainId;
 
         laserModule = (await deployments.get("LaserModuleSSR")).address;
+        laserMasterGuard = (await deployments.get("LaserMasterGuard")).address;
+        laserRegistry = (await deployments.get("LaserRegistry")).address;
     });
 
     describe("Proxy Factory creation and interaction", () => {
@@ -38,14 +43,14 @@ describe("Proxy Factory", () => {
         it("should revert by providing an invalid singleton (EOA)", async () => {
             const randy = ethers.Wallet.createRandom();
             const Factory = await ethers.getContractFactory("LaserFactory");
-            await expect(Factory.deploy(randy.address)).to.be.reverted;
+            await expect(Factory.deploy(randy.address, addrZero, addrZero)).to.be.reverted;
         });
 
         it("should revert by providing an invalid singleton (contract)", async () => {
             const Caller = await ethers.getContractFactory("Caller");
             const caller = await Caller.deploy();
             const Factory = await ethers.getContractFactory("LaserFactory");
-            await expect(Factory.deploy(caller.address)).to.be.reverted;
+            await expect(Factory.deploy(caller.address, addrZero, addrZero)).to.be.reverted;
         });
 
         it("should revert if the owner signs with an invalid chain id", async () => {

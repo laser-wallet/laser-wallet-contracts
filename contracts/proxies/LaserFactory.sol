@@ -12,6 +12,8 @@ interface ILaser {
         uint256 gasLimit,
         address relayer,
         address laserModule,
+        address _masterGuard,
+        address _laserRegistry,
         bytes calldata laserModuleData,
         bytes calldata ownerSignature
     ) external;
@@ -21,12 +23,21 @@ interface ILaser {
 contract LaserFactory is ILaserFactory {
     address public immutable singleton;
 
-    /// @param _singleton Master copy of the proxy.
+    address public immutable laserRegistry;
 
-    constructor(address _singleton) {
+    address public immutable laserMasterGuard;
+
+    /// @param _singleton Master copy of the proxy.
+    constructor(
+        address _singleton,
+        address _laserRegistry,
+        address _laserMasterGuard
+    ) {
         // Laser Wallet contract: bytes4(keccak256("I_AM_LASER"))
         if (!IERC165(_singleton).supportsInterface(0xae029e0b)) revert LaserFactory__constructor__invalidSingleton();
         singleton = _singleton;
+        laserRegistry = _laserRegistry;
+        laserMasterGuard = _laserMasterGuard;
     }
 
     ///@dev Creates a new proxy with create 2, initializes the wallet and refunds the relayer (if gas limit is greater than 0).
@@ -47,23 +58,27 @@ contract LaserFactory is ILaserFactory {
         address laserModule,
         bytes calldata laserModuleData,
         uint256 saltNumber,
-        bytes calldata ownerSignature
+        bytes memory ownerSignature
     ) external returns (LaserProxy proxy) {
-        bytes32 salt = getSalt(owner, laserModule, laserModuleData, saltNumber);
-        proxy = createProxyWithCreate2(salt);
+        {
+            bytes32 salt = getSalt(owner, laserModule, laserModuleData, saltNumber);
+            proxy = createProxyWithCreate2(salt);
 
-        ILaser(address(proxy)).init(
-            owner,
-            maxFeePerGas,
-            maxPriorityFeePerGas,
-            gasLimit,
-            relayer,
-            laserModule,
-            laserModuleData,
-            ownerSignature
-        );
+            ILaser(address(proxy)).init(
+                owner,
+                maxFeePerGas,
+                maxPriorityFeePerGas,
+                gasLimit,
+                relayer,
+                laserModule,
+                laserMasterGuard,
+                laserRegistry,
+                laserModuleData,
+                ownerSignature
+            );
 
-        emit ProxyCreation(address(proxy));
+            emit ProxyCreation(address(proxy));
+        }
     }
 
     ///@dev Precomputes the address of a proxy that is created through 'create2'.

@@ -7,6 +7,8 @@ import { LaserWallet } from "../../typechain-types";
 import { LaserFactory } from "../../typechain-types";
 import { addrZero, ownerWallet } from "../constants/constants";
 
+require("dotenv").config();
+
 type ReturnWalletSetup = {
     address: Address;
     wallet: LaserWallet;
@@ -66,6 +68,18 @@ export async function initSSR(guardians: Address[], recoveryOwners: Address[]): 
     return encodeFunctionData(abi, "initSSR", [guardians, recoveryOwners]);
 }
 
+async function authorizeModule(module: Address): Promise<void> {
+    const abi = ["function approveModule(address singleton) external"];
+
+    const [deployer] = await ethers.getSigners();
+
+    const _laserRegistry = await deployments.get("LaserRegistry");
+
+    const laserRegistry = await ethers.getContractAt(_laserRegistry.abi, _laserRegistry.address);
+
+    await laserRegistry.approveModule(module);
+}
+
 export async function walletSetup(
     _owner?: Address,
     _recoveryOwners?: Address[],
@@ -120,6 +134,8 @@ export async function walletSetup(
             value: ethers.utils.parseEther("10"),
         });
     }
+
+    await authorizeModule(LaserSSRModuleAddress);
 
     const signature = ownerSignature ? ownerSignature : await sign(ownerSigner, dataHash);
 

@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 pragma solidity 0.8.15;
 
+import "hardhat/console.sol";
+
 interface ILaser {
     function owner() external view returns (address);
 
@@ -11,34 +13,20 @@ interface ILaser {
     function isLocked() external view returns (bool);
 
     function nonce() external view returns (uint256);
-
-    function exec(
-        address to,
-        uint256 value,
-        bytes calldata callData,
-        uint256 _nonce,
-        uint256 maxFeePerGas,
-        uint256 maxPriorityFeePerGas,
-        uint256 gasLimit,
-        address relayer,
-        bytes calldata ownerSignature
-    ) external;
 }
 
 interface ILaserModuleSSR {
     function getRecoveryOwners(address wallet) external view returns (address[] memory);
 
     function getGuardians(address wallet) external view returns (address[] memory);
+
+    function getWalletTimeLock(address wallet) external view returns (uint256);
 }
 
-/**
- * @title LaserHelper - Helper contract that outputs multiple results in a single call.
- */
+///@title LaserHelper - Helper contract that outputs multiple results in a single call.
 contract LaserHelper {
-    /**
-     * @dev Returns the wallet state + SSR module.
-     */
-    function getWalletState(address laserWallet, address SSRModule)
+    ///@dev Returns the wallet state + SSR module.
+    function getWalletState(address wallet, address SSRModule)
         external
         view
         returns (
@@ -48,32 +36,38 @@ contract LaserHelper {
             address[] memory guardians,
             address[] memory recoveryOwners,
             uint256 nonce,
-            uint256 balance
+            uint256 balance,
+            uint256 timeLock
         )
     {
-        ILaser laser = ILaser(laserWallet);
+        ILaser laser = ILaser(wallet);
         ILaserModuleSSR laserModule = ILaserModuleSSR(SSRModule);
         owner = laser.owner();
         singleton = laser.singleton();
         isLocked = laser.isLocked();
-        guardians = laserModule.getGuardians(laserWallet);
-        recoveryOwners = laserModule.getRecoveryOwners(laserWallet);
+        guardians = laserModule.getGuardians(wallet);
+        recoveryOwners = laserModule.getRecoveryOwners(wallet);
         nonce = laser.nonce();
-        balance = address(laserWallet).balance;
+        balance = address(wallet).balance;
+        timeLock = laserModule.getWalletTimeLock(wallet);
     }
 
+    ///@dev Simulates a transaction.
+    ///@notice The simulation reverts if the main transaction fails.
+    ///It needs to be called off-chain from address zero.
     function simulateTransaction(
         address to,
         bytes calldata callData,
-        uint256 value,
         uint256 gasLimit
     ) external returns (uint256 totalGas) {
+        require(to.code.length > 2, "target address must be a contract");
+        (bool success, ) = to.call(callData);
+        console.log("success -->", success);
+        console.log("bal -->", address(to).balance);
+        require(success, "main call failed.");
+        gasLimit = (gasLimit * 63) / 64;
+
         totalGas = gasLimit - gasleft();
-
-        (bool success, ) = payable(to).call{value: value}(callData);
-        require(success, "main execution failed.");
-
-        totalGas = totalGas - gasleft();
         require(msg.sender == address(0), "Must be called off-chain from address zero.");
     }
 }
