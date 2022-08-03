@@ -28,7 +28,7 @@ contract LaserRegistry {
     }
 
     function approveModule(address module) external onlyLaser {
-        approvedModules[module] = approvedModules[pointer];
+        approvedModules[module] = pointer;
         approvedModules[pointer] = module;
 
         unchecked {

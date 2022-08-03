@@ -7,12 +7,16 @@ const deploy: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
     const { deployer } = await getNamedAccounts();
 
+    const laserRegistryAddress = (await deployments.get("LaserRegistry")).address;
+
     await deploy("LaserMasterGuard", {
         from: deployer,
-        args: [],
+        args: [laserRegistryAddress],
         log: true,
     });
 };
 
 deploy.tags = ["LaserMasterGuard"];
+deploy.runAtTheEnd = true;
+
 export default deploy;

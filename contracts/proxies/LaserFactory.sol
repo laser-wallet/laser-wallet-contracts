@@ -23,11 +23,21 @@ interface ILaser {
 contract LaserFactory is ILaserFactory {
     address public immutable singleton;
 
+    address public immutable laserRegistry;
+
+    address public immutable laserMasterGuard;
+
     /// @param _singleton Master copy of the proxy.
-    constructor(address _singleton) {
+    constructor(
+        address _singleton,
+        address _laserRegistry,
+        address _laserMasterGuard
+    ) {
         // Laser Wallet contract: bytes4(keccak256("I_AM_LASER"))
         if (!IERC165(_singleton).supportsInterface(0xae029e0b)) revert LaserFactory__constructor__invalidSingleton();
         singleton = _singleton;
+        laserRegistry = _laserRegistry;
+        laserMasterGuard = _laserMasterGuard;
     }
 
     ///@dev Creates a new proxy with create 2, initializes the wallet and refunds the relayer (if gas limit is greater than 0).
@@ -46,8 +56,6 @@ contract LaserFactory is ILaserFactory {
         uint256 gasLimit,
         address relayer,
         address laserModule,
-        address masterGuard,
-        address laserRegistry,
         bytes calldata laserModuleData,
         uint256 saltNumber,
         bytes memory ownerSignature
@@ -63,7 +71,7 @@ contract LaserFactory is ILaserFactory {
                 gasLimit,
                 relayer,
                 laserModule,
-                masterGuard,
+                laserMasterGuard,
                 laserRegistry,
                 laserModuleData,
                 ownerSignature

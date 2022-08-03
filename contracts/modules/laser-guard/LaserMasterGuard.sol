@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 pragma solidity 0.8.15;
 
+import "../../interfaces/ILaserRegistry.sol";
+
 interface IGuard {
     function verifyTransaction(
         address wallet,
@@ -26,11 +28,18 @@ contract LaserMasterGuard {
     ///@dev pointer to create a mapping link list.
     address private constant pointer = address(0x1);
 
+    address public immutable laserRegistry;
+
     mapping(address => uint256) internal guardModulesCount;
     mapping(address => mapping(address => address)) internal guardModules;
 
+    constructor(address _laserRegistry) {
+        laserRegistry = _laserRegistry;
+    }
+
     function addGuardModule(address module) external {
         //@todo Check that the module is a contract that supports this.
+        require(ILaserRegistry(laserRegistry).isModule(module), "Unauthorized module");
         address wallet = msg.sender;
         guardModules[wallet][module] = guardModules[wallet][pointer];
         guardModules[wallet][pointer] = module;

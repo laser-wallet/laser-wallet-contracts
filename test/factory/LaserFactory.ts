@@ -11,6 +11,7 @@ import {
     initSSR,
 } from "../utils";
 import { Address } from "../types";
+import { addrZero } from "../constants/constants";
 
 describe("Proxy Factory", () => {
     let addresses: AddressesForTest;
@@ -42,14 +43,14 @@ describe("Proxy Factory", () => {
         it("should revert by providing an invalid singleton (EOA)", async () => {
             const randy = ethers.Wallet.createRandom();
             const Factory = await ethers.getContractFactory("LaserFactory");
-            await expect(Factory.deploy(randy.address)).to.be.reverted;
+            await expect(Factory.deploy(randy.address, addrZero, addrZero)).to.be.reverted;
         });
 
         it("should revert by providing an invalid singleton (contract)", async () => {
             const Caller = await ethers.getContractFactory("Caller");
             const caller = await Caller.deploy();
             const Factory = await ethers.getContractFactory("LaserFactory");
-            await expect(Factory.deploy(caller.address)).to.be.reverted;
+            await expect(Factory.deploy(caller.address, addrZero, addrZero)).to.be.reverted;
         });
 
         it("should revert if the owner signs with an invalid chain id", async () => {
@@ -91,19 +92,7 @@ describe("Proxy Factory", () => {
             const signature = await sign(ownerSigner, dataHash);
 
             await expect(
-                factory.deployProxyAndRefund(
-                    owner,
-                    0,
-                    0,
-                    0,
-                    relayer,
-                    laserModule,
-                    laserMasterGuard,
-                    laserRegistry,
-                    initData,
-                    saltNumber,
-                    signature
-                )
+                factory.deployProxyAndRefund(owner, 0, 0, 0, relayer, laserModule, initData, saltNumber, signature)
             ).to.emit(factory, "ProxyCreation");
         });
 
@@ -130,8 +119,6 @@ describe("Proxy Factory", () => {
                 0,
                 relayer,
                 laserModule,
-                laserMasterGuard,
-                laserRegistry,
                 initData,
                 saltNumber,
                 signature
@@ -169,8 +156,6 @@ describe("Proxy Factory", () => {
                 0,
                 relayer,
                 laserModule,
-                laserMasterGuard,
-                laserRegistry,
                 initData,
                 BigNumber.from(saltNumber).add(1),
                 signature
@@ -211,8 +196,6 @@ describe("Proxy Factory", () => {
                 0,
                 relayer,
                 laserModule,
-                laserMasterGuard,
-                laserRegistry,
                 initData,
                 saltNumber,
                 signature
@@ -249,8 +232,6 @@ describe("Proxy Factory", () => {
                 0,
                 relayer,
                 laserModule,
-                laserMasterGuard,
-                laserRegistry,
                 initData,
                 saltNumber,
                 signature
@@ -287,8 +268,6 @@ describe("Proxy Factory", () => {
                 0,
                 relayer,
                 laserModule,
-                laserMasterGuard,
-                laserRegistry,
                 initData,
                 saltNumber,
                 signature
@@ -320,35 +299,11 @@ describe("Proxy Factory", () => {
             const signature = await sign(ownerSigner, dataHash);
 
             // first transaction
-            await factory.deployProxyAndRefund(
-                owner,
-                0,
-                0,
-                0,
-                relayer,
-                laserModule,
-                laserMasterGuard,
-                laserRegistry,
-                initData,
-                saltNumber,
-                signature
-            );
+            await factory.deployProxyAndRefund(owner, 0, 0, 0, relayer, laserModule, initData, saltNumber, signature);
 
             // second transaction
             await expect(
-                factory.deployProxyAndRefund(
-                    owner,
-                    0,
-                    0,
-                    0,
-                    relayer,
-                    laserModule,
-                    laserMasterGuard,
-                    laserRegistry,
-                    initData,
-                    saltNumber,
-                    signature
-                )
+                factory.deployProxyAndRefund(owner, 0, 0, 0, relayer, laserModule, initData, saltNumber, signature)
             ).to.be.reverted;
         });
     });

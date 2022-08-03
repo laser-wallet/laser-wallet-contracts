@@ -13,7 +13,7 @@ interface ILaserState {
 
     function owner() external view returns (address);
 
-    function masterGuard() external view returns (address);
+    function laserMasterGuard() external view returns (address);
 
     function laserRegistry() external view returns (address);
 

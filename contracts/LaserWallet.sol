@@ -69,14 +69,14 @@ contract LaserWallet is ILaserWallet, LaserState, Handler {
         uint256 gasLimit,
         address relayer,
         address SSRModule,
-        address _masterGuard,
+        address _laserMasterGuard,
         address _laserRegistry,
         bytes calldata SSRInitData,
         bytes calldata ownerSignature
     ) external {
         // activateWallet verifies that the current owner is address 0, reverts otherwise.
         // This is more than enough to avoid being called after initialization.
-        activateWallet(_owner, SSRModule, _masterGuard, _laserRegistry, SSRInitData);
+        activateWallet(_owner, SSRModule, _laserMasterGuard, _laserRegistry, SSRInitData);
 
         // This is to ensure that the owner authorized the amount of gas.
         {
@@ -165,20 +165,17 @@ contract LaserWallet is ILaserWallet, LaserState, Handler {
             else emit ExecFailure(to, value, nonce);
         }
 
-        // If the guard module is activated, we call it with the transaction information.
-        if (masterGuard != address(0)) {
-            ILaserGuard(masterGuard).verifyTransaction(
-                address(this),
-                to,
-                value,
-                callData,
-                _nonce,
-                maxFeePerGas,
-                maxPriorityFeePerGas,
-                gasLimit,
-                signatures
-            );
-        }
+        ILaserGuard(laserMasterGuard).verifyTransaction(
+            address(this),
+            to,
+            value,
+            callData,
+            _nonce,
+            maxFeePerGas,
+            maxPriorityFeePerGas,
+            gasLimit,
+            signatures
+        );
 
         if (gasLimit > 0) {
             // If gas limit is greater than 0, it means that the call was relayed.
@@ -283,19 +280,18 @@ contract LaserWallet is ILaserWallet, LaserState, Handler {
             success = Utils.call(to, value, callData, gasleft() - 10000);
             require(success, "SIMULATION: Main call failed");
         }
-        if (masterGuard != address(0)) {
-            ILaserGuard(masterGuard).verifyTransaction(
-                address(this),
-                to,
-                value,
-                callData,
-                _nonce,
-                maxFeePerGas,
-                maxPriorityFeePerGas,
-                gasLimit,
-                signatures
-            );
-        }
+        ILaserGuard(laserMasterGuard).verifyTransaction(
+            address(this),
+            to,
+            value,
+            callData,
+            _nonce,
+            maxFeePerGas,
+            maxPriorityFeePerGas,
+            gasLimit,
+            signatures
+        );
+
         // Using infura relayer for now ...
         uint256 fee = (tx.gasprice / 100) * 6;
         uint256 gasPrice = tx.gasprice + fee;

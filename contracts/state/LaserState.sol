@@ -5,9 +5,7 @@ import "../access/Access.sol";
 import "../common/Utils.sol";
 import "../interfaces/IERC165.sol";
 import "../interfaces/ILaserState.sol";
-import "../interfaces/ILaserModuleRegistry.sol";
-
-import "hardhat/console.sol";
+import "../interfaces/ILaserRegistry.sol";
 
 contract LaserState is Access, ILaserState {
     address internal constant pointer = address(0x1);
@@ -16,7 +14,7 @@ contract LaserState is Access, ILaserState {
 
     address public owner;
 
-    address public masterGuard;
+    address public laserMasterGuard;
 
     address public laserRegistry;
 
@@ -33,19 +31,15 @@ contract LaserState is Access, ILaserState {
 
     ///@notice Restricted, can only be called by the wallet.
     function addLaserModule(address newModule) external access {
-        // require(ILaserModuleRegistry(laserModuleRegistry).isModule(newModule), "Module not authorized");
+        require(ILaserRegistry(laserRegistry).isModule(newModule), "Invalid new module");
         laserModules[newModule] = laserModules[pointer];
         laserModules[pointer] = newModule;
     }
 
     function upgradeSingleton(address _singleton) external access {
-        // if (_singleton == address(this)) revert Singleton__upgradeSingleton__incorrectAddress();
-
-        if (!IERC165(_singleton).supportsInterface(0xae029e0b)) {
-            //bytes4(keccak256("I_AM_LASER")))
-            revert LaserState__upgradeSingleton__notLaser();
-        }
-
+        //@todo Change require for custom errrors.
+        require(_singleton != address(this), "Invalid singleton");
+        require(ILaserRegistry(laserRegistry).isSingleton(_singleton), "Invalid master copy");
         singleton = _singleton;
     }
 
@@ -65,11 +59,11 @@ contract LaserState is Access, ILaserState {
         owner = _owner;
 
         // check that the module is accepted.
-        masterGuard = _masterGuard;
+        laserMasterGuard = _masterGuard;
         laserRegistry = _laserRegistry;
 
         if (laserModule != address(0)) {
-            // require(ILaserModuleRegistry(laserModuleRegistry).isModule(laserModule), "Module not authorized");
+            require(ILaserRegistry(laserRegistry).isModule(laserModule), "Module not authorized");
             bool success = Utils.call(laserModule, 0, laserModuleData, gasleft());
             require(success);
             laserModules[laserModule] = pointer;

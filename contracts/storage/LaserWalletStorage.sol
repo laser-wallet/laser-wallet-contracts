@@ -12,9 +12,9 @@ abstract contract LaserWalletStorage {
 
     address public owner;
 
-    address public laserGuard;
+    address public laserMasterGuard;
 
-    // address public laserModuleRegistry;
+    address public laserRegistry;
 
     bool public isLocked;
 
