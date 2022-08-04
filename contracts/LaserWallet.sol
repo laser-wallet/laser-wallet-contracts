@@ -28,7 +28,17 @@ interface ILaserGuard {
  *         It has modularity (programmability) and security at its core.
  */
 contract LaserWallet is ILaserWallet, LaserState, Handler {
+    /*//////////////////////////////////////////////////////////////
+                            Laser metadata
+    //////////////////////////////////////////////////////////////*/
+
     string public constant VERSION = "1.0.0";
+
+    string public constant NAME = "Laser Wallet";
+
+    /*//////////////////////////////////////////////////////////////
+                        Signature constant helpers
+    //////////////////////////////////////////////////////////////*/
 
     bytes4 private constant EIP1271_MAGIC_VALUE = bytes4(keccak256("isValidSignature(bytes32,bytes)"));
 

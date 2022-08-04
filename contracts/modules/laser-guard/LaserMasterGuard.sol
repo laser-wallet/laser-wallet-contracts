@@ -25,28 +25,29 @@ interface IGuard {
  * @notice Parent guard module that calls child Laser guards.
  */
 contract LaserMasterGuard {
-    ///@dev pointer to create a mapping link list.
-    address private constant pointer = address(0x1);
+    address private constant POINTER = address(0x1);
 
-    address public immutable laserRegistry;
+    address public immutable LASER_REGISTRY;
 
     mapping(address => uint256) internal guardModulesCount;
     mapping(address => mapping(address => address)) internal guardModules;
 
-    constructor(address _laserRegistry) {
-        laserRegistry = _laserRegistry;
+    constructor(address _LASER_REGISTRY) {
+        LASER_REGISTRY = _LASER_REGISTRY;
     }
 
     function addGuardModule(address module) external {
         //@todo Check that the module is a contract that supports this.
-        require(ILaserRegistry(laserRegistry).isModule(module), "Unauthorized module");
+        require(ILaserRegistry(LASER_REGISTRY).isModule(module), "Unauthorized module");
         address wallet = msg.sender;
-        guardModules[wallet][module] = guardModules[wallet][pointer];
-        guardModules[wallet][pointer] = module;
+        guardModules[wallet][module] = guardModules[wallet][POINTER];
+        guardModules[wallet][POINTER] = module;
 
         unchecked {
             ++guardModulesCount[wallet];
         }
+
+        require(guardModulesCount[wallet] < 4, "Only 3 guard modules allowed per wallet");
     }
 
     function removeGuardModule(address prevModule, address module) external {
@@ -54,7 +55,7 @@ contract LaserMasterGuard {
 
         //@todo custom errors instead of require statement.
         require(guardModules[wallet][module] != address(0), "Module not found");
-        require(module != pointer, "incorrect");
+        require(module != POINTER, "incorrect");
 
         require(guardModules[wallet][prevModule] == module);
 
@@ -105,10 +106,10 @@ contract LaserMasterGuard {
 
     function getGuardModules(address wallet) public view returns (address[] memory) {
         address[] memory guardModulesArray = new address[](guardModulesCount[wallet]);
-        address currentGuardModule = guardModules[wallet][pointer];
+        address currentGuardModule = guardModules[wallet][POINTER];
 
         uint256 index;
-        while (currentGuardModule != pointer) {
+        while (currentGuardModule != POINTER) {
             guardModulesArray[index] = currentGuardModule;
             currentGuardModule = guardModules[wallet][currentGuardModule];
             unchecked {
