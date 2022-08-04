@@ -41,7 +41,7 @@ npm run test
 
 #### This command will deploy the contracts to the desired network, and verify them on Etherscan
 ```
-npm run deploy-and-verify --network <network-name>
+npm run deploy-and-verify <network-name>
 ```
 
 
