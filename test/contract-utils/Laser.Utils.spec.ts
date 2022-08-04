@@ -10,7 +10,7 @@ import {
     AddressesForTest,
 } from "../utils";
 import { Address, Domain } from "../types";
-import { ownerWallet } from "../constants/constants";
+import { addrZero, ownerWallet } from "../constants/constants";
 import { Contract } from "ethers";
 
 describe("Setup", () => {
@@ -32,7 +32,7 @@ describe("Setup", () => {
             const hash = ethers.utils.keccak256("0x1234");
             const sig = await sign(ownerSigner, hash);
             const signer = await utils.returnSigner(hash, sig, 0);
-            expect(signer).to.equal(signer);
+            expect(signer).to.equal(addrZero);
         });
 
         it("should return correct signer by signing the hash", async () => {
