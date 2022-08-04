@@ -20,5 +20,8 @@ jobs:
       - name: Installation
         run: npm i 
       
+      - name: Generate types
+        run: npm run generate-types
+        
       - name: Run tests
         run: npm run test

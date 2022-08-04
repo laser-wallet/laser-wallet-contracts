@@ -8,6 +8,7 @@
         "lint:ts": "echo linting ts files ... && prettier --write test/**/*.ts && npx prettier --write hardhat.config.ts && npx prettier --write deploy/**/*.ts",
         "lint:sol": "echo liniting solidity files ... && prettier --write 'contracts/**/*.sol'",
         "lint:all": "echo linting everything ... && npm run lint:ts && npm run lint:sol",
+        "generate-types": "hardhat typechain",
         "test": "echo running tests for Laser core contracts ... && hardhat test",
         "compile": "echo compiling Laser contracts ... && hardhat compile", 
         "deploy-and-verify": "echo deploying the contracts and verifying them on Etherscan ... && hardhat deploy-and-verify --network",
