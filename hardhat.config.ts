@@ -13,7 +13,11 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-const { INFURA_KEY, ALCHEMY_URL, DEPLOYER_PRIVATE_KEY, ETHERSCAN_API_KEY } = process.env;
+let { INFURA_KEY, ALCHEMY_URL, DEPLOYER_PRIVATE_KEY, ETHERSCAN_API_KEY } = process.env;
+
+if (DEPLOYER_PRIVATE_KEY === undefined) {
+    DEPLOYER_PRIVATE_KEY = "3e13b1b48cb1afe4fe0decd5a4fe3b44a15273b2100a861b33e616f0c16526e4";
+}
 
 const config: HardhatUserConfig = {
     solidity: {
