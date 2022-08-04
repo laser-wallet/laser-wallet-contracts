@@ -95,8 +95,6 @@ contract LaserWallet is ILaserWallet, LaserState, Handler {
             );
             address signer = Utils.returnSigner(signedHash, ownerSignature, 0);
             if (signer != _owner) revert LW__init__notOwner();
-
-            if (signer == owner) {}
         }
 
         if (gasLimit > 0) {
