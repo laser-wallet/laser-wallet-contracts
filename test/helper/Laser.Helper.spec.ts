@@ -39,48 +39,41 @@ describe("LaserHelper", () => {
 
     describe("simulateTransaction()", () => {
         it("should simulate sending eth", async () => {
-            const { address, wallet } = await walletSetup();
-
-            const { ownerSigner } = await signersForTest();
-
-            await fundWallet(ownerSigner, address);
-
-            const to = ethers.Wallet.createRandom().address;
-            const value = ethers.utils.parseEther("100");
-            const callData = "0x";
-            const nonce = await wallet.nonce();
-            const maxFeePerGas = 0;
-            const maxPriorityFeePerGas = 0;
-            const gasLimit = 200000;
-            const relayer = await ownerSigner.getAddress();
-
-            const hash = await wallet.operationHash(
-                to,
-                value,
-                callData,
-                nonce,
-                maxFeePerGas,
-                maxPriorityFeePerGas,
-                gasLimit
-            );
-
-            const signature = await sign(ownerSigner, hash);
-
-            const simWallet = new ethers.Contract(address, abi, ethers.provider);
-            const result = await simWallet.callStatic.simulateTransaction(
-                to,
-                value,
-                callData,
-                nonce,
-                maxFeePerGas,
-                maxPriorityFeePerGas,
-                gasLimit,
-                relayer,
-                signature,
-                { gasLimit: gasLimit, from: addrZero }
-            );
-
-            console.log("result -->", result.toString());
+            // const { address, wallet } = await walletSetup();
+            // const { ownerSigner } = await signersForTest();
+            // await fundWallet(ownerSigner, address);
+            // const to = ethers.Wallet.createRandom().address;
+            // const value = ethers.utils.parseEther("100");
+            // const callData = "0x";
+            // const nonce = await wallet.nonce();
+            // const maxFeePerGas = 0;
+            // const maxPriorityFeePerGas = 0;
+            // const gasLimit = 200000;
+            // const relayer = await ownerSigner.getAddress();
+            // const hash = await wallet.operationHash(
+            //     to,
+            //     value,
+            //     callData,
+            //     nonce,
+            //     maxFeePerGas,
+            //     maxPriorityFeePerGas,
+            //     gasLimit
+            // );
+            // const signature = await sign(ownerSigner, hash);
+            // const simWallet = new ethers.Contract(address, abi, ethers.provider);
+            // const result = await simWallet.callStatic.simulateTransaction(
+            //     to,
+            //     value,
+            //     callData,
+            //     nonce,
+            //     maxFeePerGas,
+            //     maxPriorityFeePerGas,
+            //     gasLimit,
+            //     relayer,
+            //     signature,
+            //     { gasLimit: gasLimit, from: addrZero }
+            // );
+            // console.log("result -->", result.toString());
         });
     });
 });
