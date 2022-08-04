@@ -2,7 +2,7 @@
 pragma solidity 0.8.15;
 
 contract LaserRegistry {
-    address private constant pointer = address(0x1);
+    address private constant POINTER = address(0x1);
 
     address public laser;
 
@@ -23,13 +23,13 @@ contract LaserRegistry {
     }
 
     function approveSingleton(address singleton) external onlyLaser {
-        approvedSingletons[singleton] = approvedSingletons[pointer];
+        approvedSingletons[singleton] = approvedSingletons[POINTER];
         approvedSingletons[singleton] = singleton;
     }
 
     function approveModule(address module) external onlyLaser {
-        approvedModules[module] = pointer;
-        approvedModules[pointer] = module;
+        approvedModules[module] = POINTER;
+        approvedModules[POINTER] = module;
 
         unchecked {
             ++moduleCount;
@@ -38,7 +38,7 @@ contract LaserRegistry {
 
     function removeModule(address prevModule, address module) external onlyLaser {
         require(approvedModules[module] != address(0), "Module not found");
-        require(module != pointer, "incorrect");
+        require(module != POINTER, "incorrect");
 
         require(approvedModules[prevModule] == module, "incorrect prev module");
 
@@ -51,19 +51,19 @@ contract LaserRegistry {
     }
 
     function isSingleton(address singleton) external view returns (bool) {
-        return approvedSingletons[singleton] != address(0) && singleton != pointer;
+        return approvedSingletons[singleton] != address(0) && singleton != POINTER;
     }
 
     function isModule(address module) external view returns (bool) {
-        return approvedModules[module] != address(0) && module != pointer;
+        return approvedModules[module] != address(0) && module != POINTER;
     }
 
     function getModules() public view returns (address[] memory) {
         address[] memory modulesArray = new address[](moduleCount);
-        address currentModule = approvedModules[pointer];
+        address currentModule = approvedModules[POINTER];
 
         uint256 index;
-        while (currentModule != pointer) {
+        while (currentModule != POINTER) {
             modulesArray[index] = currentModule;
             currentModule = approvedModules[currentModule];
             unchecked {

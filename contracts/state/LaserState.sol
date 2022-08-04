@@ -8,28 +8,40 @@ import "../interfaces/ILaserState.sol";
 import "../interfaces/ILaserRegistry.sol";
 
 contract LaserState is Access, ILaserState {
-    address internal constant pointer = address(0x1);
+    address internal constant pointer = address(0x1); // Pointer for the link list.
 
-    address public singleton;
+    /*//////////////////////////////////////////////////////////////
+                         Laser Wallet storage
+    //////////////////////////////////////////////////////////////*/
 
-    address public owner;
+    address public singleton; // Base contract.
 
-    address public laserMasterGuard;
+    address public owner; // Owner of the wallet.
 
-    address public laserRegistry;
+    address public laserMasterGuard; // Parent module for guard sub modules.
 
-    bool public isLocked;
+    address public laserRegistry; // Registry that keeps track of authorized modules (Laser and Guards).
 
-    uint256 public nonce;
+    bool public isLocked; // If the wallet is locked, only certain operations can unlock it.
 
-    mapping(address => address) internal laserModules;
+    uint256 public nonce; // Anti-replay number for signed transactions.
 
-    ///@notice Restricted, can only be called by the wallet or module.
+    mapping(address => address) internal laserModules; // Mapping of authorized Laser modules.
+
+    /**
+     * @notice Restricted, can only be called by the wallet 'address(this)' or module.
+     *
+     * @param newOwner  Address of the new owner.
+     */
     function changeOwner(address newOwner) external access {
         owner = newOwner;
     }
 
-    ///@notice Restricted, can only be called by the wallet.
+    /**
+     * @notice Restricted, can only be called by the wallet 'address(this)' or module.
+     *
+     * @param newModule Address of a new authorized Laser module.
+     */
     function addLaserModule(address newModule) external access {
         require(ILaserRegistry(laserRegistry).isModule(newModule), "Invalid new module");
         laserModules[newModule] = laserModules[pointer];
