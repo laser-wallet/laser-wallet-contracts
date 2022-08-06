@@ -3,22 +3,8 @@ pragma solidity 0.8.15;
 
 import "../../common/Utils.sol";
 import "../../interfaces/ILaserModuleSSR.sol";
-
-interface ILaser {
-    function nonce() external view returns (uint256);
-
-    function owner() external view returns (address);
-
-    function execFromModule(
-        address to,
-        uint256 value,
-        bytes calldata callData,
-        uint256 maxFeePerGas,
-        uint256 maxPriorityFeePerGas,
-        uint256 gasLimit,
-        address relayer
-    ) external;
-}
+import "../../interfaces/ILaserState.sol";
+import "../../interfaces/ILaserWallet.sol";
 
 ///@dev Laser module implementation of Smart Social Recovery.
 contract LaserModuleSSR is ILaserModuleSSR {
@@ -30,8 +16,8 @@ contract LaserModuleSSR is ILaserModuleSSR {
             "LaserModuleSSR(address wallet,bytes callData,uint256 walletNonce,uint256 maxFeePerGas,uint256 maxPriorityFeePerGas,uint256 gasLimit"
         );
 
-    ///@dev pointer to create a mapping link list.
-    address internal constant pointer = address(0x1);
+    ///@dev POINTER to create a mapping link list.
+    address internal constant POINTER = address(0x1);
 
     ///@dev timeLock keeps track of the recovery time delay. It gets set to 'block.timestamp' when 'lock' is triggered.
     mapping(address => uint256) internal timeLock;
@@ -68,7 +54,7 @@ contract LaserModuleSSR is ILaserModuleSSR {
         address relayer,
         bytes memory signatures
     ) external {
-        uint256 walletNonce = ILaser(wallet).nonce();
+        uint256 walletNonce = ILaserState(wallet).nonce();
 
         bytes32 signedHash = keccak256(
             encodeOperation(wallet, callData, walletNonce, maxFeePerGas, maxPriorityFeePerGas, gasLimit)
@@ -84,7 +70,7 @@ contract LaserModuleSSR is ILaserModuleSSR {
 
         timeLock[wallet] = block.timestamp;
 
-        ILaser(wallet).execFromModule(wallet, 0, callData, maxFeePerGas, maxPriorityFeePerGas, gasLimit, relayer);
+        ILaserWallet(wallet).execFromModule(wallet, 0, callData, maxFeePerGas, maxPriorityFeePerGas, gasLimit, relayer);
     }
 
     /**
@@ -100,7 +86,7 @@ contract LaserModuleSSR is ILaserModuleSSR {
         address relayer,
         bytes memory signatures
     ) external {
-        uint256 walletNonce = ILaser(wallet).nonce();
+        uint256 walletNonce = ILaserState(wallet).nonce();
 
         bytes32 signedHash = keccak256(
             encodeOperation(wallet, callData, walletNonce, maxFeePerGas, maxPriorityFeePerGas, gasLimit)
@@ -108,7 +94,7 @@ contract LaserModuleSSR is ILaserModuleSSR {
 
         require(bytes4(callData) == bytes4(keccak256("unlock()")), "should be the same!");
 
-        address walletOwner = ILaser(wallet).owner();
+        address walletOwner = ILaserState(wallet).owner();
         require(walletOwner != address(0));
 
         address signer1 = Utils.returnSigner(signedHash, signatures, 0);
@@ -121,7 +107,7 @@ contract LaserModuleSSR is ILaserModuleSSR {
         );
 
         timeLock[wallet] = 0;
-        ILaser(wallet).execFromModule(wallet, 0, callData, maxFeePerGas, maxPriorityFeePerGas, gasLimit, relayer);
+        ILaserWallet(wallet).execFromModule(wallet, 0, callData, maxFeePerGas, maxPriorityFeePerGas, gasLimit, relayer);
     }
 
     function recover(
@@ -133,7 +119,7 @@ contract LaserModuleSSR is ILaserModuleSSR {
         address relayer,
         bytes memory signatures
     ) external {
-        uint256 walletNonce = ILaser(wallet).nonce();
+        uint256 walletNonce = ILaserState(wallet).nonce();
 
         bytes32 signedHash = keccak256(
             encodeOperation(wallet, callData, walletNonce, maxFeePerGas, maxPriorityFeePerGas, gasLimit)
@@ -149,13 +135,13 @@ contract LaserModuleSSR is ILaserModuleSSR {
 
         require(timeLock[wallet] + 1 weeks < block.timestamp, "incorrect time");
         timeLock[wallet] = 0;
-        ILaser(wallet).execFromModule(wallet, 0, callData, maxFeePerGas, maxPriorityFeePerGas, gasLimit, relayer);
+        ILaserWallet(wallet).execFromModule(wallet, 0, callData, maxFeePerGas, maxPriorityFeePerGas, gasLimit, relayer);
     }
 
     function addGuardian(address wallet, address newGuardian) external onlyWallet(wallet) {
         verifyNewRecoveryOwnerOrGuardian(wallet, newGuardian);
-        guardians[wallet][newGuardian] = guardians[wallet][pointer];
-        guardians[wallet][pointer] = newGuardian;
+        guardians[wallet][newGuardian] = guardians[wallet][POINTER];
+        guardians[wallet][POINTER] = newGuardian;
 
         unchecked {
             guardianCount[wallet]++;
@@ -170,7 +156,7 @@ contract LaserModuleSSR is ILaserModuleSSR {
         // There needs to be at least 1 guardian.
         if (guardianCount[wallet] < 2) revert SSR__removeGuardian__underflow();
 
-        if (guardianToRemove == pointer) revert SSR__removeGuardian__invalidAddress();
+        if (guardianToRemove == POINTER) revert SSR__removeGuardian__invalidAddress();
 
         if (guardians[wallet][prevGuardian] != guardianToRemove)
             revert SSR__removeGuardian__incorrectPreviousGuardian();
@@ -194,7 +180,7 @@ contract LaserModuleSSR is ILaserModuleSSR {
 
         if (guardians[wallet][prevGuardian] != oldGuardian) revert SSR__swapGuardian__invalidPrevGuardian();
 
-        if (oldGuardian == pointer) revert SSR__swapGuardian__invalidOldGuardian();
+        if (oldGuardian == POINTER) revert SSR__swapGuardian__invalidOldGuardian();
 
         guardians[wallet][newGuardian] = guardians[wallet][oldGuardian];
         guardians[wallet][prevGuardian] = newGuardian;
@@ -203,8 +189,8 @@ contract LaserModuleSSR is ILaserModuleSSR {
 
     function addRecoveryOwner(address wallet, address newRecoveryOwner) external onlyWallet(wallet) {
         verifyNewRecoveryOwnerOrGuardian(wallet, newRecoveryOwner);
-        recoveryOwners[wallet][newRecoveryOwner] = recoveryOwners[wallet][pointer];
-        recoveryOwners[wallet][pointer] = newRecoveryOwner;
+        recoveryOwners[wallet][newRecoveryOwner] = recoveryOwners[wallet][POINTER];
+        recoveryOwners[wallet][POINTER] = newRecoveryOwner;
 
         unchecked {
             recoveryOwnerCount[wallet]++;
@@ -219,7 +205,7 @@ contract LaserModuleSSR is ILaserModuleSSR {
         // There needs to be at least 1 recovery owner.
         if (recoveryOwnerCount[wallet] < 2) revert SSR__removeRecoveryOwner__underflow();
 
-        if (recoveryOwnerToRemove == pointer) revert SSR__removeRecoveryOwner__invalidAddress();
+        if (recoveryOwnerToRemove == POINTER) revert SSR__removeRecoveryOwner__invalidAddress();
 
         if (recoveryOwners[wallet][prevRecoveryOwner] != recoveryOwnerToRemove) {
             revert SSR__removeRecoveryOwner__incorrectPreviousRecoveryOwner();
@@ -245,7 +231,7 @@ contract LaserModuleSSR is ILaserModuleSSR {
             revert SSR__swapRecoveryOwner__invalidPrevRecoveryOwner();
         }
 
-        if (oldRecoveryOwner == pointer) revert SSR__swapRecoveryOwner__invalidOldRecoveryOwner();
+        if (oldRecoveryOwner == POINTER) revert SSR__swapRecoveryOwner__invalidOldRecoveryOwner();
 
         recoveryOwners[wallet][newRecoveryOwner] = recoveryOwners[wallet][oldRecoveryOwner];
         recoveryOwners[wallet][prevRecoveryOwner] = newRecoveryOwner;
@@ -254,10 +240,10 @@ contract LaserModuleSSR is ILaserModuleSSR {
 
     function getGuardians(address wallet) external view returns (address[] memory) {
         address[] memory guardiansArray = new address[](guardianCount[wallet]);
-        address currentGuardian = guardians[wallet][pointer];
+        address currentGuardian = guardians[wallet][POINTER];
 
         uint256 index;
-        while (currentGuardian != pointer) {
+        while (currentGuardian != POINTER) {
             guardiansArray[index] = currentGuardian;
             currentGuardian = guardians[wallet][currentGuardian];
             unchecked {
@@ -269,11 +255,10 @@ contract LaserModuleSSR is ILaserModuleSSR {
 
     function getRecoveryOwners(address wallet) external view returns (address[] memory) {
         address[] memory recoveryOwnersArray = new address[](recoveryOwnerCount[wallet]);
-
-        address currentRecoveryOwner = recoveryOwners[wallet][pointer];
+        address currentRecoveryOwner = recoveryOwners[wallet][POINTER];
 
         uint256 index;
-        while (currentRecoveryOwner != pointer) {
+        while (currentRecoveryOwner != POINTER) {
             recoveryOwnersArray[index] = currentRecoveryOwner;
             currentRecoveryOwner = recoveryOwners[wallet][currentRecoveryOwner];
             unchecked {
@@ -292,10 +277,11 @@ contract LaserModuleSSR is ILaserModuleSSR {
 
         if (guardiansLength < 1) revert SSR__initGuardians__underflow();
 
-        address currentGuardian = pointer;
+        address currentGuardian = POINTER;
+        address guardian;
 
         for (uint256 i = 0; i < guardiansLength; ) {
-            address guardian = _guardians[i];
+            guardian = _guardians[i];
 
             guardians[wallet][currentGuardian] = guardian;
             currentGuardian = guardian;
@@ -307,7 +293,7 @@ contract LaserModuleSSR is ILaserModuleSSR {
             }
         }
 
-        guardians[wallet][currentGuardian] = pointer;
+        guardians[wallet][currentGuardian] = POINTER;
         guardianCount[wallet] = guardiansLength;
     }
 
@@ -319,10 +305,11 @@ contract LaserModuleSSR is ILaserModuleSSR {
 
         if (recoveryOwnersLength < 1) revert SSR__initRecoveryOwners__underflow();
 
-        address currentRecoveryOwner = pointer;
+        address currentRecoveryOwner = POINTER;
+        address recoveryOwner;
 
         for (uint256 i = 0; i < recoveryOwnersLength; ) {
-            address recoveryOwner = _recoveryOwners[i];
+            recoveryOwner = _recoveryOwners[i];
 
             recoveryOwners[wallet][currentRecoveryOwner] = recoveryOwner;
             currentRecoveryOwner = recoveryOwner;
@@ -334,12 +321,12 @@ contract LaserModuleSSR is ILaserModuleSSR {
             }
         }
 
-        recoveryOwners[wallet][currentRecoveryOwner] = pointer;
+        recoveryOwners[wallet][currentRecoveryOwner] = POINTER;
         recoveryOwnerCount[wallet] = recoveryOwnersLength;
     }
 
     function verifyNewRecoveryOwnerOrGuardian(address wallet, address toVerify) internal view {
-        address owner = ILaser(wallet).owner();
+        address owner = ILaserState(wallet).owner();
 
         if (toVerify.code.length > 0) {
             // If the recovery owner is a smart contract wallet, it needs to support EIP1271.

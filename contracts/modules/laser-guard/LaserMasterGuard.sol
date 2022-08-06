@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 pragma solidity 0.8.15;
 
+import "../../interfaces/ILaserGuard.sol";
+import "../../interfaces/ILaserMasterGuard.sol";
 import "../../interfaces/ILaserRegistry.sol";
 
 interface IGuard {
@@ -24,7 +26,7 @@ interface IGuard {
  *
  * @notice Parent guard module that calls child Laser guards.
  */
-contract LaserMasterGuard {
+contract LaserMasterGuard is ILaserMasterGuard {
     address private constant POINTER = address(0x1);
 
     address public immutable LASER_REGISTRY;
@@ -32,41 +34,81 @@ contract LaserMasterGuard {
     mapping(address => uint256) internal guardModulesCount;
     mapping(address => mapping(address => address)) internal guardModules;
 
-    constructor(address _LASER_REGISTRY) {
-        LASER_REGISTRY = _LASER_REGISTRY;
+    constructor(address laserRegistry) {
+        LASER_REGISTRY = laserRegistry;
     }
 
+    /**
+     * @notice Adds a new guard module.
+     *         wallet is 'msg.sender'.
+     *
+     * @param module The address of the new module. It needs to be authorized in LaserRegistry.
+     */
     function addGuardModule(address module) external {
-        //@todo Check that the module is a contract that supports this.
-        require(ILaserRegistry(LASER_REGISTRY).isModule(module), "Unauthorized module");
         address wallet = msg.sender;
-        guardModules[wallet][module] = guardModules[wallet][POINTER];
-        guardModules[wallet][POINTER] = module;
+
+        if (!ILaserRegistry(LASER_REGISTRY).isModule(module)) {
+            revert LaserMasterGuard__addGuardModule__unauthorizedModule();
+        }
+
+        if (guardModulesCount[wallet] == 0) {
+            initGuardModules(wallet, module);
+        } else {
+            guardModules[wallet][module] = guardModules[wallet][POINTER];
+            guardModules[wallet][POINTER] = module;
+        }
 
         unchecked {
             ++guardModulesCount[wallet];
         }
 
-        require(guardModulesCount[wallet] < 4, "Only 3 guard modules allowed per wallet");
+        if (guardModulesCount[wallet] == 4) revert LaserMasterGuard__addGuardModule__overflow();
     }
 
+    /**
+     * @notice Removes a guard module.
+     * wallet is 'msg.sender'.
+     *
+     * @param prevModule    The address of the previous module on the linked list.
+     * @param module        The address of the module to remove.
+     */
     function removeGuardModule(address prevModule, address module) external {
         address wallet = msg.sender;
 
-        //@todo custom errors instead of require statement.
-        require(guardModules[wallet][module] != address(0), "Module not found");
-        require(module != POINTER, "incorrect");
+        if (guardModules[wallet][module] == address(0)) {
+            revert LaserMasterGuard__removeGuardModule__incorrectModule();
+        }
 
-        require(guardModules[wallet][prevModule] == module);
+        if (module == POINTER) {
+            revert LaserMasterGuard__removeGuardModule__incorrectModule();
+        }
+
+        if (guardModules[wallet][prevModule] != module) {
+            revert LaserMasterGuard__removeGuardModule__incorrectPrevModule();
+        }
 
         guardModules[wallet][prevModule] = guardModules[wallet][module];
         guardModules[wallet][module] = address(0);
 
-        unchecked {
-            guardModulesCount[wallet]--;
-        }
+        guardModulesCount[wallet]--;
     }
 
+    /**
+     * @notice Verifies a Laser transaction.
+     *         It calls all guard sub-modules with the 'verifyTransaction api'.
+     *         Each sub-module implements its own logic. But the main purpose is to
+     *         provide extra transaction security.
+     *
+     * @param wallet The address of the wallet: should be 'msg.sender'.
+     * @param to                    Destination address.
+     * @param value                 Amount in WEI to transfer.
+     * @param callData              Data payload for the transaction.
+     * @param nonce                 Anti-replay number.
+     * @param maxFeePerGas          Maximum WEI the owner is willing to pay per unit of gas.
+     * @param maxPriorityFeePerGas  Miner's tip.
+     * @param gasLimit              Maximum amount of gas the owner is willing to use for this transaction.
+     * @param signatures            The signature(s) of the hash of this transaction.
+     */
     function verifyTransaction(
         address wallet,
         address to,
@@ -80,11 +122,14 @@ contract LaserMasterGuard {
     ) external {
         if (guardModulesCount[wallet] > 0) {
             address[] memory walletGuardModules = getGuardModules(wallet);
+
             uint256 modulesLength = walletGuardModules.length;
 
-            for (uint256 i = 0; i < modulesLength; ) {
-                address guard = walletGuardModules[i];
+            address guard;
 
+            for (uint256 i = 0; i < modulesLength; ) {
+                guard = walletGuardModules[i];
+                // @todo Optimize this.
                 IGuard(guard).verifyTransaction(
                     wallet,
                     to,
@@ -104,11 +149,17 @@ contract LaserMasterGuard {
         }
     }
 
+    /**
+     * @param wallet The requested address.
+     *
+     * @return The guard modules that belong to the requested address.
+     */
     function getGuardModules(address wallet) public view returns (address[] memory) {
         address[] memory guardModulesArray = new address[](guardModulesCount[wallet]);
         address currentGuardModule = guardModules[wallet][POINTER];
 
         uint256 index;
+
         while (currentGuardModule != POINTER) {
             guardModulesArray[index] = currentGuardModule;
             currentGuardModule = guardModules[wallet][currentGuardModule];
@@ -117,5 +168,10 @@ contract LaserMasterGuard {
             }
         }
         return guardModulesArray;
+    }
+
+    function initGuardModules(address wallet, address module) internal {
+        guardModules[wallet][POINTER] = module;
+        guardModules[wallet][module] = POINTER;
     }
 }

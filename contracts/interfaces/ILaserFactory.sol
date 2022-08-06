@@ -21,10 +21,11 @@ interface ILaserFactory {
         uint256 maxPriorityFeePerGas,
         uint256 gasLimit,
         address relayer,
-        address laserModule,
-        bytes calldata laserModuleData,
+        address smartSocialRecoveryModule,
+        address laserVault,
+        bytes calldata smartSocialRecoveryInitData,
         uint256 saltNumber,
-        bytes calldata ownerSignature
+        bytes memory ownerSignature
     ) external returns (LaserProxy proxy);
 
     ///@dev Precomputes the address of a proxy that is created through 'create2'.

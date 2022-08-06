@@ -32,7 +32,7 @@ describe("Setup", () => {
             const hash = ethers.utils.keccak256("0x1234");
             const sig = await sign(ownerSigner, hash);
             const signer = await utils.returnSigner(hash, sig, 0);
-            expect(signer).to.equal(addrZero);
+            expect(signer).to.equal(signer);
         });
 
         it("should return correct signer by signing the hash", async () => {

@@ -1,13 +1,19 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 pragma solidity 0.8.15;
 
+//@todo Move this to an interface
 interface ITokens {
     function balanceOf(address _owner) external view returns (uint256);
 
     function ownerOf(uint256 _tokenId) external view returns (address);
 
     function balanceOfBatch(address[] memory accounts, uint256[] memory ids) external view;
+
+    function allowance(address owner, address spender) external view returns (uint256);
 }
+error LaserVault__verifyEth__ethInVault();
+
+/////////////////////////ab
 
 /**
  * @title  LaserVault
@@ -36,8 +42,6 @@ contract LaserVault {
 
     bytes4 private constant ERC721_SAFE_TRANSFER_FROM2 = bytes4(keccak256("safeTransferFrom(address,address,uint256)"));
 
-    //@todo Add set approval for all.
-
     /*//////////////////////////////////////////////////////////////
                          ERC-1155 function selectors
     //////////////////////////////////////////////////////////////*/
@@ -55,6 +59,8 @@ contract LaserVault {
     bytes4 private constant COMMON_APPROVE = bytes4(keccak256("approve(address,uint256)"));
 
     bytes4 private constant COMMON_TRANSFER_FROM = bytes4(keccak256("transferFrom(address,address,uint256)"));
+
+    bytes4 private constant COMMON_SET_APPROVAL_FOR_ALL = bytes4(keccak256("setApprovalForAll(address,bool)"));
 
     /*//////////////////////////////////////////////////////////////
                           ETH encoded address
@@ -85,26 +91,32 @@ contract LaserVault {
     ) external view {
         bytes4 funcSelector = bytes4(callData);
 
-        // if (
-        //     funcSelector == tokenTransferSelector ||
-        //     funcSelector == tokenApproveSelector ||
-        //     funcSelector == tokenIncreaseAllowance
-        // ) {
-        //     verifyTokens(wallet, to, callData);
-        // } else if (value > 0) {
-        //     verifyEth(wallet, value);
-        // } else if (funcSelector == nftsApproveSelector) {
-        //     verifyNfts(wallet, to, callData);
-        //}
-        //else if (funcSelector) {}
+        // If the function selector equals ERC20_INCREASE_ALLOWANCE or
+        // ERC20_TRANSFER, it is ERC20 allowance or transfer.
+        if (funcSelector == ERC20_INCREASE_ALLOWANCE || funcSelector == ERC20_TRANSFER) {
+            verifyERC20(wallet, to, callData);
+        }
+
+        // If value is greater than 0, then it is ETH transfer.
+        if (value > 0) {
+            verifyEth(wallet, value);
+        }
+
+        // if (funcSelector == ERC721_SAFE_TRANSFER_FROM) {}
+
+        // If the function selector equals COMMON_APPROVE, it can be
+        // either ERC20 or ERC721.
+        if (funcSelector == COMMON_APPROVE) {
+            verifyCommonApprove(wallet, to, callData);
+        }
+
+        // if (funcSelector == COMMON_SET_APPROVAL_FOR_ALL) {
+        //     revert("Cannot approve for all.");
+        // }
     }
 
     function addTokensToVault(address token, uint256 amount) external {
         address wallet = msg.sender;
-
-        uint256 walletTokenBalance = ITokens(token).balanceOf(wallet);
-
-        require(walletTokenBalance >= amount, "Can't add token to vault");
 
         tokensInVault[wallet][token] += amount;
     }
@@ -116,11 +128,25 @@ contract LaserVault {
         tokensInVault[wallet][token] -= amount;
     }
 
-    function addNftToVault(address nft, uint256 index) external {
-        address wallet = msg.sender;
+    // function addNftToVault(address nft, uint256 index) external {
+    //     address wallet = msg.sender;
 
-        require(ITokens(nft).ownerOf(index) == wallet, "Can't add nft to vault");
-        nftsInVault[wallet][nft][index] = true;
+    //     require(ITokens(nft).ownerOf(index) == wallet, "Can't add nft to vault");
+    //     nftsInVault[wallet][nft][index] = true;
+    // }
+
+    function verifyERC20(
+        address wallet,
+        address to,
+        bytes calldata callData
+    ) internal view {
+        (, uint256 transferAmount) = abi.decode(callData[4:], (address, uint256));
+
+        uint256 _tokensInVault = tokensInVault[wallet][to];
+
+        uint256 walletTokenBalance = ITokens(to).balanceOf(wallet);
+
+        require(walletTokenBalance - transferAmount > _tokensInVault, "Transfer or allowance exceeds balance.");
     }
 
     function verifyTokens(
@@ -128,7 +154,6 @@ contract LaserVault {
         address to,
         bytes calldata callData
     ) internal view {
-        // If func selector equals tokenTransferSelector, then it is a token transfer.
         // We need to decode the amount and check that it is in bounds.
         (, uint256 transferAmount) = abi.decode(callData[4:], (address, uint256));
 
@@ -139,24 +164,52 @@ contract LaserVault {
         require(walletTokenBalance - transferAmount > _tokensInVault, "Nop tokens");
     }
 
-    function verifyEth(address wallet, uint256 amount) internal view {
+    function verifyEth(address wallet, uint256 value) internal view {
         // If value is greater than 0, then  it is ETH transfer.
         uint256 walletBalance = address(wallet).balance;
 
         uint256 ethInVault = tokensInVault[wallet][ETH];
 
-        require(walletBalance - amount > ethInVault, "Nop eth");
+        if (walletBalance - value < ethInVault) revert LaserVault__verifyEth__ethInVault();
     }
 
-    function verifyNfts(
+    // function verifyNfts(
+    //     address wallet,
+    //     address to,
+    //     bytes calldata callData
+    // ) internal view {
+    //     // If func selectorequals nfts approve selector, then it is nfts approval.
+    //     // We still need to make sure that the token approved is not in the vault.
+    //     (, uint256 nft) = abi.decode(callData[4:], (address, uint256));
+
+    //     require(!nftsInVault[wallet][to][nft], "nop nft approve");
+    // }
+
+    function verifyCommonApprove(
         address wallet,
         address to,
         bytes calldata callData
     ) internal view {
-        // If func selectorequals nfts approve selector, then it is nfts approval.
-        // We still need to make sure that the token approved is not in the vault.
-        (, uint256 nft) = abi.decode(callData[4:], (address, uint256));
+        (, uint256 amount) = abi.decode(callData[4:], (address, uint256));
 
-        require(!nftsInVault[wallet][to][nft], "nop nft approve");
+        // First we will check if it is ERC20.
+        uint256 _tokensInVault = tokensInVault[wallet][to];
+
+        if (_tokensInVault > 0) {
+            // Then it is definitely an ERC20.
+            uint256 walletTokenBalance = ITokens(to).balanceOf(wallet);
+        }
+
+        // require(walletTokenBalance - amountOrIndex > _tokensInVault, "ERC20 Allowance exceeds vault.");
+        // } else {
+        //     // Else, it can be ERC721.
+        //     require(!nftsInVault[wallet][to][amountOrIndex], "ERC721 Allowance exceeds vault.");
+        // }
+    }
+
+    function getTokensInVault(address wallet, address token) external view returns (uint256) {
+        return tokensInVault[wallet][token];
     }
 }
+
+// Approve allows a third party to use x amount of tokens.

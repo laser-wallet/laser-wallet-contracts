@@ -3,21 +3,7 @@ pragma solidity 0.8.15;
 
 import "../interfaces/IERC165.sol";
 import "../interfaces/ILaserFactory.sol";
-
-interface ILaser {
-    function init(
-        address _owner,
-        uint256 maxFeePerGas,
-        uint256 maxPriorityFeePerGas,
-        uint256 gasLimit,
-        address relayer,
-        address laserModule,
-        address _masterGuard,
-        address _laserRegistry,
-        bytes calldata laserModuleData,
-        bytes calldata ownerSignature
-    ) external;
-}
+import "../interfaces/ILaserWallet.sol";
 
 ///@title LaserFactory - Factory for creating new Laser proxies and helper methods.
 contract LaserFactory is ILaserFactory {
@@ -40,40 +26,33 @@ contract LaserFactory is ILaserFactory {
         laserMasterGuard = _laserMasterGuard;
     }
 
-    ///@dev Creates a new proxy with create 2, initializes the wallet and refunds the relayer (if gas limit is greater than 0).
-    ///@param maxFeePerGas Maximum amount that the user is willing to pay for a unit of gas.
-    ///@param maxPriorityFeePerGas Miner's tip.
-    ///@param gasLimit The transaction's gas limit. It needs to be the same as the actual transaction gas limit.
-    ///@param relayer Address that forwards the transaction so it abstracts away the gas costs.
-    ///@param ownerSignature The signatures of the transaction.
-    ///@notice If 'gasLimit' does not match the actual gas limit of the transaction, the relayer can incur losses.
-    ///It is the relayer's responsability to make sure that they are the same, the user does not get affected if a mistake is made.
-    ///We prefer to prioritize the user's safety (not overpay) over the relayer.
     function deployProxyAndRefund(
         address owner,
         uint256 maxFeePerGas,
         uint256 maxPriorityFeePerGas,
         uint256 gasLimit,
         address relayer,
-        address laserModule,
-        bytes calldata laserModuleData,
+        address smartSocialRecoveryModule,
+        address laserVault,
+        bytes memory smartSocialRecoveryInitData,
         uint256 saltNumber,
         bytes memory ownerSignature
     ) external returns (LaserProxy proxy) {
         {
-            bytes32 salt = getSalt(owner, laserModule, laserModuleData, saltNumber);
+            bytes32 salt = getSalt(owner, smartSocialRecoveryModule, smartSocialRecoveryInitData, saltNumber);
             proxy = createProxyWithCreate2(salt);
 
-            ILaser(address(proxy)).init(
+            ILaserWallet(address(proxy)).init(
                 owner,
                 maxFeePerGas,
                 maxPriorityFeePerGas,
                 gasLimit,
                 relayer,
-                laserModule,
+                smartSocialRecoveryModule,
                 laserMasterGuard,
+                laserVault,
                 laserRegistry,
-                laserModuleData,
+                smartSocialRecoveryInitData,
                 ownerSignature
             );
 
@@ -118,11 +97,13 @@ contract LaserFactory is ILaserFactory {
         if (address(proxy) == address(0)) revert LaserFactory__create2Failed();
     }
 
-    ///@dev Generates the salt for deployment.
+    /**
+     * @dev Generates the salt for deployment.
+     */
     function getSalt(
         address owner,
         address laserModule,
-        bytes calldata laserModuleData,
+        bytes memory laserModuleData,
         uint256 saltNumber
     ) internal pure returns (bytes32 salt) {
         salt = keccak256(abi.encodePacked(owner, laserModule, laserModuleData, saltNumber));
