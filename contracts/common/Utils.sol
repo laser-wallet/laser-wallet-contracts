@@ -10,8 +10,6 @@ library Utils {
     error Utils__returnSigner__invalidSignature();
     error Utils__returnSigner__invalidContractSignature();
 
-    ///@dev Returns the signer of the hash.
-    ///@param signedHash The hash that was signed.
     function returnSigner(
         bytes32 signedHash,
         bytes memory signatures,

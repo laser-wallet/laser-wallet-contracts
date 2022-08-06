@@ -20,6 +20,7 @@ describe("Proxy Factory", () => {
     let laserModule: Address;
     let laserMasterGuard: Address;
     let laserRegistry: Address;
+    let laserVault: Address;
 
     beforeEach(async () => {
         await deployments.fixture();
@@ -31,6 +32,7 @@ describe("Proxy Factory", () => {
         laserModule = (await deployments.get("LaserModuleSSR")).address;
         laserMasterGuard = (await deployments.get("LaserMasterGuard")).address;
         laserRegistry = (await deployments.get("LaserRegistry")).address;
+        laserVault = (await deployments.get("LaserVault")).address;
     });
 
     describe("Proxy Factory creation and interaction", () => {
@@ -92,7 +94,18 @@ describe("Proxy Factory", () => {
             const signature = await sign(ownerSigner, dataHash);
 
             await expect(
-                factory.deployProxyAndRefund(owner, 0, 0, 0, relayer, laserModule, initData, saltNumber, signature)
+                factory.deployProxyAndRefund(
+                    owner,
+                    0,
+                    0,
+                    0,
+                    relayer,
+                    laserModule,
+                    laserVault,
+                    initData,
+                    saltNumber,
+                    signature
+                )
             ).to.emit(factory, "ProxyCreation");
         });
 
@@ -119,6 +132,7 @@ describe("Proxy Factory", () => {
                 0,
                 relayer,
                 laserModule,
+                laserVault,
                 initData,
                 saltNumber,
                 signature
@@ -156,6 +170,7 @@ describe("Proxy Factory", () => {
                 0,
                 relayer,
                 laserModule,
+                laserVault,
                 initData,
                 BigNumber.from(saltNumber).add(1),
                 signature
@@ -196,6 +211,7 @@ describe("Proxy Factory", () => {
                 0,
                 relayer,
                 laserModule,
+                laserVault,
                 initData,
                 saltNumber,
                 signature
@@ -232,6 +248,7 @@ describe("Proxy Factory", () => {
                 0,
                 relayer,
                 laserModule,
+                laserVault,
                 initData,
                 saltNumber,
                 signature
@@ -268,6 +285,7 @@ describe("Proxy Factory", () => {
                 0,
                 relayer,
                 laserModule,
+                laserVault,
                 initData,
                 saltNumber,
                 signature
@@ -299,11 +317,33 @@ describe("Proxy Factory", () => {
             const signature = await sign(ownerSigner, dataHash);
 
             // first transaction
-            await factory.deployProxyAndRefund(owner, 0, 0, 0, relayer, laserModule, initData, saltNumber, signature);
+            await factory.deployProxyAndRefund(
+                owner,
+                0,
+                0,
+                0,
+                relayer,
+                laserModule,
+                laserVault,
+                initData,
+                saltNumber,
+                signature
+            );
 
             // second transaction
             await expect(
-                factory.deployProxyAndRefund(owner, 0, 0, 0, relayer, laserModule, initData, saltNumber, signature)
+                factory.deployProxyAndRefund(
+                    owner,
+                    0,
+                    0,
+                    0,
+                    relayer,
+                    laserModule,
+                    laserVault,
+                    initData,
+                    saltNumber,
+                    signature
+                )
             ).to.be.reverted;
         });
     });

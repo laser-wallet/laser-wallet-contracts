@@ -40,7 +40,7 @@ export type Domain = {
     verifyingContract: string;
 };
 
-export interface Transaction {
+export type Transaction = {
     to: Address;
     value: BigNumberish;
     callData: string;
@@ -50,9 +50,9 @@ export interface Transaction {
     gasLimit: BigNumberish;
     relayer: Address;
     signatures: string;
-}
+};
 
-export interface LaserTypes {
+export type LaserTypes = {
     to: Address;
     value: BigNumberish;
     callData: string;
@@ -60,4 +60,4 @@ export interface LaserTypes {
     maxFeePerGas: BigNumberish;
     maxPriorityFeePerGas: BigNumberish;
     gasLimit: BigNumberish;
-}
+};

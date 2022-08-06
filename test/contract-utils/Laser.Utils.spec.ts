@@ -10,7 +10,7 @@ import {
     AddressesForTest,
 } from "../utils";
 import { Address, Domain } from "../types";
-import { ownerWallet } from "../constants/constants";
+import { addrZero, ownerWallet } from "../constants/constants";
 import { Contract } from "ethers";
 
 describe("Setup", () => {

@@ -4,11 +4,12 @@ pragma solidity 0.8.15;
 import "../access/Access.sol";
 import "../common/Utils.sol";
 import "../interfaces/IERC165.sol";
+import "../interfaces/ILaserMasterGuard.sol";
 import "../interfaces/ILaserState.sol";
 import "../interfaces/ILaserRegistry.sol";
 
-contract LaserState is Access, ILaserState {
-    address internal constant pointer = address(0x1); // Pointer for the link list.
+contract LaserState is ILaserState, Access {
+    address internal constant POINTER = address(0x1); // Pointer for the link list.
 
     /*//////////////////////////////////////////////////////////////
                          Laser Wallet storage
@@ -44,8 +45,8 @@ contract LaserState is Access, ILaserState {
      */
     function addLaserModule(address newModule) external access {
         require(ILaserRegistry(laserRegistry).isModule(newModule), "Invalid new module");
-        laserModules[newModule] = laserModules[pointer];
-        laserModules[pointer] = newModule;
+        laserModules[newModule] = laserModules[POINTER];
+        laserModules[POINTER] = newModule;
     }
 
     function upgradeSingleton(address _singleton) external access {
@@ -57,10 +58,11 @@ contract LaserState is Access, ILaserState {
 
     function activateWallet(
         address _owner,
-        address laserModule,
-        address _masterGuard,
+        address smartSocialRecoveryModule,
+        address _laserMasterGuard,
+        address laserVault,
         address _laserRegistry,
-        bytes calldata laserModuleData
+        bytes calldata smartSocialRecoveryInitData
     ) internal {
         // If owner is not address 0, the wallet was already initialized.
         if (owner != address(0)) revert LaserState__initOwner__walletInitialized();
@@ -71,14 +73,15 @@ contract LaserState is Access, ILaserState {
         owner = _owner;
 
         // check that the module is accepted.
-        laserMasterGuard = _masterGuard;
+        laserMasterGuard = _laserMasterGuard;
         laserRegistry = _laserRegistry;
 
-        if (laserModule != address(0)) {
-            require(ILaserRegistry(laserRegistry).isModule(laserModule), "Module not authorized");
-            bool success = Utils.call(laserModule, 0, laserModuleData, gasleft());
-            require(success);
-            laserModules[laserModule] = pointer;
-        }
+        require(ILaserRegistry(laserRegistry).isModule(smartSocialRecoveryModule), "Module not authorized");
+        bool success = Utils.call(smartSocialRecoveryModule, 0, smartSocialRecoveryInitData, gasleft());
+        require(success);
+        laserModules[smartSocialRecoveryModule] = POINTER;
+
+        // We add the guard module.
+        ILaserMasterGuard(_laserMasterGuard).addGuardModule(laserVault);
     }
 }

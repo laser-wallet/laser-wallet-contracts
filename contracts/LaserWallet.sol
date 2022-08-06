@@ -2,22 +2,9 @@
 pragma solidity 0.8.15;
 
 import "./handlers/Handler.sol";
+import "./interfaces/ILaserGuard.sol";
 import "./interfaces/ILaserWallet.sol";
 import "./state/LaserState.sol";
-
-interface ILaserGuard {
-    function verifyTransaction(
-        address wallet,
-        address to,
-        uint256 value,
-        bytes calldata callData,
-        uint256 nonce,
-        uint256 maxFeePerGas,
-        uint256 maxPriorityFeePerGas,
-        uint256 gasLimit,
-        bytes calldata signature
-    ) external;
-}
 
 /**
  * @title  LaserWallet
@@ -64,13 +51,17 @@ contract LaserWallet is ILaserWallet, LaserState, Handler {
      * @notice Setup function, sets initial storage of the wallet.
      *         It can't be called after initialization.
      *
-     * @param _owner                The owner of the wallet.
-     * @param maxFeePerGas          Maximum WEI the owner is willing to pay per unit of gas.
-     * @param maxPriorityFeePerGas  Miner's tip.
-     * @param gasLimit              Maximum amount of gas the owner is willing to use for this transaction.
-     * @param relayer               Address to refund for the inclusion of this transaction.
-     * @param SSRModule             Address of the initial module to setup -> Smart Social Recovery.
-     * @param SSRInitData       Initialization data for the provided module.
+     * @param _owner                        The owner of the wallet.
+     * @param maxFeePerGas                  Maximum WEI the owner is willing to pay per unit of gas.
+     * @param maxPriorityFeePerGas          Miner's tip.
+     * @param gasLimit                      Maximum amount of gas the owner is willing to use for this transaction.
+     * @param relayer                       Address to refund for the inclusion of this transaction.
+     * @param smartSocialRecoveryModule     Address of the initial module to setup -> Smart Social Recovery.
+     * @param _laserMasterGuard             Address of the parent guard module 'LaserMasterGuard'.
+     * @param laserVault                    Address of the guard sub-module 'LaserVault'.
+     * @param _laserRegistry                Address of the Laser registry: module that keeps track of authorized modules.
+     * @param smartSocialRecoveryInitData   Initialization data for the provided module.
+     * @param ownerSignature                Signature of the owner that validates approval for initialization.
      */
     function init(
         address _owner,
@@ -78,15 +69,23 @@ contract LaserWallet is ILaserWallet, LaserState, Handler {
         uint256 maxPriorityFeePerGas,
         uint256 gasLimit,
         address relayer,
-        address SSRModule,
+        address smartSocialRecoveryModule,
         address _laserMasterGuard,
+        address laserVault,
         address _laserRegistry,
-        bytes calldata SSRInitData,
-        bytes calldata ownerSignature
+        bytes calldata smartSocialRecoveryInitData,
+        bytes memory ownerSignature
     ) external {
         // activateWallet verifies that the current owner is address 0, reverts otherwise.
         // This is more than enough to avoid being called after initialization.
-        activateWallet(_owner, SSRModule, _laserMasterGuard, _laserRegistry, SSRInitData);
+        activateWallet(
+            _owner,
+            smartSocialRecoveryModule,
+            _laserMasterGuard,
+            laserVault,
+            _laserRegistry,
+            smartSocialRecoveryInitData
+        );
 
         // This is to ensure that the owner authorized the amount of gas.
         {
@@ -193,6 +192,7 @@ contract LaserWallet is ILaserWallet, LaserState, Handler {
             // We are using Infura's relayer for now ...
             uint256 fee = (tx.gasprice / 100) * 6;
             uint256 gasPrice = tx.gasprice + fee;
+            gasLimit = (gasLimit * 63) / 64;
             uint256 gasUsed = gasLimit - gasleft() + 7000;
             uint256 refundAmount = gasUsed * gasPrice;
 
@@ -224,17 +224,16 @@ contract LaserWallet is ILaserWallet, LaserState, Handler {
         uint256 gasLimit,
         address relayer
     ) external {
-        // We quiet compiler warnings.
+        // We quiet compiler warnings FOR NOW.
         (maxFeePerGas, maxPriorityFeePerGas);
         unchecked {
             nonce++;
         }
-        ///@todo custom errors instead of require statement.
-        require(laserModules[msg.sender] != address(0), "nop module");
+        if (laserModules[msg.sender] == address(0)) revert LW__execFromModule__unauthorizedModule();
 
         bool success = Utils.call(to, value, callData, gasleft() - 10000);
 
-        require(success, "main call failed");
+        if (!success) revert LW__execFromModule__mainCallFailed();
 
         if (gasLimit > 0) {
             // Using infura relayer for now ...
@@ -246,7 +245,7 @@ contract LaserWallet is ILaserWallet, LaserState, Handler {
 
             success = Utils.call(relayer == address(0) ? tx.origin : relayer, refundAmount, new bytes(0), gasleft());
 
-            require(success, "refund failed");
+            if (!success) revert LW__execFromModule__refundFailure();
         }
     }
 
@@ -314,6 +313,8 @@ contract LaserWallet is ILaserWallet, LaserState, Handler {
 
     /**
      * @notice Locks the wallet. Once locked, only the SSR module can unlock it or recover it.
+     *
+     * @dev Can only be called by address(this).
      */
     function lock() external access {
         isLocked = true;
@@ -321,6 +322,8 @@ contract LaserWallet is ILaserWallet, LaserState, Handler {
 
     /**
      * @notice Unlocks the wallet. Can only be unlocked or recovered from the SSR module.
+     *
+     * @dev Can only be called by address(this).
      */
     function unlock() external access {
         isLocked = false;
@@ -364,9 +367,6 @@ contract LaserWallet is ILaserWallet, LaserState, Handler {
         return block.chainid;
     }
 
-    /**
-     * @return
-     */
     function domainSeparator() public view returns (bytes32) {
         return keccak256(abi.encode(DOMAIN_SEPARATOR_TYPEHASH, getChainId(), address(this)));
     }

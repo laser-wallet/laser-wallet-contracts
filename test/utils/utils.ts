@@ -1,4 +1,4 @@
-import { Wallet, Contract, BigNumber, Signer } from "ethers";
+import { Wallet, Contract, BigNumber, Signer, BigNumberish } from "ethers";
 import { ethers } from "hardhat";
 import { Address, LaserTypes, Transaction } from "../types";
 import { addressesForTest } from "./setup";
@@ -101,4 +101,16 @@ export function isAddress(addresses: Address[], address: Address): boolean {
     });
 
     return _isAddress;
+}
+
+export function addTokensToVault(token: Address, amount: BigNumberish): string {
+    const abi = ["function addTokensToVault(address token, uint256 amount) external"];
+
+    return encodeFunctionData(abi, "addTokensToVault", [token, amount]);
+}
+
+export function removeTokensFromVault(token: Address, amount: BigNumberish): string {
+    const abi = ["function removeTokensFromVault(address token, uint256 amount) external"];
+
+    return encodeFunctionData(abi, "removeTokensFromVault", [token, amount]);
 }

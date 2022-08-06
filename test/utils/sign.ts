@@ -12,8 +12,7 @@ export async function signTypedData(signer: Wallet, domain: Domain, transaction:
         maxPriorityFeePerGas: transaction.maxPriorityFeePerGas,
         gasLimit: transaction.gasLimit,
     };
-    const signature = await signer._signTypedData(domain, types, laserTypes);
-    return signature;
+    return signer._signTypedData(domain, types, laserTypes);
 }
 
 export async function sign(signer: Signer, hash: string): Promise<string> {

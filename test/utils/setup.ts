@@ -68,8 +68,8 @@ export async function initSSR(guardians: Address[], recoveryOwners: Address[]): 
     return encodeFunctionData(abi, "initSSR", [guardians, recoveryOwners]);
 }
 
-async function authorizeModule(module: Address): Promise<void> {
-    const abi = ["function approveModule(address singleton) external"];
+async function authorizeModule(modules: Address[]): Promise<void> {
+    const abi = ["function approveModule(address module) external"];
 
     const [deployer] = await ethers.getSigners();
 
@@ -77,7 +77,9 @@ async function authorizeModule(module: Address): Promise<void> {
 
     const laserRegistry = await ethers.getContractAt(_laserRegistry.abi, _laserRegistry.address);
 
-    await laserRegistry.approveModule(module);
+    modules.map(async (module) => {
+        await laserRegistry.approveModule(module);
+    });
 }
 
 export async function walletSetup(
@@ -97,6 +99,7 @@ export async function walletSetup(
     const _LaserWallet = await deployments.get("LaserWallet");
     const abi = _LaserWallet.abi;
     const singleton = (await ethers.getContractAt(abi, _LaserWallet.address)) as LaserWallet;
+
     const Factory = await deployments.get("LaserFactory");
     const factory = await ethers.getContractAt(Factory.abi, Factory.address);
 
@@ -125,8 +128,9 @@ export async function walletSetup(
 
     const ssrInitData = initSSR(guardians, recoveryOwners);
     const LaserSSRModuleAddress = (await deployments.get("LaserModuleSSR")).address;
-
     const preComputedAddress = await factory.preComputeAddress(owner, LaserSSRModuleAddress, ssrInitData, salt);
+
+    const laserVaultAddress = (await deployments.get("LaserVault")).address;
 
     if (fundWallet) {
         await ownerSigner.sendTransaction({
@@ -135,7 +139,7 @@ export async function walletSetup(
         });
     }
 
-    await authorizeModule(LaserSSRModuleAddress);
+    await authorizeModule([LaserSSRModuleAddress, laserVaultAddress]);
 
     const signature = ownerSignature ? ownerSignature : await sign(ownerSigner, dataHash);
 
@@ -146,6 +150,7 @@ export async function walletSetup(
         gasLimit,
         relayer,
         LaserSSRModuleAddress,
+        laserVaultAddress,
         ssrInitData,
         salt,
         signature,
