@@ -5,20 +5,6 @@ import "../../interfaces/ILaserGuard.sol";
 import "../../interfaces/ILaserMasterGuard.sol";
 import "../../interfaces/ILaserRegistry.sol";
 
-interface IGuard {
-    function verifyTransaction(
-        address wallet,
-        address to,
-        uint256 value,
-        bytes calldata callData,
-        uint256 nonce,
-        uint256 maxFeePerGas,
-        uint256 maxPriorityFeePerGas,
-        uint256 gasLimit,
-        bytes calldata signature
-    ) external;
-}
-
 /**
  * @title LaserMasterGuard
  *
@@ -130,7 +116,7 @@ contract LaserMasterGuard is ILaserMasterGuard {
             for (uint256 i = 0; i < modulesLength; ) {
                 guard = walletGuardModules[i];
                 // @todo Optimize this.
-                IGuard(guard).verifyTransaction(
+                ILaserGuard(guard).verifyTransaction(
                     wallet,
                     to,
                     value,
