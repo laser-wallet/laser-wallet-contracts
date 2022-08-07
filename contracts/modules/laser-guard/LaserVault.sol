@@ -102,17 +102,11 @@ contract LaserVault {
             verifyEth(wallet, value);
         }
 
-        // if (funcSelector == ERC721_SAFE_TRANSFER_FROM) {}
-
         // If the function selector equals COMMON_APPROVE, it can be
         // either ERC20 or ERC721.
         if (funcSelector == COMMON_APPROVE) {
             verifyCommonApprove(wallet, to, callData);
         }
-
-        // if (funcSelector == COMMON_SET_APPROVAL_FOR_ALL) {
-        //     revert("Cannot approve for all.");
-        // }
     }
 
     function addTokensToVault(address token, uint256 amount) external {
@@ -190,6 +184,7 @@ contract LaserVault {
         address to,
         bytes calldata callData
     ) internal view {
+        //@todo Check the allowance, just approve the exact allowance for this transaction.
         (, uint256 amount) = abi.decode(callData[4:], (address, uint256));
 
         // First we will check if it is ERC20.
@@ -211,5 +206,3 @@ contract LaserVault {
         return tokensInVault[wallet][token];
     }
 }
-
-// Approve allows a third party to use x amount of tokens.
