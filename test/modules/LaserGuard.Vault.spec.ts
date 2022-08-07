@@ -22,10 +22,8 @@ import {
 import { Address, Domain, Transaction } from "../types";
 import { addrZero } from "../constants/constants";
 import hre from "hardhat";
-import { Contract } from "ethers";
+import { BigNumber, Contract } from "ethers";
 import { LaserVault, LaserVault__factory } from "../../typechain-types";
-
-const { abi } = require("../../artifacts/contracts/LaserWallet.sol/LaserWallet.json");
 
 const ETH_VAULT = "0xc9e6c67284a1cefbad549c4af8200e564a75ca4c";
 
@@ -168,9 +166,24 @@ describe("Laser Vault", () => {
 
             expect(await ethers.provider.getBalance(tx.to)).to.equal(tx.value);
         });
+
+        it("should revert if ")
     });
 
     describe("ERC20 tokens", () => {
-        it("should ..", async () => {});
+        let erc20: Contract;
+        let initialSupply: BigNumber;
+
+        beforeEach(async () => {
+            initialSupply = ethers.utils.parseEther("100000");
+            const _erc20 = await ethers.getContractFactory("ERC20");
+            erc20 = await _erc20.deploy("TestToken", "TT", 18, initialSupply);
+        });
+
+        it("msg.sender should have the initial supply", async () => {
+            const bal = await erc20.balanceOf(addresses.owner); // address 0 in Harhdat.
+
+            expect(bal).to.equal(initialSupply);
+        });
     });
 });
