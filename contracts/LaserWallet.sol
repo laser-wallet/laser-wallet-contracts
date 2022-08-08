@@ -89,9 +89,11 @@ contract LaserWallet is ILaserWallet, LaserState, Handler {
 
         // This is to ensure that the owner authorized the amount of gas.
         {
+            // todo: Add address(this).
             bytes32 signedHash = keccak256(
                 abi.encodePacked(maxFeePerGas, maxPriorityFeePerGas, gasLimit, block.chainid)
             );
+
             address signer = Utils.returnSigner(signedHash, ownerSignature, 0);
             if (signer != _owner) revert LW__init__notOwner();
         }
@@ -348,6 +350,9 @@ contract LaserWallet is ILaserWallet, LaserState, Handler {
         return EIP1271_MAGIC_VALUE;
     }
 
+    /**
+     * @notice Returns the hash to be signed to execute a transaction.
+     */
     function operationHash(
         address to,
         uint256 value,
@@ -367,10 +372,16 @@ contract LaserWallet is ILaserWallet, LaserState, Handler {
         return block.chainid;
     }
 
+    /**
+     * @notice Domain separator for this wallet.
+     */
     function domainSeparator() public view returns (bytes32) {
         return keccak256(abi.encode(DOMAIN_SEPARATOR_TYPEHASH, getChainId(), address(this)));
     }
 
+    /**
+     * @notice Encodes the transaction data.
+     */
     function encodeOperation(
         address to,
         uint256 value,

@@ -1,5 +1,6 @@
 import { Wallet, Contract, BigNumber, Signer, BigNumberish } from "ethers";
 import { ethers } from "hardhat";
+import { addrZero } from "../constants/constants";
 import { Address, LaserTypes, Transaction } from "../types";
 import { addressesForTest } from "./setup";
 import { sign } from "./sign";
@@ -107,8 +108,13 @@ export function addTokensToVault(token: Address, amount: BigNumberish): string {
     return encodeFunctionData(abi, "addTokensToVault", [token, amount]);
 }
 
-export function removeTokensFromVault(token: Address, amount: BigNumberish): string {
-    const abi = ["function removeTokensFromVault(address token, uint256 amount) external"];
+export function removeTokensFromVault(token: Address, amount: BigNumberish, guardianSignature: string): string {
+    const abi = ["function removeTokensFromVault(address token, uint256 amount, bytes) external"];
+    return encodeFunctionData(abi, "removeTokensFromVault", [token, amount, guardianSignature]);
+}
 
-    return encodeFunctionData(abi, "removeTokensFromVault", [token, amount]);
+export function removeTokensFromVaultHash(tokenAddress: Address, amount: BigNumber, chainId: number): string {
+    const abiCoder = new ethers.utils.AbiCoder();
+    const dataHash = ethers.utils.solidityKeccak256(["address", "uint256", "uint256"], [tokenAddress, amount, chainId]);
+    return dataHash;
 }

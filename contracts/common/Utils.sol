@@ -7,9 +7,21 @@ import "../interfaces/IEIP1271.sol";
  * @title Utils - Helper functions for Laser wallet and modules.
  */
 library Utils {
+    /*//////////////////////////////////////////////////////////////
+                            Errors
+    //////////////////////////////////////////////////////////////*/
+
     error Utils__returnSigner__invalidSignature();
+
     error Utils__returnSigner__invalidContractSignature();
 
+    /**
+     * @param signedHash  The hash that was signed.
+     * @param signatures  Result of signing the has.
+     * @param pos         Position of the signer.
+     *
+     * @return signer      Address that signed the hash.
+     */
     function returnSigner(
         bytes32 signedHash,
         bytes memory signatures,
@@ -49,8 +61,11 @@ library Utils {
         if (signer == address(0)) revert Utils__returnSigner__invalidSignature();
     }
 
-    ///@dev Returns the r, s and v values of the signature.
-    ///@param pos Which signature to read.
+    /**
+     * @dev Returns the r, s and v values of the signature.
+     *
+     * @param pos Which signature to read.
+     */
     function splitSigs(bytes memory signatures, uint256 pos)
         internal
         pure
@@ -68,19 +83,27 @@ library Utils {
         }
     }
 
-    ///@dev Calls a target address, sends value and / or data payload.
+    /**
+     * @dev Calls a target address, sends value and / or data payload.
+     *
+     * @param to     Destination address.
+     * @param value  Amount in WEI to transfer.
+     * @param callData   Data payload for the transaction.
+     */
     function call(
         address to,
         uint256 value,
-        bytes memory data,
+        bytes memory callData,
         uint256 txGas
     ) internal returns (bool success) {
         assembly {
-            success := call(txGas, to, value, add(data, 0x20), mload(data), 0, 0)
+            success := call(txGas, to, value, add(callData, 0x20), mload(callData), 0, 0)
         }
     }
 
-    ///@dev Calculates the gas price for the transaction.
+    /**
+     * @dev Calculates the gas price for the transaction.
+     */
     function calculateGasPrice(uint256 maxFeePerGas, uint256 maxPriorityFeePerGas) internal view returns (uint256) {
         if (maxFeePerGas == maxPriorityFeePerGas) {
             // Legacy mode (pre-EIP1559)

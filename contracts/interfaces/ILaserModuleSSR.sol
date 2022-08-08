@@ -53,4 +53,6 @@ interface ILaserModuleSSR {
 
     ///@dev Returns the chain id of this.
     function getChainId() external view returns (uint256 chainId);
+
+    function isGuardian(address wallet, address guardian) external view returns (bool);
 }
