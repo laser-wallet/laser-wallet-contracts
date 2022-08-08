@@ -146,36 +146,27 @@ contract LaserWallet is ILaserWallet, LaserState, Handler {
         uint256 maxPriorityFeePerGas,
         uint256 gasLimit,
         address relayer,
-        bytes calldata signatures
+        bytes memory signatures
     ) external returns (bool success) {
-        {
-            // We immediately increase the nonce to avoid replay attacks.
-            unchecked {
-                if (nonce++ != _nonce) revert LW__exec__invalidNonce();
-            }
-
-            // If the wallet is locked, further transactions cannot be executed from 'exec'.
-            if (isLocked) revert LW__exec__walletLocked();
-
-            // We get the hash of this transaction.
-            bytes32 signedHash = keccak256(
-                encodeOperation(to, value, callData, _nonce, maxFeePerGas, maxPriorityFeePerGas, gasLimit)
-            );
-
-            // We get the signer of the hash of this transaction.
-            address signer = Utils.returnSigner(signedHash, signatures, 0);
-
-            // The signer must be the owner.
-            if (signer != owner) revert LW__exec__notOwner();
-
-            // We execute the main transaction but we keep 10_000 units of gas for the remaining operations.
-            success = Utils.call(to, value, callData, gasleft() - 10000);
-
-            // We do not revert the call if it fails, because the wallet needs to pay the relayer even in case of failure.
-            if (success) emit ExecSuccess(to, value, nonce);
-            else emit ExecFailure(to, value, nonce);
+        // We immediately increase the nonce to avoid replay attacks.
+        unchecked {
+            if (nonce++ != _nonce) revert LW__exec__invalidNonce();
         }
 
+        // If the wallet is locked, further transactions cannot be executed from 'exec'.
+        if (isLocked) revert LW__exec__walletLocked();
+
+        // We get the hash of this transaction.
+        bytes32 signedHash = keccak256(
+            encodeOperation(to, value, callData, _nonce, maxFeePerGas, maxPriorityFeePerGas, gasLimit)
+        );
+
+        // We get the signer of the hash of this transaction.
+        address signer = Utils.returnSigner(signedHash, signatures, 0);
+
+        // The signer must be the owner.
+        if (signer != owner) revert LW__exec__notOwner();
+        // We call Laser master guard to verify the transaction (in bounds).
         ILaserGuard(laserMasterGuard).verifyTransaction(
             address(this),
             to,
@@ -187,6 +178,12 @@ contract LaserWallet is ILaserWallet, LaserState, Handler {
             gasLimit,
             signatures
         );
+        // We execute the main transaction but we keep 10_000 units of gas for the remaining operations.
+        success = Utils.call(to, value, callData, gasleft() - 10000);
+
+        // We do not revert the call if it fails, because the wallet needs to pay the relayer even in case of failure.
+        if (success) emit ExecSuccess(to, value, nonce);
+        else emit ExecFailure(to, value, nonce);
 
         if (gasLimit > 0) {
             // If gas limit is greater than 0, it means that the call was relayed.
@@ -197,7 +194,6 @@ contract LaserWallet is ILaserWallet, LaserState, Handler {
             gasLimit = (gasLimit * 63) / 64;
             uint256 gasUsed = gasLimit - gasleft() + 7000;
             uint256 refundAmount = gasUsed * gasPrice;
-
             success = Utils.call(relayer == address(0) ? tx.origin : relayer, refundAmount, new bytes(0), gasleft());
             if (!success) revert LW__exec__refundFailure();
         }

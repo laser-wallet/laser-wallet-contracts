@@ -67,6 +67,8 @@ contract LaserMasterGuard is ILaserMasterGuard {
             ++guardModulesCount[wallet];
         }
 
+        // We can only have a maximum amount of 3 guard modules with low amount of gas usage per transaction.
+        // This rule is to avoid a self-inflicted DDoS attack.
         if (guardModulesCount[wallet] == 4) revert LaserMasterGuard__addGuardModule__overflow();
     }
 
@@ -135,17 +137,14 @@ contract LaserMasterGuard is ILaserMasterGuard {
         uint256 gasLimit,
         bytes memory signatures
     ) external {
-        if (guardModulesCount[wallet] > 0) {
-            address[] memory walletGuardModules = getGuardModules(wallet);
+        uint256 amountOfGuards = guardModulesCount[wallet];
 
-            uint256 modulesLength = walletGuardModules.length;
+        if (amountOfGuards > 0) {
+            address currentGuardModule = guardModules[wallet][POINTER];
 
-            address guard;
-
-            for (uint256 i = 0; i < modulesLength; ) {
-                guard = walletGuardModules[i];
-                // @todo Optimize this.
-                ILaserGuard(guard).verifyTransaction(
+            if (amountOfGuards == 1) {
+                // If there is only 1 guard module, there is no need to loop.
+                ILaserGuard(currentGuardModule).verifyTransaction(
                     wallet,
                     to,
                     value,
@@ -156,9 +155,29 @@ contract LaserMasterGuard is ILaserMasterGuard {
                     gasLimit,
                     signatures
                 );
+            } else {
+                uint256 index;
+                // Guard modules are capped at max 3, and each one is verified that the gas usage
+                // is in bounds. Therefore there is no risk of DDoS (using so much gas that the transaction reverts).
+                while (currentGuardModule != POINTER) {
+                    ILaserGuard(currentGuardModule).verifyTransaction(
+                        wallet,
+                        to,
+                        value,
+                        callData,
+                        nonce,
+                        maxFeePerGas,
+                        maxPriorityFeePerGas,
+                        gasLimit,
+                        signatures
+                    );
 
-                unchecked {
-                    ++i;
+                    currentGuardModule = guardModules[wallet][currentGuardModule];
+
+                    unchecked {
+                        // Max amount of 3 guard modules, therefore it cannot overflow.
+                        ++index;
+                    }
                 }
             }
         }

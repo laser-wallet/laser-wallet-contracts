@@ -3,11 +3,8 @@ pragma solidity 0.8.15;
 
 import "../../common/Utils.sol";
 import "../../interfaces/IERC20.sol";
+import "../../interfaces/ILaserVault.sol";
 import "../../interfaces/ILaserModuleSSR.sol";
-
-//@todo Move this to an interface
-
-error LaserVault__verifyEth__ethInVault();
 
 /**
  * @title  LaserVault
@@ -18,7 +15,7 @@ error LaserVault__verifyEth__ethInVault();
  *         It acts as a vault in the sense that the locked assets cannot be use unless the wallet's
  *         owner (or authorized module) orders otherwise.
  */
-contract LaserVault {
+contract LaserVault is ILaserVault {
     /*//////////////////////////////////////////////////////////////
                           Init module 
     //////////////////////////////////////////////////////////////*/
