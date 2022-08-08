@@ -118,7 +118,6 @@ export async function walletSetup(
             [maxFeePerGas, maxPriorityFeePerGas, gasLimit, chainId]
         )
     );
-
     owner = _owner ? _owner : owner;
     ownerSigner = _ownerSigner ? _ownerSigner : ownerSigner;
     recoveryOwners = _recoveryOwners ? _recoveryOwners : recoveryOwners;

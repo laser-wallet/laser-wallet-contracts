@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 pragma solidity 0.8.15;
 
-import "hardhat/console.sol";
-
 interface ILaser {
     function owner() external view returns (address);
 
@@ -50,24 +48,5 @@ contract LaserHelper {
         nonce = laser.nonce();
         balance = address(wallet).balance;
         timeLock = laserModule.getWalletTimeLock(wallet);
-    }
-
-    ///@dev Simulates a transaction.
-    ///@notice The simulation reverts if the main transaction fails.
-    ///It needs to be called off-chain from address zero.
-    function simulateTransaction(
-        address to,
-        bytes calldata callData,
-        uint256 gasLimit
-    ) external returns (uint256 totalGas) {
-        require(to.code.length > 2, "target address must be a contract");
-        (bool success, ) = to.call(callData);
-        console.log("success -->", success);
-        console.log("bal -->", address(to).balance);
-        require(success, "main call failed.");
-        gasLimit = (gasLimit * 63) / 64;
-
-        totalGas = gasLimit - gasleft();
-        require(msg.sender == address(0), "Must be called off-chain from address zero.");
     }
 }

@@ -23,9 +23,11 @@ contract LaserModuleSSR is ILaserModuleSSR {
     mapping(address => uint256) internal timeLock;
 
     mapping(address => uint256) internal recoveryOwnerCount;
+
     mapping(address => uint256) internal guardianCount;
 
     mapping(address => mapping(address => address)) internal recoveryOwners;
+
     mapping(address => mapping(address => address)) internal guardians;
 
     modifier onlyWallet(address wallet) {
@@ -270,6 +272,10 @@ contract LaserModuleSSR is ILaserModuleSSR {
 
     function getWalletTimeLock(address wallet) external view returns (uint256) {
         return timeLock[wallet];
+    }
+
+    function isGuardian(address wallet, address guardian) external view returns (bool) {
+        return guardians[wallet][guardian] != address(0) && guardian != POINTER;
     }
 
     function initGuardians(address wallet, address[] calldata _guardians) internal {

@@ -172,6 +172,9 @@ interface ILaserWallet {
      */
     function isValidSignature(bytes32 hash, bytes memory signature) external view returns (bytes4);
 
+    /**
+     * @notice Returns the hash to be signed to execute a transaction.
+     */
     function operationHash(
         address to,
         uint256 value,
@@ -187,5 +190,8 @@ interface ILaserWallet {
      */
     function getChainId() external view returns (uint256 chainId);
 
+    /**
+     * @notice Domain separator for this wallet.
+     */
     function domainSeparator() external view returns (bytes32);
 }

@@ -18,6 +18,7 @@ import {
     getRecoveryOwners,
     removeTokensFromVault,
     addTokensToVault,
+    removeTokensFromVaultHash,
 } from "../utils";
 import { Address, Domain, Transaction } from "../types";
 import { addrZero } from "../constants/constants";
@@ -76,8 +77,11 @@ describe("Laser Vault", () => {
             // Should be added.
             expect(await laserVault.getTokensInVault(address, ETH_VAULT)).to.equal(ethToVault);
 
+            const guardianHash = removeTokensFromVaultHash(ETH_VAULT, ethToVault, Number(await wallet.getChainId()));
+
+            const guardianSignature = await sign(signers.guardian1Signer, guardianHash);
             // We remove the eth.
-            tx.callData = removeTokensFromVault(ETH_VAULT, ethToVault);
+            tx.callData = removeTokensFromVault(ETH_VAULT, ethToVault, guardianSignature);
             tx.nonce = 1;
             hash = await getHash(wallet, tx);
             tx.signatures = await sign(signers.ownerSigner, hash);
@@ -126,6 +130,7 @@ describe("Laser Vault", () => {
             tx.signatures = await sign(signers.ownerSigner, hash);
             await sendTx(wallet, tx);
 
+            const initialBalance = await ethers.provider.getBalance(address);
             // Should be added.
             expect(await laserVault.getTokensInVault(address, ETH_VAULT)).to.equal(ethToVault);
 
@@ -137,6 +142,7 @@ describe("Laser Vault", () => {
             hash = await getHash(wallet, tx);
             tx.signatures = await sign(signers.ownerSigner, hash);
             await expect(sendTx(wallet, tx)).to.be.revertedWith("LaserVault__verifyEth__ethInVault");
+            expect(await ethers.provider.getBalance(address)).to.equal(initialBalance);
         });
 
         it("should allow to do an eth transfer if enough funds are out of the vault", async () => {
@@ -166,8 +172,6 @@ describe("Laser Vault", () => {
 
             expect(await ethers.provider.getBalance(tx.to)).to.equal(tx.value);
         });
-
-        it("should revert if ")
     });
 
     describe("ERC20 tokens", () => {

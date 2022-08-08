@@ -1,19 +1,13 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 pragma solidity 0.8.15;
 
+import "../../common/Utils.sol";
+import "../../interfaces/IERC20.sol";
+import "../../interfaces/ILaserModuleSSR.sol";
+
 //@todo Move this to an interface
-interface ITokens {
-    function balanceOf(address _owner) external view returns (uint256);
 
-    function ownerOf(uint256 _tokenId) external view returns (address);
-
-    function balanceOfBatch(address[] memory accounts, uint256[] memory ids) external view;
-
-    function allowance(address owner, address spender) external view returns (uint256);
-}
 error LaserVault__verifyEth__ethInVault();
-
-/////////////////////////ab
 
 /**
  * @title  LaserVault
@@ -25,6 +19,11 @@ error LaserVault__verifyEth__ethInVault();
  *         owner (or authorized module) orders otherwise.
  */
 contract LaserVault {
+    /*//////////////////////////////////////////////////////////////
+                          Init module 
+    //////////////////////////////////////////////////////////////*/
+    address public immutable LASER_SMART_SOCIAL_RECOVERY;
+
     /*//////////////////////////////////////////////////////////////
                          ERC-20 function selectors
     //////////////////////////////////////////////////////////////*/
@@ -78,6 +77,19 @@ contract LaserVault {
     // walletAddress => nftAddress => tokenId => boolean.
     mapping(address => mapping(address => mapping(uint256 => bool))) private nftsInVault;
 
+    constructor(address smartSocialRecovery) {
+        //@todo Check that the smart social recovery is registred in LaserRegistry.
+        LASER_SMART_SOCIAL_RECOVERY = smartSocialRecovery;
+    }
+
+    /**
+     * @notice Verifies that the transaction doesn't spend assets from the vault.
+     *
+     * @param  wallet   The address of the wallet.
+     * @param  to       Destination address.
+     * @param  value    Amount in WEI to transfer.
+     * @param callData  Data payload for the transaction.
+     */
     function verifyTransaction(
         address wallet,
         address to,
@@ -93,8 +105,12 @@ contract LaserVault {
 
         // If the function selector equals ERC20_INCREASE_ALLOWANCE or
         // ERC20_TRANSFER, it is ERC20 allowance or transfer.
-        if (funcSelector == ERC20_INCREASE_ALLOWANCE || funcSelector == ERC20_TRANSFER) {
-            verifyERC20(wallet, to, callData);
+        if (funcSelector == ERC20_TRANSFER) {
+            verifyERC20Transfer(wallet, to, callData);
+        }
+
+        if (funcSelector == ERC20_INCREASE_ALLOWANCE) {
+            verifyERC20IncreaseAllowance(wallet, to, callData);
         }
 
         // If value is greater than 0, then it is ETH transfer.
@@ -109,27 +125,54 @@ contract LaserVault {
         }
     }
 
+    /**
+     * @notice Adds tokens to vault.
+     *
+     * @param  token  The address of the token.
+     * @param  amount Amount of tokens to add to the vault.
+     */
     function addTokensToVault(address token, uint256 amount) external {
         address wallet = msg.sender;
 
         tokensInVault[wallet][token] += amount;
     }
 
-    function removeTokensFromVault(address token, uint256 amount) external {
+    /**
+     * @notice Removes tokens from vault.
+     *
+     * @param  token             The address of the token.
+     * @param  amount            Amount of tokens to remove to the vault.
+     * @param guardianSignature  Signature of one of the wallet's guardians.
+     *                           In order to take tokens out of the vault, it needs to be
+     *                           signed by the owner + a guardian.
+     */
+    function removeTokensFromVault(
+        address token,
+        uint256 amount,
+        bytes calldata guardianSignature
+    ) external {
         address wallet = msg.sender;
 
-        //@todo Check that the wallet has enough tokens.
+        bytes32 signedHash = keccak256(abi.encodePacked(token, amount, block.chainid));
+
+        address signer = Utils.returnSigner(signedHash, guardianSignature, 0);
+
+        require(ILaserModuleSSR(LASER_SMART_SOCIAL_RECOVERY).isGuardian(wallet, signer), "Invalid guardian signature");
+
         tokensInVault[wallet][token] -= amount;
     }
 
-    // function addNftToVault(address nft, uint256 index) external {
-    //     address wallet = msg.sender;
+    /**
+     * @param wallet The address of the wallet.
+     * @param token  The address of the token.
+     *
+     * @return The amount of tokens that are in the vault from the provided token and wallet.
+     */
+    function getTokensInVault(address wallet, address token) external view returns (uint256) {
+        return tokensInVault[wallet][token];
+    }
 
-    //     require(ITokens(nft).ownerOf(index) == wallet, "Can't add nft to vault");
-    //     nftsInVault[wallet][nft][index] = true;
-    // }
-
-    function verifyERC20(
+    function verifyERC20Transfer(
         address wallet,
         address to,
         bytes calldata callData
@@ -138,24 +181,33 @@ contract LaserVault {
 
         uint256 _tokensInVault = tokensInVault[wallet][to];
 
-        uint256 walletTokenBalance = ITokens(to).balanceOf(wallet);
+        uint256 walletTokenBalance = IERC20(to).balanceOf(wallet);
 
         require(walletTokenBalance - transferAmount > _tokensInVault, "Transfer or allowance exceeds balance.");
     }
 
-    function verifyTokens(
+    /**
+     * @notice Verifies that the wallet has enough allowance to transfer the amount of tokens.
+     *
+     * @param wallet The wallet address.
+     * @param to The address to transfer the tokens to.
+     * @param callData The calldata of the function.
+     */
+    function verifyERC20IncreaseAllowance(
         address wallet,
         address to,
         bytes calldata callData
     ) internal view {
-        // We need to decode the amount and check that it is in bounds.
-        (, uint256 transferAmount) = abi.decode(callData[4:], (address, uint256));
-
-        uint256 walletTokenBalance = ITokens(to).balanceOf(wallet);
+        (address spender, uint256 addedValue) = abi.decode(callData[4:], (address, uint256));
 
         uint256 _tokensInVault = tokensInVault[wallet][to];
 
-        require(walletTokenBalance - transferAmount > _tokensInVault, "Nop tokens");
+        uint256 walletTokenBalance = IERC20(to).balanceOf(wallet);
+
+        uint256 spenderCurrentAllowance = IERC20(to).allowance(spender, wallet);
+        uint256 spenderNewAllowance = spenderCurrentAllowance + addedValue;
+
+        require(walletTokenBalance - spenderNewAllowance > _tokensInVault, "Allowance exceeds vault.");
     }
 
     function verifyEth(address wallet, uint256 value) internal view {
@@ -166,18 +218,6 @@ contract LaserVault {
 
         if (walletBalance - value < ethInVault) revert LaserVault__verifyEth__ethInVault();
     }
-
-    // function verifyNfts(
-    //     address wallet,
-    //     address to,
-    //     bytes calldata callData
-    // ) internal view {
-    //     // If func selectorequals nfts approve selector, then it is nfts approval.
-    //     // We still need to make sure that the token approved is not in the vault.
-    //     (, uint256 nft) = abi.decode(callData[4:], (address, uint256));
-
-    //     require(!nftsInVault[wallet][to][nft], "nop nft approve");
-    // }
 
     function verifyCommonApprove(
         address wallet,
@@ -192,17 +232,9 @@ contract LaserVault {
 
         if (_tokensInVault > 0) {
             // Then it is definitely an ERC20.
-            uint256 walletTokenBalance = ITokens(to).balanceOf(wallet);
+            uint256 walletTokenBalance = IERC20(to).balanceOf(wallet);
+
+            require(walletTokenBalance - amount > _tokensInVault, "Approve exceeds vault");
         }
-
-        // require(walletTokenBalance - amountOrIndex > _tokensInVault, "ERC20 Allowance exceeds vault.");
-        // } else {
-        //     // Else, it can be ERC721.
-        //     require(!nftsInVault[wallet][to][amountOrIndex], "ERC721 Allowance exceeds vault.");
-        // }
-    }
-
-    function getTokensInVault(address wallet, address token) external view returns (uint256) {
-        return tokensInVault[wallet][token];
     }
 }

@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 pragma solidity 0.8.15;
 
+import "../../common/Utils.sol";
 import "../../interfaces/ILaserGuard.sol";
 import "../../interfaces/ILaserMasterGuard.sol";
+import "../../interfaces/ILaserModuleSSR.sol";
 import "../../interfaces/ILaserRegistry.sol";
 
 /**
@@ -13,15 +15,32 @@ import "../../interfaces/ILaserRegistry.sol";
  * @notice Parent guard module that calls child Laser guards.
  */
 contract LaserMasterGuard is ILaserMasterGuard {
+    /*//////////////////////////////////////////////////////////////
+                            Constans
+    //////////////////////////////////////////////////////////////*/
     address private constant POINTER = address(0x1);
 
     address public immutable LASER_REGISTRY;
 
+    address public immutable LASER_SMART_SOCIAL_RECOVERY;
+
+    /*//////////////////////////////////////////////////////////////
+                        LaserMasterGuard's storage
+    //////////////////////////////////////////////////////////////*/
+
     mapping(address => uint256) internal guardModulesCount;
+
     mapping(address => mapping(address => address)) internal guardModules;
 
-    constructor(address laserRegistry) {
+    /**
+     * @param laserRegistry         Address of LaserRegistry: contract that contains the addresses
+     *                              of authorized modules.
+     * @param smartSocialRecovery   Address of Laser smart social recovery module.
+     */
+    constructor(address laserRegistry, address smartSocialRecovery) {
         LASER_REGISTRY = laserRegistry;
+        //@todo Check that the smart social recovery is registred in LaserRegistry.
+        LASER_SMART_SOCIAL_RECOVERY = smartSocialRecovery;
     }
 
     /**
@@ -38,7 +57,7 @@ contract LaserMasterGuard is ILaserMasterGuard {
         }
 
         if (guardModulesCount[wallet] == 0) {
-            initGuardModules(wallet, module);
+            initGuardModule(wallet, module);
         } else {
             guardModules[wallet][module] = guardModules[wallet][POINTER];
             guardModules[wallet][POINTER] = module;
@@ -58,8 +77,18 @@ contract LaserMasterGuard is ILaserMasterGuard {
      * @param prevModule    The address of the previous module on the linked list.
      * @param module        The address of the module to remove.
      */
-    function removeGuardModule(address prevModule, address module) external {
+    function removeGuardModule(
+        address prevModule,
+        address module,
+        bytes calldata guardianSignature
+    ) external {
         address wallet = msg.sender;
+
+        bytes32 signedHash = keccak256(abi.encodePacked(module, block.chainid));
+
+        address signer = Utils.returnSigner(signedHash, guardianSignature, 0);
+
+        require(ILaserModuleSSR(LASER_SMART_SOCIAL_RECOVERY).isGuardian(wallet, signer), "Invalid guardian signature");
 
         if (guardModules[wallet][module] == address(0)) {
             revert LaserMasterGuard__removeGuardModule__incorrectModule();
@@ -85,7 +114,7 @@ contract LaserMasterGuard is ILaserMasterGuard {
      *         Each sub-module implements its own logic. But the main purpose is to
      *         provide extra transaction security.
      *
-     * @param wallet The address of the wallet: should be 'msg.sender'.
+     * @param wallet                The address of the wallet: should be 'msg.sender'.
      * @param to                    Destination address.
      * @param value                 Amount in WEI to transfer.
      * @param callData              Data payload for the transaction.
@@ -156,7 +185,13 @@ contract LaserMasterGuard is ILaserMasterGuard {
         return guardModulesArray;
     }
 
-    function initGuardModules(address wallet, address module) internal {
+    /**
+     * @notice Inits the guard modules for a specific wallet.
+     *
+     * @param  wallet  Address of the wallet to init the guard module.
+     * @param  module  Address of the module to init.
+     */
+    function initGuardModule(address wallet, address module) internal {
         guardModules[wallet][POINTER] = module;
         guardModules[wallet][module] = POINTER;
     }

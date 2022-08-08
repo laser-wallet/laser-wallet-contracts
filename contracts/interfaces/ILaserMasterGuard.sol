@@ -34,7 +34,11 @@ interface ILaserMasterGuard {
      * @param prevModule    The address of the previous module on the linked list.
      * @param module        The address of the module to remove.
      */
-    function removeGuardModule(address prevModule, address module) external;
+    function removeGuardModule(
+        address prevModule,
+        address module,
+        bytes calldata guardianSignature
+    ) external;
 
     /**
      * @notice Verifies a Laser transaction.
@@ -42,7 +46,7 @@ interface ILaserMasterGuard {
      *         Each sub-module implements its own logic. But the main purpose is to
      *         provide extra transaction security.
      *
-     * @param wallet The address of the wallet: should be 'msg.sender'.
+     * @param wallet                The address of the wallet: should be 'msg.sender'.
      * @param to                    Destination address.
      * @param value                 Amount in WEI to transfer.
      * @param callData              Data payload for the transaction.
