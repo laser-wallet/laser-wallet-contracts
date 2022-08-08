@@ -13,7 +13,8 @@ pragma solidity 0.8.15;
  * @dev    This interface has all events, errors, and external function for LaserMasterGuard.
  */
 interface ILaserVault {
-    // addGuardModule() custom errors.
+    // verifyEth() custom errors.
+    error LaserVault__verifyEth__ethInVault();
 
     /**
      * @notice Verifies that the transaction doesn't spend assets from the vault.
@@ -59,10 +60,10 @@ interface ILaserVault {
     ) external;
 
     /**
-     * @param wallet The address of the wallet. 
-     * @param token  The address of the token. 
+     * @param wallet The address of the wallet.
+     * @param token  The address of the token.
      *
-     * @return The amount of tokens that are in the vault from the provided token and wallet. 
+     * @return The amount of tokens that are in the vault from the provided token and wallet.
      */
     function getTokensInVault(address wallet, address token) external view returns (uint256);
 }
