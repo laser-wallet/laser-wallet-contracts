@@ -5,7 +5,11 @@ import "../interfaces/IERC165.sol";
 import "../interfaces/ILaserFactory.sol";
 import "../interfaces/ILaserWallet.sol";
 
-///@title LaserFactory - Factory for creating new Laser proxies and helper methods.
+/**
+ * @title LaserFactory
+ *
+ * @notice Factory that creates new Laser proxies, and has helper methods.
+ */
 contract LaserFactory is ILaserFactory {
     address public immutable singleton;
 

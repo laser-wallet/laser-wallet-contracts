@@ -137,12 +137,12 @@ contract LaserMasterGuard is ILaserMasterGuard {
         uint256 gasLimit,
         bytes memory signatures
     ) external {
-        uint256 amountOfGuards = guardModulesCount[wallet];
+        uint256 nGuards = guardModulesCount[wallet];
 
-        if (amountOfGuards > 0) {
+        if (nGuards > 0) {
             address currentGuardModule = guardModules[wallet][POINTER];
 
-            if (amountOfGuards == 1) {
+            if (nGuards == 1) {
                 // If there is only 1 guard module, there is no need to loop.
                 ILaserGuard(currentGuardModule).verifyTransaction(
                     wallet,
@@ -156,7 +156,6 @@ contract LaserMasterGuard is ILaserMasterGuard {
                     signatures
                 );
             } else {
-                uint256 index;
                 // Guard modules are capped at max 3, and each one is verified that the gas usage
                 // is in bounds. Therefore there is no risk of DDoS (using so much gas that the transaction reverts).
                 while (currentGuardModule != POINTER) {
@@ -173,11 +172,6 @@ contract LaserMasterGuard is ILaserMasterGuard {
                     );
 
                     currentGuardModule = guardModules[wallet][currentGuardModule];
-
-                    unchecked {
-                        // Max amount of 3 guard modules, therefore it cannot overflow.
-                        ++index;
-                    }
                 }
             }
         }
