@@ -100,6 +100,11 @@ contract LaserVault is ILaserVault {
     ) external view {
         bytes4 funcSelector = bytes4(callData);
 
+        // If value is greater than 0, then it is an ETH transfer.
+        if (value > 0) {
+            verifyEth(wallet, value);
+        }
+
         // If the function selector equals ERC20_INCREASE_ALLOWANCE or
         // ERC20_TRANSFER, it is ERC20 allowance or transfer.
         if (funcSelector == ERC20_TRANSFER) {
@@ -108,11 +113,6 @@ contract LaserVault is ILaserVault {
 
         if (funcSelector == ERC20_INCREASE_ALLOWANCE) {
             verifyERC20IncreaseAllowance(wallet, to, callData);
-        }
-
-        // If value is greater than 0, then it is ETH transfer.
-        if (value > 0) {
-            verifyEth(wallet, value);
         }
 
         // If the function selector equals COMMON_APPROVE, it can be
