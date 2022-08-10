@@ -112,12 +112,7 @@ export async function walletSetup(
 
     const abiCoder = new ethers.utils.AbiCoder();
     const chainId = (await ethers.provider.getNetwork()).chainId;
-    const dataHash = ethers.utils.keccak256(
-        abiCoder.encode(
-            ["uint256", "uint256", "uint256", "uint256"],
-            [maxFeePerGas, maxPriorityFeePerGas, gasLimit, chainId]
-        )
-    );
+
     owner = _owner ? _owner : owner;
     ownerSigner = _ownerSigner ? _ownerSigner : ownerSigner;
     recoveryOwners = _recoveryOwners ? _recoveryOwners : recoveryOwners;
@@ -129,6 +124,10 @@ export async function walletSetup(
     const LaserSSRModuleAddress = (await deployments.get("LaserModuleSSR")).address;
     const preComputedAddress = await factory.preComputeAddress(owner, LaserSSRModuleAddress, ssrInitData, salt);
 
+    const dataHash = ethers.utils.solidityKeccak256(
+        ["uint256", "uint256", "uint256", "uint256", "address"],
+        [maxFeePerGas, maxPriorityFeePerGas, gasLimit, chainId, preComputedAddress]
+    );
     const laserVaultAddress = (await deployments.get("LaserVault")).address;
 
     if (fundWallet) {

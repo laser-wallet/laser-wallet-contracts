@@ -89,9 +89,8 @@ contract LaserWallet is ILaserWallet, LaserState, Handler {
 
         // This is to ensure that the owner authorized the amount of gas.
         {
-            // todo: Add address(this).
             bytes32 signedHash = keccak256(
-                abi.encodePacked(maxFeePerGas, maxPriorityFeePerGas, gasLimit, block.chainid)
+                abi.encodePacked(maxFeePerGas, maxPriorityFeePerGas, gasLimit, block.chainid, address(this))
             );
 
             address signer = Utils.returnSigner(signedHash, ownerSignature, 0);

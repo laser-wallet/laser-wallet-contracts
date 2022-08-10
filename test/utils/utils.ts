@@ -1,9 +1,10 @@
 import { Wallet, Contract, BigNumber, Signer, BigNumberish } from "ethers";
-import { ethers } from "hardhat";
+import { ethers, deployments } from "hardhat";
 import { addrZero } from "../constants/constants";
 import { Address, LaserTypes, Transaction } from "../types";
 import { addressesForTest } from "./setup";
 import { sign } from "./sign";
+import { initSSR } from "./setup";
 
 export function encodeFunctionData(abi: any, functionName: string, ..._params: any[]): string {
     const params = _params[0];
@@ -117,4 +118,18 @@ export function removeTokensFromVaultHash(tokenAddress: Address, amount: BigNumb
     const abiCoder = new ethers.utils.AbiCoder();
     const dataHash = ethers.utils.solidityKeccak256(["address", "uint256", "uint256"], [tokenAddress, amount, chainId]);
     return dataHash;
+}
+
+export async function preComputeAddress(
+    factory: Contract,
+    owner: Address,
+    guardians: Address[],
+    recoveryOwners: Address[],
+    salt: Number
+): Promise<string> {
+    const LaserSSRModuleAddress = (await deployments.get("LaserModuleSSR")).address;
+
+    const ssrInitData = initSSR(guardians, recoveryOwners);
+
+    return factory.preComputeAddress(owner, LaserSSRModuleAddress, ssrInitData, salt);
 }
