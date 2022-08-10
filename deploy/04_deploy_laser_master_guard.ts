@@ -18,6 +18,5 @@ const deploy: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 };
 
 deploy.tags = ["LaserMasterGuard"];
-deploy.runAtTheEnd = true;
 
 export default deploy;
