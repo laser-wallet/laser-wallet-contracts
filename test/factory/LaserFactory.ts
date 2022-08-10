@@ -9,6 +9,7 @@ import {
     SignersForTest,
     sign,
     initSSR,
+    preComputeAddress,
 } from "../utils";
 import { Address } from "../types";
 import { addrZero } from "../constants/constants";
@@ -64,11 +65,12 @@ describe("Proxy Factory", () => {
             const { ownerSigner } = signers;
 
             const invalidChainId = 1234;
+            const preComputedAddress = await preComputeAddress(factory, owner, guardians, recoveryOwners, saltNumber);
             const abiCoder = new ethers.utils.AbiCoder();
-            const dataHash = ethers.utils.keccak256(
-                abiCoder.encode(["uint256", "uint256", "uint256", "uint256"], [0, 0, 0, invalidChainId])
+            const dataHash = ethers.utils.solidityKeccak256(
+                ["uint256", "uint256", "uint256", "uint256", "address"],
+                [0, 0, 0, invalidChainId, preComputedAddress]
             );
-
             const initData = await initSSR(guardians, recoveryOwners);
             const signature = await sign(ownerSigner, dataHash);
 
@@ -84,10 +86,12 @@ describe("Proxy Factory", () => {
             const saltNumber = Math.floor(Math.random() * 100000);
 
             const { ownerSigner } = signers;
+            const preComputedAddress = await preComputeAddress(factory, owner, guardians, recoveryOwners, saltNumber);
 
             const abiCoder = new ethers.utils.AbiCoder();
-            const dataHash = ethers.utils.keccak256(
-                abiCoder.encode(["uint256", "uint256", "uint256", "uint256"], [0, 0, 0, chainId])
+            const dataHash = ethers.utils.solidityKeccak256(
+                ["uint256", "uint256", "uint256", "uint256", "address"],
+                [0, 0, 0, chainId, preComputedAddress]
             );
 
             const initData = await initSSR(guardians, recoveryOwners);
@@ -118,8 +122,11 @@ describe("Proxy Factory", () => {
             const { ownerSigner } = signers;
 
             const abiCoder = new ethers.utils.AbiCoder();
-            const dataHash = ethers.utils.keccak256(
-                abiCoder.encode(["uint256", "uint256", "uint256", "uint256"], [0, 0, 0, chainId])
+            const _preComputedAddress = await preComputeAddress(factory, owner, guardians, recoveryOwners, saltNumber);
+
+            const dataHash = ethers.utils.solidityKeccak256(
+                ["uint256", "uint256", "uint256", "uint256", "address"],
+                [0, 0, 0, chainId, _preComputedAddress]
             );
 
             const initData = await initSSR(guardians, recoveryOwners);
@@ -152,13 +159,16 @@ describe("Proxy Factory", () => {
             const saltNumber = Math.floor(Math.random() * 100000);
 
             const initData = await initSSR(guardians, recoveryOwners);
-            const preComputedAddress = await factory.preComputeAddress(owner, laserModule, initData, saltNumber);
+            const preComputedAddress = await factory.preComputeAddress(owner, laserModule, initData, 123123);
 
             const { ownerSigner } = signers;
 
+            const _preComputedAddress = await preComputeAddress(factory, owner, guardians, recoveryOwners, saltNumber);
+
             const abiCoder = new ethers.utils.AbiCoder();
-            const dataHash = ethers.utils.keccak256(
-                abiCoder.encode(["uint256", "uint256", "uint256", "uint256"], [0, 0, 0, chainId])
+            const dataHash = ethers.utils.solidityKeccak256(
+                ["uint256", "uint256", "uint256", "uint256", "address"],
+                [0, 0, 0, chainId, _preComputedAddress]
             );
 
             const signature = await sign(ownerSigner, dataHash);
@@ -172,7 +182,7 @@ describe("Proxy Factory", () => {
                 laserModule,
                 laserVault,
                 initData,
-                BigNumber.from(saltNumber).add(1),
+                saltNumber,
                 signature
             );
             const receipt = await tx.wait();
@@ -197,9 +207,12 @@ describe("Proxy Factory", () => {
 
             const { ownerSigner } = signers;
 
+            const _preComputedAddress = await preComputeAddress(factory, owner, guardians, recoveryOwners, saltNumber);
+
             const abiCoder = new ethers.utils.AbiCoder();
-            const dataHash = ethers.utils.keccak256(
-                abiCoder.encode(["uint256", "uint256", "uint256", "uint256"], [0, 0, 0, chainId])
+            const dataHash = ethers.utils.solidityKeccak256(
+                ["uint256", "uint256", "uint256", "uint256", "address"],
+                [0, 0, 0, chainId, _preComputedAddress]
             );
 
             const signature = await sign(ownerSigner, dataHash);
@@ -235,8 +248,11 @@ describe("Proxy Factory", () => {
             const { ownerSigner } = signers;
 
             const abiCoder = new ethers.utils.AbiCoder();
-            const dataHash = ethers.utils.keccak256(
-                abiCoder.encode(["uint256", "uint256", "uint256", "uint256"], [0, 0, 0, chainId])
+            const _preComputedAddress = await preComputeAddress(factory, owner, guardians, recoveryOwners, saltNumber);
+
+            const dataHash = ethers.utils.solidityKeccak256(
+                ["uint256", "uint256", "uint256", "uint256", "address"],
+                [0, 0, 0, chainId, _preComputedAddress]
             );
 
             const signature = await sign(ownerSigner, dataHash);
@@ -271,9 +287,12 @@ describe("Proxy Factory", () => {
 
             const { ownerSigner } = signers;
 
+            const _preComputedAddress = await preComputeAddress(factory, owner, guardians, recoveryOwners, saltNumber);
+
             const abiCoder = new ethers.utils.AbiCoder();
-            const dataHash = ethers.utils.keccak256(
-                abiCoder.encode(["uint256", "uint256", "uint256", "uint256"], [0, 0, 0, chainId])
+            const dataHash = ethers.utils.solidityKeccak256(
+                ["uint256", "uint256", "uint256", "uint256", "address"],
+                [0, 0, 0, chainId, _preComputedAddress]
             );
 
             const signature = await sign(ownerSigner, dataHash);
@@ -310,8 +329,9 @@ describe("Proxy Factory", () => {
             const { ownerSigner } = signers;
 
             const abiCoder = new ethers.utils.AbiCoder();
-            const dataHash = ethers.utils.keccak256(
-                abiCoder.encode(["uint256", "uint256", "uint256", "uint256"], [0, 0, 0, chainId])
+            const dataHash = ethers.utils.solidityKeccak256(
+                ["uint256", "uint256", "uint256", "uint256", "address"],
+                [0, 0, 0, chainId, preComputedAddress]
             );
 
             const signature = await sign(ownerSigner, dataHash);
