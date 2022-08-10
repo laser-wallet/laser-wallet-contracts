@@ -6,7 +6,9 @@ import "../../interfaces/ILaserModuleSSR.sol";
 import "../../interfaces/ILaserState.sol";
 import "../../interfaces/ILaserWallet.sol";
 
-///@dev Laser module implementation of Smart Social Recovery.
+////////////
+///// TODO: Adding and removing a guardian or recovery owner should
+// only be allowed when the wallet is unlocked.
 contract LaserModuleSSR is ILaserModuleSSR {
     bytes32 private constant DOMAIN_SEPARATOR_TYPEHASH =
         keccak256("EIP712Domain(uint256 chainId,address verifyingContract)");

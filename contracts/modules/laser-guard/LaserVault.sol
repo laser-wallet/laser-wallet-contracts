@@ -25,9 +25,9 @@ contract LaserVault is ILaserVault {
                          ERC-20 function selectors
     //////////////////////////////////////////////////////////////*/
 
-    bytes4 private constant ERC20_TRANSFER = bytes4(keccak256("transfer(address,uint256"));
+    bytes4 private constant ERC20_TRANSFER = bytes4(keccak256("transfer(address,uint256)"));
 
-    bytes4 private constant ERC20_INCREASE_ALLOWANCE = bytes4(keccak256("increaseAllowance(address,uint256"));
+    bytes4 private constant ERC20_INCREASE_ALLOWANCE = bytes4(keccak256("increaseAllowance(address,uint256)"));
 
     /*//////////////////////////////////////////////////////////////
                          ERC-721 function selectors
@@ -105,20 +105,16 @@ contract LaserVault is ILaserVault {
             verifyEth(wallet, value);
         }
 
-        // If the function selector equals ERC20_INCREASE_ALLOWANCE or
-        // ERC20_TRANSFER, it is ERC20 allowance or transfer.
         if (funcSelector == ERC20_TRANSFER) {
             verifyERC20Transfer(wallet, to, callData);
         }
 
-        if (funcSelector == ERC20_INCREASE_ALLOWANCE) {
-            verifyERC20IncreaseAllowance(wallet, to, callData);
-        }
-
-        // If the function selector equals COMMON_APPROVE, it can be
-        // either ERC20 or ERC721.
         if (funcSelector == COMMON_APPROVE) {
             verifyCommonApprove(wallet, to, callData);
+        }
+
+        if (funcSelector == ERC20_INCREASE_ALLOWANCE) {
+            verifyERC20IncreaseAllowance(wallet, to, callData);
         }
     }
 
@@ -132,6 +128,8 @@ contract LaserVault is ILaserVault {
         address wallet = msg.sender;
 
         tokensInVault[wallet][token] += amount;
+
+        emit TokensAdded(token, amount);
     }
 
     /**
@@ -157,6 +155,8 @@ contract LaserVault is ILaserVault {
         require(ILaserModuleSSR(LASER_SMART_SOCIAL_RECOVERY).isGuardian(wallet, signer), "Invalid guardian signature");
 
         tokensInVault[wallet][token] -= amount;
+
+        emit TokensRemoved(token, amount);
     }
 
     /**
@@ -169,6 +169,28 @@ contract LaserVault is ILaserVault {
         return tokensInVault[wallet][token];
     }
 
+    /**
+     * @notice Verifies that the transfer amount is in bounds.
+     *
+     * @param wallet   The wallet address.
+     * @param value    Amount in 'WEI' to transfer.
+     */
+    function verifyEth(address wallet, uint256 value) internal view {
+        // If value is greater than 0, then  it is ETH transfer.
+        uint256 walletBalance = address(wallet).balance;
+
+        uint256 ethInVault = tokensInVault[wallet][ETH];
+
+        if (walletBalance - value < ethInVault) revert LaserVault__verifyEth__ethInVault();
+    }
+
+    /**
+     * @notice Verifies that the transfer amount is in bounds.
+     *
+     * @param wallet    The wallet address.
+     * @param to        The address to transfer the tokens to.
+     * @param callData  The calldata of the function.
+     */
     function verifyERC20Transfer(
         address wallet,
         address to,
@@ -180,14 +202,45 @@ contract LaserVault is ILaserVault {
 
         uint256 walletTokenBalance = IERC20(to).balanceOf(wallet);
 
-        require(walletTokenBalance - transferAmount > _tokensInVault, "Transfer or allowance exceeds balance.");
+        if (walletTokenBalance - transferAmount < _tokensInVault) {
+            revert LaserVault__verifyERC20Transfer__erc20InVault();
+        }
+    }
+
+    /**
+     * @notice Verifies that the spender's allowance is in bounds with the tokens in vault.
+     *
+     * @param wallet   The wallet address.
+     * @param to       The address to transfer the tokens to.
+     * @param callData The calldata of the function.
+     */
+    function verifyCommonApprove(
+        address wallet,
+        address to,
+        bytes calldata callData
+    ) internal view {
+        (address spender, uint256 amount) = abi.decode(callData[4:], (address, uint256));
+
+        // First we will check if it is ERC20.
+        uint256 _tokensInVault = tokensInVault[wallet][to];
+
+        if (_tokensInVault > 0) {
+            // Then it is definitely an ERC20.
+            uint256 walletTokenBalance = IERC20(to).balanceOf(wallet);
+
+            uint256 spenderAllowance = IERC20(to).allowance(wallet, spender);
+
+            if (walletTokenBalance - (amount + spenderAllowance) < _tokensInVault) {
+                revert LaserVault__verifyCommonApprove__erc20InVault();
+            }
+        }
     }
 
     /**
      * @notice Verifies that the wallet has enough allowance to transfer the amount of tokens.
      *
-     * @param wallet The wallet address.
-     * @param to The address to transfer the tokens to.
+     * @param wallet   The wallet address.
+     * @param to       The address to transfer the tokens to.
      * @param callData The calldata of the function.
      */
     function verifyERC20IncreaseAllowance(
@@ -205,33 +258,5 @@ contract LaserVault is ILaserVault {
         uint256 spenderNewAllowance = spenderCurrentAllowance + addedValue;
 
         require(walletTokenBalance - spenderNewAllowance > _tokensInVault, "Allowance exceeds vault.");
-    }
-
-    function verifyEth(address wallet, uint256 value) internal view {
-        // If value is greater than 0, then  it is ETH transfer.
-        uint256 walletBalance = address(wallet).balance;
-
-        uint256 ethInVault = tokensInVault[wallet][ETH];
-
-        if (walletBalance - value < ethInVault) revert LaserVault__verifyEth__ethInVault();
-    }
-
-    function verifyCommonApprove(
-        address wallet,
-        address to,
-        bytes calldata callData
-    ) internal view {
-        //@todo Check the allowance, just approve the exact allowance for this transaction.
-        (, uint256 amount) = abi.decode(callData[4:], (address, uint256));
-
-        // First we will check if it is ERC20.
-        uint256 _tokensInVault = tokensInVault[wallet][to];
-
-        if (_tokensInVault > 0) {
-            // Then it is definitely an ERC20.
-            uint256 walletTokenBalance = IERC20(to).balanceOf(wallet);
-
-            require(walletTokenBalance - amount > _tokensInVault, "Approve exceeds vault");
-        }
     }
 }

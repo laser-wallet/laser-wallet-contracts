@@ -14,13 +14,25 @@ import {
     removeTokensFromVault,
     addTokensToVault,
     removeTokensFromVaultHash,
+    encodeFunctionData,
 } from "../utils";
-import { Transaction } from "../types";
+import { Address, Transaction } from "../types";
 import { BigNumber, Contract } from "ethers";
 import { LaserVault, LaserVault__factory } from "../../typechain-types";
 
 // address(bytes20(bytes32(keccak256("ETH.ENCODED.LASER")))
 const ETH_VAULT = "0xc9e6c67284a1cefbad549c4af8200e564a75ca4c";
+
+function transferTokenData(address: Address, amount: BigNumber): string {
+    const abi = ["function transfer(address,uint256) external"];
+
+    return encodeFunctionData(abi, "transfer", [address, amount]);
+}
+
+function approveData(address: Address, amount: BigNumber): string {
+    const abi = ["function approve(address,uint256) external"];
+    return encodeFunctionData(abi, "approve", [address, amount]);
+}
 
 describe("Laser Vault", () => {
     let addresses: AddressesForTest;
@@ -284,10 +296,243 @@ describe("Laser Vault", () => {
             });
         });
 
-        describe("verifyERC20Transfer()", () => {});
+        describe("verifyERC20Transfer()", () => {
+            it("should transfer tokens if the vault is empty", async () => {
+                const { address, wallet } = await walletSetup();
+                await fundWallet(signers.ownerSigner, address);
+
+                expect(await erc20.balanceOf(address)).to.equal(0);
+
+                const transferAmount = ethers.utils.parseEther("10");
+                await erc20.transfer(address, transferAmount);
+                expect(await erc20.balanceOf(address)).to.equal(transferAmount);
+
+                const to = ethers.Wallet.createRandom().address;
+                expect(await erc20.balanceOf(to)).to.equal(0);
+                tx.to = erc20.address;
+                tx.value = 0;
+                tx.callData = transferTokenData(to, transferAmount);
+                const hash = await getHash(wallet, tx);
+                tx.signatures = await sign(signers.ownerSigner, hash);
+                await sendTx(wallet, tx);
+
+                expect(await erc20.balanceOf(to)).to.equal(transferAmount);
+                expect(await erc20.balanceOf(address)).to.equal(0);
+            });
+
+            it("should revert if tx wants to use tokens from the vault", async () => {
+                const { address, wallet } = await walletSetup();
+                const transferAmount = ethers.utils.parseEther("100");
+
+                await erc20.transfer(address, transferAmount);
+                expect(await erc20.balanceOf(address)).to.equal(transferAmount);
+                await fundWallet(signers.ownerSigner, address);
+
+                expect(await laserVault.getTokensInVault(address, erc20.address)).to.equal(0);
+                const erc20ToVault = ethers.utils.parseEther("100");
+                // We add erc20 to vault.
+                tx.to = laserVault.address;
+                tx.callData = addTokensToVault(erc20.address, erc20ToVault);
+                let hash = await getHash(wallet, tx);
+                tx.signatures = await sign(signers.ownerSigner, hash);
+                await sendTx(wallet, tx);
+
+                // Should be added.
+                expect(await laserVault.getTokensInVault(address, erc20.address)).to.equal(erc20ToVault);
+
+                const to = ethers.Wallet.createRandom().address;
+                tx.to = erc20.address;
+                tx.value = 0;
+                tx.nonce = 1;
+                tx.callData = transferTokenData(to, BigNumber.from(100)); // less than vault.
+                hash = await getHash(wallet, tx);
+                tx.signatures = await sign(signers.ownerSigner, hash);
+                await expect(sendTx(wallet, tx)).to.be.revertedWith("LaserVault__verifyERC20Transfer__erc20InVault()");
+            });
+
+            it("should revert if tx wants to use more tokens than allowed", async () => {
+                const { address, wallet } = await walletSetup();
+                const transferAmount = ethers.utils.parseEther("100");
+
+                await erc20.transfer(address, transferAmount);
+                expect(await erc20.balanceOf(address)).to.equal(transferAmount);
+                await fundWallet(signers.ownerSigner, address);
+
+                expect(await laserVault.getTokensInVault(address, erc20.address)).to.equal(0);
+                const erc20ToVault = ethers.utils.parseEther("50");
+                // We add erc20 to vault.
+                tx.to = laserVault.address;
+                tx.callData = addTokensToVault(erc20.address, erc20ToVault);
+                let hash = await getHash(wallet, tx);
+                tx.signatures = await sign(signers.ownerSigner, hash);
+                await sendTx(wallet, tx);
+
+                // Should be added.
+                expect(await laserVault.getTokensInVault(address, erc20.address)).to.equal(erc20ToVault);
+
+                const to = ethers.Wallet.createRandom().address;
+                tx.to = erc20.address;
+                tx.value = 0;
+                tx.nonce = 1;
+                const tokenAmount = ethers.utils.parseEther("50.0000000001");
+                tx.callData = transferTokenData(to, tokenAmount); // less than vault.
+                hash = await getHash(wallet, tx);
+                tx.signatures = await sign(signers.ownerSigner, hash);
+                await expect(sendTx(wallet, tx)).to.be.revertedWith("LaserVault__verifyERC20Transfer__erc20InVault()");
+            });
+
+            it("should allow to transfer tokens if enough funds are out of the vault", async () => {
+                const { address, wallet } = await walletSetup();
+                const transferAmount = ethers.utils.parseEther("100");
+
+                await erc20.transfer(address, transferAmount);
+                expect(await erc20.balanceOf(address)).to.equal(transferAmount);
+                await fundWallet(signers.ownerSigner, address);
+                const erc20ToVault = ethers.utils.parseEther("50");
+                // We add erc20 to vault.
+                tx.to = laserVault.address;
+                tx.callData = addTokensToVault(erc20.address, erc20ToVault);
+                let hash = await getHash(wallet, tx);
+                tx.signatures = await sign(signers.ownerSigner, hash);
+                await sendTx(wallet, tx);
+
+                // Should be added.
+                expect(await laserVault.getTokensInVault(address, erc20.address)).to.equal(erc20ToVault);
+
+                const to = ethers.Wallet.createRandom().address;
+                expect(await erc20.balanceOf(to)).to.equal(0);
+
+                tx.to = erc20.address;
+                tx.value = 0;
+                tx.nonce = 1;
+                const tokenAmount = ethers.utils.parseEther("49");
+                tx.callData = transferTokenData(to, tokenAmount);
+                hash = await getHash(wallet, tx);
+                tx.signatures = await sign(signers.ownerSigner, hash);
+                await sendTx(wallet, tx);
+                expect(await erc20.balanceOf(to)).to.equal(tokenAmount);
+            });
+
+            it("should revert if max supply of token is in the vault", async () => {
+                const { address, wallet } = await walletSetup();
+                const transferAmount = ethers.utils.parseEther("100");
+
+                await erc20.transfer(address, transferAmount);
+                expect(await erc20.balanceOf(address)).to.equal(transferAmount);
+                await fundWallet(signers.ownerSigner, address);
+
+                expect(await laserVault.getTokensInVault(address, erc20.address)).to.equal(0);
+                const erc20ToVault = ethers.utils.parseEther("50000000000");
+                // We add erc20 to vault.
+                tx.to = laserVault.address;
+                tx.callData = addTokensToVault(erc20.address, erc20ToVault);
+                let hash = await getHash(wallet, tx);
+                tx.signatures = await sign(signers.ownerSigner, hash);
+                await sendTx(wallet, tx);
+
+                // Should be added.
+                expect(await laserVault.getTokensInVault(address, erc20.address)).to.equal(erc20ToVault);
+
+                const to = ethers.Wallet.createRandom().address;
+                tx.to = erc20.address;
+                tx.value = 0;
+                tx.nonce = 1;
+                const tokenAmount = ethers.utils.parseEther("90");
+                tx.callData = transferTokenData(to, tokenAmount); // less than vault.
+                hash = await getHash(wallet, tx);
+                tx.signatures = await sign(signers.ownerSigner, hash);
+                await expect(sendTx(wallet, tx)).to.be.revertedWith("LaserVault__verifyERC20Transfer__erc20InVault()");
+            });
+        });
+
+        describe("verifyCommonApprove()", () => {
+            it("should approve if vault is empty", async () => {
+                const { address, wallet } = await walletSetup();
+                await fundWallet(signers.ownerSigner, address);
+                // should have 0 allowance.
+                const spender = ethers.Wallet.createRandom().address;
+                expect(await erc20.allowance(address, spender)).to.equal(0);
+
+                tx.to = erc20.address;
+                tx.value = 0;
+                const approveAmount = ethers.utils.parseEther("1000");
+                tx.callData = approveData(spender, approveAmount);
+                const hash = await getHash(wallet, tx);
+                tx.signatures = await sign(signers.ownerSigner, hash);
+                await sendTx(wallet, tx);
+
+                expect(await erc20.allowance(address, spender)).to.equal(approveAmount);
+            });
+
+            it("should revert if tx wants to approve tokens from vault", async () => {
+                const { address, wallet } = await walletSetup();
+                const transferAmount = ethers.utils.parseEther("100");
+
+                await erc20.transfer(address, transferAmount);
+                expect(await erc20.balanceOf(address)).to.equal(transferAmount);
+                await fundWallet(signers.ownerSigner, address);
+
+                // pass tokens to vault.
+                tx.to = laserVault.address;
+                tx.value = 0;
+                const amountToVault = ethers.utils.parseEther("50");
+                tx.callData = addTokensToVault(erc20.address, amountToVault);
+                let hash = await getHash(wallet, tx);
+                tx.signatures = await sign(signers.ownerSigner, hash);
+                await sendTx(wallet, tx);
+
+                // should be added to vault.
+                expect(await laserVault.getTokensInVault(address, erc20.address)).to.equal(amountToVault);
+
+                tx.to = erc20.address;
+                tx.nonce = 1;
+                const approveAmount = ethers.utils.parseEther("51");
+                const spender = ethers.Wallet.createRandom().address;
+                tx.callData = approveData(spender, approveAmount);
+                hash = await getHash(wallet, tx);
+                tx.signatures = await sign(signers.ownerSigner, hash);
+                await expect(sendTx(wallet, tx)).to.be.revertedWith("LaserVault__verifyCommonApprove__erc20InVault()");
+            });
+
+            it("should revert if spender allowance exceeds tokens in vault", async () => {
+                const { address, wallet } = await walletSetup();
+                const transferAmount = ethers.utils.parseEther("100");
+
+                await erc20.transfer(address, transferAmount);
+                expect(await erc20.balanceOf(address)).to.equal(transferAmount);
+                await fundWallet(signers.ownerSigner, address);
+
+                // pass tokens to vault.
+                tx.to = laserVault.address;
+                tx.value = 0;
+                const amountToVault = ethers.utils.parseEther("50");
+                tx.callData = addTokensToVault(erc20.address, amountToVault);
+                let hash = await getHash(wallet, tx);
+                tx.signatures = await sign(signers.ownerSigner, hash);
+                await sendTx(wallet, tx);
+                expect(await laserVault.getTokensInVault(address, erc20.address)).to.equal(amountToVault);
+
+                const spender = ethers.Wallet.createRandom().address;
+                expect(await erc20.allowance(address, spender)).to.equal(0);
+
+                tx.to = erc20.address;
+                tx.nonce = 1;
+                let approveAmount = ethers.utils.parseEther("49");
+                tx.callData = approveData(spender, approveAmount);
+                hash = await getHash(wallet, tx);
+                tx.signatures = await sign(signers.ownerSigner, hash);
+                await sendTx(wallet, tx);
+                expect(await erc20.allowance(address, spender)).to.equal(approveAmount);
+
+                tx.nonce = 2;
+                approveAmount = ethers.utils.parseEther("1.00001");
+                tx.callData = approveData(spender, approveAmount);
+                hash = await getHash(wallet, tx);
+                tx.signatures = await sign(signers.ownerSigner, hash);
+                await expect(sendTx(wallet, tx)).to.be.revertedWith("LaserVault__verifyCommonApprove__erc20InVault()");
+            });
+        });
 
         describe("verifyERC20IncreaseAllowance()", () => {});
-
-        describe("verifyCommonApprove()", () => {});
     });
 });

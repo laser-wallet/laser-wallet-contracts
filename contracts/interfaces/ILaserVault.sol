@@ -13,8 +13,17 @@ pragma solidity 0.8.15;
  * @dev    This interface has all events, errors, and external function for LaserMasterGuard.
  */
 interface ILaserVault {
-    // verifyEth() custom errors.
+    event TokensAdded(address indexed, uint256 indexed);
+    event TokensRemoved(address indexed, uint256 indexed);
+
+    // verifyEth() custom error.
     error LaserVault__verifyEth__ethInVault();
+
+    // verifyERC20Transfer() custom error.
+    error LaserVault__verifyERC20Transfer__erc20InVault();
+
+    // verifyCommonApprove() custom error.
+    error LaserVault__verifyCommonApprove__erc20InVault();
 
     /**
      * @notice Verifies that the transaction doesn't spend assets from the vault.
