@@ -114,9 +114,17 @@ export function removeTokensFromVault(token: Address, amount: BigNumberish, guar
     return encodeFunctionData(abi, "removeTokensFromVault", [token, amount, guardianSignature]);
 }
 
-export function removeTokensFromVaultHash(tokenAddress: Address, amount: BigNumber, chainId: number): string {
-    const abiCoder = new ethers.utils.AbiCoder();
-    const dataHash = ethers.utils.solidityKeccak256(["address", "uint256", "uint256"], [tokenAddress, amount, chainId]);
+export function removeTokensFromVaultHash(
+    tokenAddress: Address,
+    amount: BigNumber,
+    chainId: number,
+    walletAddress: Address,
+    walletNonce: number
+): string {
+    const dataHash = ethers.utils.solidityKeccak256(
+        ["address", "uint256", "uint256", "address", "uint256"],
+        [tokenAddress, amount, chainId, walletAddress, walletNonce]
+    );
     return dataHash;
 }
 

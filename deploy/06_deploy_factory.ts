@@ -19,5 +19,5 @@ const deploy: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 };
 
 deploy.tags = ["LaserFactory"];
-deploy.runAtTheEnd = true;
+
 export default deploy;

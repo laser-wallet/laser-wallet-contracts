@@ -31,8 +31,26 @@ interface ILaserWallet {
     error LW__execFromModule__mainCallFailed();
     error LW__execFromModule__refundFailure();
 
+    // simulateTransaction() custom errors.
+    error LW__SIMULATION__invalidNonce();
+    error LW__SIMULATION__walletLocked();
+    error LW__SIMULATION__notOwner();
+    error LW__SIMULATION__refundFailure();
+
     // isValidSignature() Laser custom error.
     error LaserWallet__invalidSignature();
+
+    struct Transaction {
+        address to;
+        uint256 value;
+        bytes callData;
+        uint256 nonce;
+        uint256 maxFeePerGas;
+        uint256 maxPriorityFeePerGas;
+        uint256 gasLimit;
+        address relayer;
+        bytes signatures;
+    }
 
     /**
      * @notice Setup function, sets initial storage of the wallet.

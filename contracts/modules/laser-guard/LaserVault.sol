@@ -3,8 +3,9 @@ pragma solidity 0.8.15;
 
 import "../../common/Utils.sol";
 import "../../interfaces/IERC20.sol";
-import "../../interfaces/ILaserVault.sol";
 import "../../interfaces/ILaserModuleSSR.sol";
+import "../../interfaces/ILaserState.sol";
+import "../../interfaces/ILaserVault.sol";
 
 /**
  * @title  LaserVault
@@ -19,6 +20,7 @@ contract LaserVault is ILaserVault {
     /*//////////////////////////////////////////////////////////////
                           Init module 
     //////////////////////////////////////////////////////////////*/
+
     address public immutable LASER_SMART_SOCIAL_RECOVERY;
 
     /*//////////////////////////////////////////////////////////////
@@ -148,7 +150,11 @@ contract LaserVault is ILaserVault {
     ) external {
         address wallet = msg.sender;
 
-        bytes32 signedHash = keccak256(abi.encodePacked(token, amount, block.chainid));
+        // We subtract 1 from the nonce because the nonce was incremented at the
+        // beginning of the transaction.
+        uint256 walletNonce = ILaserState(wallet).nonce() - 1;
+
+        bytes32 signedHash = keccak256(abi.encodePacked(token, amount, block.chainid, wallet, walletNonce));
 
         address signer = Utils.returnSigner(signedHash, guardianSignature, 0);
 

@@ -47,14 +47,6 @@ describe("Smart Social Recovery", () => {
         initData = await initSSR(addresses.guardians, addresses.recoveryOwners);
         saltNumber = Math.floor(Math.random() * 100000);
 
-        const abiCoder = new ethers.utils.AbiCoder();
-        const dataHash = ethers.utils.keccak256(
-            abiCoder.encode(
-                ["uint256", "uint256", "uint256", "uint256"],
-                [0, 0, 0, (await ethers.provider.getNetwork()).chainId]
-            )
-        );
-        signature = await sign(signers.ownerSigner, dataHash);
         moduleAbi = LaserModule.abi;
         tx = await generateTransaction();
         tx.to = laserModule;
