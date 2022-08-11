@@ -83,8 +83,13 @@ describe("Laser Vault", () => {
             // Should be added.
             expect(await laserVault.getTokensInVault(address, ETH_VAULT)).to.equal(ethToVault);
 
-            const guardianHash = removeTokensFromVaultHash(ETH_VAULT, ethToVault, Number(await wallet.getChainId()));
-
+            const guardianHash = removeTokensFromVaultHash(
+                ETH_VAULT,
+                ethToVault,
+                Number(await wallet.getChainId()),
+                address,
+                Number(await wallet.nonce())
+            );
             const guardianSignature = await sign(signers.guardian1Signer, guardianHash);
             // We remove the eth.
             tx.callData = removeTokensFromVault(ETH_VAULT, ethToVault, guardianSignature);
@@ -280,9 +285,10 @@ describe("Laser Vault", () => {
                 const guardianHash = removeTokensFromVaultHash(
                     erc20.address,
                     erc20ToVault,
-                    Number(await wallet.getChainId())
+                    Number(await wallet.getChainId()),
+                    address,
+                    Number(await wallet.nonce())
                 );
-
                 const guardianSignature = await sign(signers.guardian1Signer, guardianHash);
                 // We remove the erc20.
                 tx.callData = removeTokensFromVault(erc20.address, erc20ToVault, guardianSignature);

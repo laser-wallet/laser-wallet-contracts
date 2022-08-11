@@ -7,14 +7,13 @@ const deploy: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
     const { deployer } = await getNamedAccounts();
 
-    const laserSSRAddress = (await deployments.get("LaserModuleSSR")).address;
-
-    await deploy("LaserVault", {
+    await deploy("LaserHelper", {
         from: deployer,
-        args: [laserSSRAddress],
+        args: [],
         log: true,
     });
 };
 
-deploy.tags = ["LaserVault"];
+deploy.tags = ["LaserHelper"];
+
 export default deploy;

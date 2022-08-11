@@ -1,25 +1,8 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 pragma solidity 0.8.15;
 
-interface ILaser {
-    function owner() external view returns (address);
-
-    function singleton() external view returns (address);
-
-    function timeLock() external view returns (uint256);
-
-    function isLocked() external view returns (bool);
-
-    function nonce() external view returns (uint256);
-}
-
-interface ILaserModuleSSR {
-    function getRecoveryOwners(address wallet) external view returns (address[] memory);
-
-    function getGuardians(address wallet) external view returns (address[] memory);
-
-    function getWalletTimeLock(address wallet) external view returns (uint256);
-}
+import "../interfaces/ILaserModuleSSR.sol";
+import "../interfaces/ILaserState.sol";
 
 ///@title LaserHelper - Helper contract that outputs multiple results in a single call.
 contract LaserHelper {
@@ -38,15 +21,15 @@ contract LaserHelper {
             uint256 timeLock
         )
     {
-        ILaser laser = ILaser(wallet);
-        ILaserModuleSSR laserModule = ILaserModuleSSR(SSRModule);
+        ILaserState laser = ILaserState(wallet);
+        ILaserModuleSSR ssr = ILaserModuleSSR(SSRModule);
         owner = laser.owner();
         singleton = laser.singleton();
         isLocked = laser.isLocked();
-        guardians = laserModule.getGuardians(wallet);
-        recoveryOwners = laserModule.getRecoveryOwners(wallet);
+        guardians = ssr.getGuardians(wallet);
+        recoveryOwners = ssr.getRecoveryOwners(wallet);
         nonce = laser.nonce();
         balance = address(wallet).balance;
-        timeLock = laserModule.getWalletTimeLock(wallet);
+        timeLock = ssr.getWalletTimeLock(wallet);
     }
 }

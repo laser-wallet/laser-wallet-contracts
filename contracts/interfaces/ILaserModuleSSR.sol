@@ -34,14 +34,31 @@ interface ILaserModuleSSR {
     ///@notice The target wallet is the 'msg.sender'.
     function initSSR(address[] calldata _guardians, address[] calldata _recoveryOwners) external;
 
-    ///@dev Locks the target wallet.
-    ///@param wallet The target wallet address.
-    ///@param callData Data payload.
-    ///@param maxFeePerGas Maximum WEI per uinit of gas.
-    ///@param gasLimit Maximum units of gas to spend for this transaction.
-    ///@param relayer Address to refund for the transaction inclusion.
-    ///@notice Can only be called by a recovery owner + guardian.
     function lock(
+        address wallet,
+        bytes calldata callData,
+        uint256 maxFeePerGas,
+        uint256 maxPriorityFeePerGas,
+        uint256 gasLimit,
+        address relayer,
+        bytes memory signatures
+    ) external;
+
+    /**
+     * @dev Unlocks the target wallet.
+     * @notice Can only be called with the signature of the wallet's owner + recovery owner or  owner + guardian.
+     */
+    function unlock(
+        address wallet,
+        bytes calldata callData,
+        uint256 maxFeePerGas,
+        uint256 maxPriorityFeePerGas,
+        uint256 gasLimit,
+        address relayer,
+        bytes memory signatures
+    ) external;
+
+    function recover(
         address wallet,
         bytes calldata callData,
         uint256 maxFeePerGas,
@@ -53,6 +70,12 @@ interface ILaserModuleSSR {
 
     ///@dev Returns the chain id of this.
     function getChainId() external view returns (uint256 chainId);
+
+    function getGuardians(address wallet) external view returns (address[] memory);
+
+    function getRecoveryOwners(address wallet) external view returns (address[] memory);
+
+    function getWalletTimeLock(address wallet) external view returns (uint256);
 
     function isGuardian(address wallet, address guardian) external view returns (bool);
 }

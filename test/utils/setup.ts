@@ -137,8 +137,6 @@ export async function walletSetup(
         });
     }
 
-    await authorizeModule([LaserSSRModuleAddress, laserVaultAddress]);
-
     const signature = ownerSignature ? ownerSignature : await sign(ownerSigner, dataHash);
 
     const transaction = await factory.deployProxyAndRefund(

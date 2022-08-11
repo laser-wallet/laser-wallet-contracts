@@ -8,6 +8,10 @@ import "../interfaces/ILaserMasterGuard.sol";
 import "../interfaces/ILaserState.sol";
 import "../interfaces/ILaserRegistry.sol";
 
+/////
+///////// @todo Add 'removeModule', should be the signature of the owner + guardian
+////////        or owner + recovery owner.
+/////
 contract LaserState is ILaserState, Access {
     address internal constant POINTER = address(0x1); // Pointer for the link list.
 

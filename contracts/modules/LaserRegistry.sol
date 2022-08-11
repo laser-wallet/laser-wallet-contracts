@@ -18,8 +18,26 @@ contract LaserRegistry {
         _;
     }
 
-    constructor(address _laser) {
+    constructor(
+        address _laser,
+        address firstSingleton,
+        address[] memory modules
+    ) {
         laser = _laser;
+
+        approvedSingletons[firstSingleton] = approvedSingletons[POINTER];
+        approvedSingletons[firstSingleton] = firstSingleton;
+
+        address currentModule = POINTER;
+        uint256 modulesLength = modules.length;
+        for (uint256 i = 0; i < modulesLength; i++) {
+            address module = modules[i];
+
+            approvedModules[currentModule] = module;
+            currentModule = module;
+        }
+        approvedModules[currentModule] = POINTER;
+        moduleCount = modulesLength;
     }
 
     function approveSingleton(address singleton) external onlyLaser {
@@ -28,7 +46,7 @@ contract LaserRegistry {
     }
 
     function approveModule(address module) external onlyLaser {
-        approvedModules[module] = POINTER;
+        approvedModules[module] = approvedModules[POINTER];
         approvedModules[POINTER] = module;
 
         unchecked {
