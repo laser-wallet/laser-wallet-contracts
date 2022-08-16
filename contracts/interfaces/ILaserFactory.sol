@@ -1,10 +1,8 @@
 // SPDX-License-Identifier: LGPL-3.0-only
-pragma solidity 0.8.15;
+pragma solidity 0.8.16;
 
 import "../proxies/LaserProxy.sol";
 
-///@title ILaserFactory.
-///@notice Has all the external functions, events and errors for ProxyFactory.sol.
 interface ILaserFactory {
     event ProxyCreation(address proxy);
 

@@ -9,7 +9,7 @@
         "lint:sol": "echo liniting solidity files ... && prettier --write 'contracts/**/*.sol'",
         "lint:all": "echo linting everything ... && npm run lint:ts && npm run lint:sol",
         "generate-types": "hardhat typechain",
-        "test": "echo running tests for Laser core contracts ... && hardhat test",
+        "test": "echo running tests for Laser core contracts ... && npm run generate-types && hardhat test",
         "compile": "echo compiling Laser contracts ... && hardhat compile",
         "deploy-and-verify": "echo deploying the contracts and verifying them on Etherscan ... && hardhat deploy-and-verify --network",
         "coverage": "hardhat coverage"
@@ -34,7 +34,7 @@
         "dotenv": "^16.0.1",
         "ethereum-waffle": "^3.4.4",
         "ethers": "^5.5.4",
-        "hardhat": "^2.10.1",
+        "hardhat": "^2.10.2",
         "hardhat-deploy": "^0.11.4",
         "hardhat-gas-reporter": "^1.0.8",
         "hardhat-storage-layout": "^0.1.6",
