@@ -21,7 +21,7 @@ if (DEPLOYER_PRIVATE_KEY === undefined) {
 
 const config: HardhatUserConfig = {
     solidity: {
-        version: "0.8.15",
+        version: "0.8.16",
         settings: {
             optimizer: {
                 enabled: true,

@@ -1,8 +1,11 @@
 // SPDX-License-Identifier: LGPL-3.0-only
-pragma solidity 0.8.15;
+pragma solidity 0.8.16;
 
-///@title IHandler
-///@notice Has all the external functions for Handler.sol.
+/**
+ * @title IHandler
+ * 
+ * @notice Has all the external functions for Handler.sol.
+ */
 interface IHandler {
     function onERC721Received(
         address,
