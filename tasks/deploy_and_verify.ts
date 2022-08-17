@@ -1,5 +1,3 @@
-import "hardhat-deploy";
-import "@nomiclabs/hardhat-ethers";
 import { task } from "hardhat/config";
 
 task("deploy-and-verify", "Deploys all Laser contracts and verifies them on Etherscan.").setAction(async (_, hre) => {
