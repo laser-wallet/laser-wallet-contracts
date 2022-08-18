@@ -87,7 +87,6 @@ contract LaserWallet is ILaserWallet, LaserState, Handler {
             smartSocialRecoveryInitData
         );
 
-        // This is to ensure that the owner authorized the amount of gas.
         {
             bytes32 signedHash = keccak256(
                 abi.encodePacked(maxFeePerGas, maxPriorityFeePerGas, gasLimit, block.chainid, address(this))

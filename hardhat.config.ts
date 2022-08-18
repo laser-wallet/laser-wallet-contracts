@@ -1,12 +1,15 @@
 import "@nomiclabs/hardhat-waffle";
 import "@nomiclabs/hardhat-etherscan";
 import "@nomiclabs/hardhat-ethers";
-import { HardhatUserConfig } from "hardhat/types";
 import "@typechain/hardhat";
+
+import { HardhatUserConfig } from "hardhat/types";
+
 import "hardhat-gas-reporter";
 import "hardhat-storage-layout";
 import "hardhat-deploy";
 import "solidity-coverage";
+
 import "./tasks/deploy_and_verify";
 
 import dotenv from "dotenv";

@@ -1,70 +1,108 @@
 import { expect } from "chai";
 import { deployments, ethers } from "hardhat";
-import { LaserHelper } from "../../typechain-types/helper";
-import { addrZero } from "../constants/constants";
-import { Address } from "../types";
-import { addressesForTest, encodeFunctionData, fundWallet, getHash, sign, signersForTest, walletSetup } from "../utils";
+import { encodeFunctionData, walletSetup } from "../utils";
+import { LaserHelper__factory, LaserHelper, LaserModuleSSR__factory } from "../../typechain-types";
 
 const { abi } = require("../../artifacts/contracts/LaserWallet.sol/LaserWallet.json");
 
-const random = ethers.Wallet.createRandom().address;
 describe("LaserHelper", () => {
-    let SSRModule: Address;
+    let helper: LaserHelper;
 
     beforeEach(async () => {
         await deployments.fixture();
 
-        SSRModule = (await deployments.get("LaserModuleSSR")).address;
+        const _helper = await deployments.get("LaserHelper");
+        helper = LaserHelper__factory.connect(_helper.address, ethers.provider);
     });
 
-    describe("getWalletState()", () => {
-        it("should return correct outputs", async () => {
+    describe("Single calls", () => {
+        it("shoud return correct singleton", async () => {
             const { address, wallet } = await walletSetup();
-            const Helper = await deployments.get("LaserHelper");
-            const helper = await ethers.getContractAt(Helper.abi, Helper.address);
 
-            const { owner, singleton, isLocked, guardians, recoveryOwners, nonce, balance } =
-                await helper.getWalletState(address, SSRModule);
+            const payload = encodeFunctionData(abi, "singleton", []);
+
+            const payloads = [payload];
+            const to = [address];
+
+            const result = await helper.getRequests(payloads, to);
+
+            expect(`0x${result[0].slice(26).toLowerCase()}`).to.equal((await wallet.singleton()).toLowerCase());
+        });
+
+        it("should return correct owner", async () => {
+            const { address, wallet } = await walletSetup();
+
+            const payload = encodeFunctionData(abi, "owner", []);
+
+            const payloads = [payload];
+            const to = [address];
+
+            const result = await helper.getRequests(payloads, to);
+
+            expect(`0x${result[0].slice(26).toLowerCase()}`).to.equal((await wallet.owner()).toLowerCase());
+        });
+
+        it("should return correct locked state", async () => {
+            const { address, wallet } = await walletSetup();
+
+            const payload = encodeFunctionData(abi, "isLocked", []);
+
+            const payloads = [payload];
+            const to = [address];
+
+            const result = await helper.getRequests(payloads, to);
+
+            const isLocked = result[0].slice(result[0].length - 1) === "0" ? false : true;
+
+            expect(isLocked).to.equal(await wallet.isLocked());
+        });
+
+        it("should return correct guardians", async () => {
+            const { address, wallet } = await walletSetup();
+
+            const _ssr = await deployments.get("LaserModuleSSR");
+            const ssr = LaserModuleSSR__factory.connect(_ssr.address, ethers.provider);
+            const payload = encodeFunctionData(LaserModuleSSR__factory.abi, "getGuardians", [address]);
+
+            const payloads = [payload];
+            const to = [ssr.address];
+
+            const result = await helper.getRequests(payloads, to);
+
+            const guardian1 = `0x${result[0].slice(154, 194)}`;
+            const guardian2 = `0x${result[0].slice(218)}`;
+            const guardians = [guardian1, guardian2];
+
+            const walletGuardians = await ssr.getGuardians(address);
+
+            for (let i = 0; i < walletGuardians.length; i++) {
+                const guardian = walletGuardians[i].toLowerCase();
+                expect(guardian).to.equal(guardians[i].toLowerCase());
+            }
         });
     });
 
-    describe("simulateTransaction()", () => {
-        it("should simulate sending eth", async () => {
-            // const { address, wallet } = await walletSetup();
-            // const { ownerSigner } = await signersForTest();
-            // await fundWallet(ownerSigner, address);
-            // const to = ethers.Wallet.createRandom().address;
-            // const value = ethers.utils.parseEther("100");
-            // const callData = "0x";
-            // const nonce = await wallet.nonce();
-            // const maxFeePerGas = 0;
-            // const maxPriorityFeePerGas = 0;
-            // const gasLimit = 200000;
-            // const relayer = await ownerSigner.getAddress();
-            // const hash = await wallet.operationHash(
-            //     to,
-            //     value,
-            //     callData,
-            //     nonce,
-            //     maxFeePerGas,
-            //     maxPriorityFeePerGas,
-            //     gasLimit
-            // );
-            // const signature = await sign(ownerSigner, hash);
-            // const simWallet = new ethers.Contract(address, abi, ethers.provider);
-            // const result = await simWallet.callStatic.simulateTransaction(
-            //     to,
-            //     value,
-            //     callData,
-            //     nonce,
-            //     maxFeePerGas,
-            //     maxPriorityFeePerGas,
-            //     gasLimit,
-            //     relayer,
-            //     signature,
-            //     { gasLimit: gasLimit, from: addrZero }
-            // );
-            // console.log("result -->", result.toString());
+    describe("Batch calls", () => {
+        it("should correctly execute batch calls", async () => {
+            const { address, wallet } = await walletSetup();
+
+            const payload1 = encodeFunctionData(abi, "singleton", []);
+            const payload2 = encodeFunctionData(abi, "owner", []);
+            const payload3 = encodeFunctionData(abi, "isLocked", []);
+
+            const payloads = [payload1, payload2, payload3];
+            const to = [address, address, address];
+
+            const result = await helper.getRequests(payloads, to);
+
+            const singleton = `0x${result[0].slice(26).toLowerCase()}`;
+            expect((await wallet.singleton()).toLowerCase()).to.equal(singleton.toLowerCase());
+
+            const owner = `0x${result[1].slice(26).toLowerCase()}`;
+            expect((await wallet.owner()).toLowerCase()).to.equal(owner);
+
+            const isLocked = result[2].slice(result[0].length - 1) === "0" ? false : true;
+            expect(isLocked).to.equal(await wallet.isLocked());
         });
     });
 });
