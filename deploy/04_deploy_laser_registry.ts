@@ -9,10 +9,11 @@ const deploy: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
 
     const laserSSRAddress = (await deployments.get("LaserModuleSSR")).address;
     const laserWalletAddress = (await deployments.get("LaserWallet")).address;
+    const laserVaultAddress = (await deployments.get("LaserVault")).address;
 
     await deploy("LaserRegistry", {
         from: deployer,
-        args: [deployer, laserWalletAddress, [laserSSRAddress]],
+        args: [deployer, laserWalletAddress, [laserSSRAddress, laserVaultAddress]],
         log: true,
     });
 };

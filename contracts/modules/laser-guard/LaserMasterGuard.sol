@@ -53,10 +53,9 @@ contract LaserMasterGuard is ILaserMasterGuard {
     function addGuardModule(address module) external {
         address wallet = msg.sender;
 
-        // @todo undo this (make the deployments - approvals automatic on deploy).
-        // if (!ILaserRegistry(LASER_REGISTRY).isModule(module)) {
-        //     revert LaserMasterGuard__addGuardModule__unauthorizedModule();
-        // }
+        if (!ILaserRegistry(LASER_REGISTRY).isModule(module)) {
+            revert LaserMasterGuard__addGuardModule__unauthorizedModule();
+        }
 
         if (guardModulesCount[wallet] == 0) {
             initGuardModule(wallet, module);

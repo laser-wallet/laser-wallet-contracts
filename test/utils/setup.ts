@@ -68,20 +68,6 @@ export async function initSSR(guardians: Address[], recoveryOwners: Address[]): 
     return encodeFunctionData(abi, "initSSR", [guardians, recoveryOwners]);
 }
 
-async function authorizeModule(modules: Address[]): Promise<void> {
-    const abi = ["function approveModule(address module) external"];
-
-    const [deployer] = await ethers.getSigners();
-
-    const _laserRegistry = await deployments.get("LaserRegistry");
-
-    const laserRegistry = await ethers.getContractAt(_laserRegistry.abi, _laserRegistry.address);
-
-    modules.map(async (module) => {
-        await laserRegistry.approveModule(module);
-    });
-}
-
 export async function walletSetup(
     _owner?: Address,
     _recoveryOwners?: Address[],

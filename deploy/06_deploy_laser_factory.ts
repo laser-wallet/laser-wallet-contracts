@@ -8,8 +8,8 @@ const deploy: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const { deployer } = await getNamedAccounts();
 
     const laserWalletAddress = (await deployments.get("LaserWallet")).address;
-    const laserMasterGuard = (await deployments.get("LaserMasterGuard")).address;
     const laserRegistryAddress = (await deployments.get("LaserRegistry")).address;
+    const laserMasterGuard = (await deployments.get("LaserMasterGuard")).address;
 
     await deploy("LaserFactory", {
         from: deployer,

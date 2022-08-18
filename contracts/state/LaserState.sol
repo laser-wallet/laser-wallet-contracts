@@ -71,8 +71,6 @@ contract LaserState is ILaserState, Access {
         // If owner is not address 0, the wallet was already initialized.
         if (owner != address(0)) revert LaserState__initOwner__walletInitialized();
 
-        if (_owner.code.length != 0 || _owner == address(0)) revert LaserState__initOwner__invalidAddress();
-
         // We set the owner.
         owner = _owner;
 

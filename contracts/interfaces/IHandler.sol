@@ -3,7 +3,7 @@ pragma solidity 0.8.16;
 
 /**
  * @title IHandler
- * 
+ *
  * @notice Has all the external functions for Handler.sol.
  */
 interface IHandler {
