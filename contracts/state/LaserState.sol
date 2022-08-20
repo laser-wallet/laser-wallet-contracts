@@ -8,12 +8,8 @@ import "../interfaces/ILaserMasterGuard.sol";
 import "../interfaces/ILaserState.sol";
 import "../interfaces/ILaserRegistry.sol";
 
-/////
-///////// @todo Add 'removeModule', should be the signature of the owner + guardian
-////////        or owner + recovery owner.
-/////
 contract LaserState is ILaserState, Access {
-    address internal constant POINTER = address(0x1); // Pointer for the link list.
+    address internal constant POINTER = address(0x1); // POINTER for the link list.
 
     /*//////////////////////////////////////////////////////////////
                          Laser Wallet storage
@@ -23,15 +19,17 @@ contract LaserState is ILaserState, Access {
 
     address public owner; // Owner of the wallet.
 
-    address public laserMasterGuard; // Parent module for guard sub modules.
-
-    address public laserRegistry; // Registry that keeps track of authorized modules (Laser and Guards).
-
     bool public isLocked; // If the wallet is locked, only certain operations can unlock it.
 
     uint256 public nonce; // Anti-replay number for signed transactions.
 
-    mapping(address => address) internal laserModules; // Mapping of authorized Laser modules.
+    uint256 internal guardianCount;
+
+    uint256 internal recoveryOwnerCount;
+
+    mapping(address => address) public guardians;
+
+    mapping(address => address) public recoveryOwners;
 
     /**
      * @notice Restricted, can only be called by the wallet 'address(this)' or module.
@@ -40,50 +38,187 @@ contract LaserState is ILaserState, Access {
      */
     function changeOwner(address newOwner) external access {
         owner = newOwner;
+        emit OwnerChanged(newOwner);
     }
 
-    /**
-     * @notice Restricted, can only be called by the wallet 'address(this)' or module.
-     *
-     * @param newModule Address of a new authorized Laser module.
-     */
-    function addLaserModule(address newModule) external access {
-        require(ILaserRegistry(laserRegistry).isModule(newModule), "Invalid new module");
-        laserModules[newModule] = laserModules[POINTER];
-        laserModules[POINTER] = newModule;
-    }
-
-    function upgradeSingleton(address _singleton) external access {
+    function changeSingleton(address newSingleton) external access {
         //@todo Change require for custom errrors.
-        require(_singleton != address(this), "Invalid singleton");
-        require(ILaserRegistry(laserRegistry).isSingleton(_singleton), "Invalid master copy");
-        singleton = _singleton;
+        require(newSingleton != address(this), "Invalid singleton");
+        singleton = newSingleton;
+        emit SingletonChanged(newSingleton);
     }
+
+    function addGuardian(address newGuardian) external access {
+        if (
+            newGuardian == address(0) ||
+            newGuardian == owner ||
+            guardians[newGuardian] != address(0) ||
+            newGuardian == POINTER
+        ) revert LS__addGuardian__invalidAddress();
+
+        if (newGuardian.code.length > 0) {
+            if (!IERC165(newGuardian).supportsInterface(0x1626ba7e)) {
+                revert LS__addGuardian__invalidAddress();
+            }
+        }
+
+        guardians[newGuardian] = guardians[POINTER];
+        guardians[POINTER] = newGuardian;
+
+        unchecked {
+            guardianCount++;
+        }
+
+        emit NewGuardian(newGuardian);
+    }
+
+    function removeGuardian(address prevGuardian, address guardianToRemove) external access {
+        if (guardianToRemove == POINTER) {
+            revert LS__removeGuardian__invalidAddress();
+        }
+
+        if (guardians[prevGuardian] != guardianToRemove) {
+            revert LS__removeGuardian__incorrectPreviousGuardian();
+        }
+
+        // There needs to be at least 1 guardian.
+        if (guardianCount - 1 < 1) revert LS__removeGuardian__underflow();
+
+        guardians[prevGuardian] = guardians[guardianToRemove];
+        guardians[guardianToRemove] = address(0);
+
+        unchecked {
+            guardianCount--;
+        }
+
+        emit GuardianRemoved(guardianToRemove);
+    }
+
+    function addRecoveryOwner(address newRecoveryOwner) external access {
+        if (
+            newRecoveryOwner == address(0) ||
+            newRecoveryOwner == owner ||
+            recoveryOwners[newRecoveryOwner] != address(0) ||
+            newRecoveryOwner == POINTER
+        ) revert LS__addGuardian__invalidAddress();
+
+        if (newRecoveryOwner.code.length > 0) {
+            if (!IERC165(newRecoveryOwner).supportsInterface(0x1626ba7e)) {
+                revert LS__addGuardian__invalidAddress();
+            }
+        }
+
+        recoveryOwners[newRecoveryOwner] = guardians[POINTER];
+        recoveryOwners[POINTER] = newRecoveryOwner;
+
+        unchecked {
+            guardianCount++;
+        }
+
+        emit NewRecoveryOwner(newRecoveryOwner);
+    }
+
+    function removeRecoveryOwner(address prevRecoveryOwner, address recoveryOwnerToRemove) external access {
+        if (recoveryOwnerToRemove == POINTER) {
+            revert LS__removeGuardian__invalidAddress();
+        }
+
+        if (guardians[prevRecoveryOwner] != recoveryOwnerToRemove) {
+            revert LS__removeGuardian__incorrectPreviousGuardian();
+        }
+
+        // There needs to be at least 1 recovery owner.
+        if (guardianCount - 1 < 1) revert LS__removeGuardian__underflow();
+
+        recoveryOwners[prevRecoveryOwner] = recoveryOwners[recoveryOwnerToRemove];
+        recoveryOwners[recoveryOwnerToRemove] = address(0);
+
+        unchecked {
+            recoveryOwnerCount--;
+        }
+
+        emit RecoveryOwnerRemoved(recoveryOwnerToRemove);
+    }
+
+    function getGuardians() external view returns (address[] memory) {
+        address[] memory guardiansArray = new address[](guardianCount);
+        address currentGuardian = guardians[POINTER];
+
+        uint256 index = 0;
+        while (currentGuardian != POINTER) {
+            guardiansArray[index] = currentGuardian;
+            currentGuardian = guardians[currentGuardian];
+            index++;
+        }
+        return guardiansArray;
+    }
+
+    function getRecoveryOwners() external view returns (address[] memory) {
+        address[] memory recoveryOwnersArray = new address[](guardianCount);
+        address currentGuardian = guardians[POINTER];
+
+        uint256 index = 0;
+        while (currentGuardian != POINTER) {
+            recoveryOwnersArray[index] = currentGuardian;
+            currentGuardian = guardians[currentGuardian];
+            index++;
+        }
+        return recoveryOwnersArray;
+    }
+
+    function initGuardians(address[] calldata _guardians) internal {
+        uint256 guardiansLength = _guardians.length;
+        // There needs to be at least 1 guardian.
+        if (guardiansLength < 1) revert LS__initGuardians__underflow();
+
+        address currentGuardian = POINTER;
+
+        for (uint256 i = 0; i < guardiansLength; ) {
+            address guardian = _guardians[i];
+            if (
+                guardian == owner ||
+                guardian == address(0) ||
+                guardian == POINTER ||
+                guardian == currentGuardian ||
+                guardians[guardian] != address(0)
+            ) revert LS__initGuardians__invalidAddress();
+
+            if (guardian.code.length > 0) {
+                // If the guardian is a smart contract wallet, it needs to support EIP1271.
+                if (!IERC165(guardian).supportsInterface(0x1626ba7e)) {
+                    revert LS__initGuardians__invalidAddress();
+                }
+            }
+
+            unchecked {
+                // Won't overflow...
+                ++i;
+            }
+            guardians[currentGuardian] = guardian;
+            currentGuardian = guardian;
+        }
+
+        guardians[currentGuardian] = POINTER;
+        guardianCount = guardiansLength;
+        guardianCount = guardiansLength;
+    }
+
+    function initRecoveryOwners(address[] calldata _recoveryOwners) internal {}
 
     function activateWallet(
         address _owner,
-        address smartSocialRecoveryModule,
-        address _laserMasterGuard,
-        address laserVault,
-        address _laserRegistry,
-        bytes calldata smartSocialRecoveryInitData
+        address[] calldata _guardians,
+        address[] calldata _recoveryOwners
     ) internal {
-        // If owner is not address 0, the wallet was already initialized.
-        if (owner != address(0)) revert LaserState__initOwner__walletInitialized();
+        if (owner != address(0)) revert LS__initOwner__walletInitialized();
 
-        // We set the owner.
+        // We set the owner. There is no need for further verification.
         owner = _owner;
 
-        // check that the module is accepted.
-        laserMasterGuard = _laserMasterGuard;
-        laserRegistry = _laserRegistry;
+        // We init the guardians.
+        initGuardians(_guardians);
 
-        require(ILaserRegistry(laserRegistry).isModule(smartSocialRecoveryModule), "Module not authorized");
-        bool success = Utils.call(smartSocialRecoveryModule, 0, smartSocialRecoveryInitData, gasleft());
-        require(success);
-        laserModules[smartSocialRecoveryModule] = POINTER;
-
-        // We add the guard module.
-        ILaserMasterGuard(_laserMasterGuard).addGuardModule(laserVault);
+        // We init the recovery owners.
+        initRecoveryOwners(_recoveryOwners);
     }
 }

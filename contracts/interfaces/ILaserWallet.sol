@@ -38,17 +38,13 @@ interface ILaserWallet {
     error LW__SIMULATION__refundFailure();
 
     // isValidSignature() Laser custom error.
-    error LaserWallet__invalidSignature();
+    error LaserWallet__notSupported();
 
     struct Transaction {
         address to;
         uint256 value;
         bytes callData;
         uint256 nonce;
-        uint256 maxFeePerGas;
-        uint256 maxPriorityFeePerGas;
-        uint256 gasLimit;
-        address relayer;
         bytes signatures;
     }
 
@@ -56,30 +52,14 @@ interface ILaserWallet {
      * @notice Setup function, sets initial storage of the wallet.
      *         It can't be called after initialization.
      *
-     * @param _owner                        The owner of the wallet.
-     * @param maxFeePerGas                  Maximum WEI the owner is willing to pay per unit of gas.
-     * @param maxPriorityFeePerGas          Miner's tip.
-     * @param gasLimit                      Maximum amount of gas the owner is willing to use for this transaction.
-     * @param relayer                       Address to refund for the inclusion of this transaction.
-     * @param smartSocialRecoveryModule     Address of the initial module to setup -> Smart Social Recovery.
-     * @param _laserMasterGuard             Address of the parent guard module 'LaserMasterGuard'.
-     * @param laserVault                    Address of the guard sub-module 'LaserVault'.
-     * @param _laserRegistry                Address of the Laser registry: module that keeps track of authorized modules.
-     * @param smartSocialRecoveryInitData   Initialization data for the provided module.
-     * @param ownerSignature                Signature of the owner that validates approval for initialization.
+     * @param _owner           The owner of the wallet.
+     * @param ownerSignature   Signature of the owner that validates approval for initialization.
      */
     function init(
         address _owner,
-        uint256 maxFeePerGas,
-        uint256 maxPriorityFeePerGas,
-        uint256 gasLimit,
-        address relayer,
-        address smartSocialRecoveryModule,
-        address _laserMasterGuard,
-        address laserVault,
-        address _laserRegistry,
-        bytes calldata smartSocialRecoveryInitData,
-        bytes memory ownerSignature
+        address[] calldata _guardians,
+        address[] calldata _recoveryOwners,
+        bytes calldata ownerSignature
     ) external;
 
     /**
@@ -92,89 +72,15 @@ interface ILaserWallet {
      * @param value                 Amount in WEI to transfer.
      * @param callData              Data payload for the transaction.
      * @param _nonce                Anti-replay number.
-     * @param maxFeePerGas          Maximum WEI the owner is willing to pay per unit of gas.
-     * @param maxPriorityFeePerGas  Miner's tip.
-     * @param gasLimit              Maximum amount of gas the owner is willing to use for this transaction.
-     * @param relayer               Address to refund for the inclusion of this transaction.
-     * @param signatures            The signature(s) of the hash for this transaction.
+     * @param signatures            The signature(s) of the hash of this transaction.
      */
     function exec(
         address to,
         uint256 value,
         bytes calldata callData,
         uint256 _nonce,
-        uint256 maxFeePerGas,
-        uint256 maxPriorityFeePerGas,
-        uint256 gasLimit,
-        address relayer,
         bytes calldata signatures
     ) external returns (bool success);
-
-    /**
-     * @notice Executes a transaction from an authorized module.
-     *         If 'gasLimit' does not match the actual gas limit of the transaction, the relayer can incur losses.
-     *         It is the relayer's responsability to make sure that they are the same,
-     *         the user does not get affected if a mistake is made.
-     *
-     * @param to                    Destination address.
-     * @param value                 Amount in WEI to transfer.
-     * @param callData              Data payload for the transaction.
-     * @param maxFeePerGas          Maximum WEI the owner is willing to pay per unit of gas.
-     * @param maxPriorityFeePerGas  Miner's tip.
-     * @param gasLimit              Maximum amount of gas the owner is willing to use for this transaction.
-     * @param relayer               Address to refund for the inclusion of this transaction.
-     */
-    function execFromModule(
-        address to,
-        uint256 value,
-        bytes calldata callData,
-        uint256 maxFeePerGas,
-        uint256 maxPriorityFeePerGas,
-        uint256 gasLimit,
-        address relayer
-    ) external;
-
-    /**
-     * @notice Simulates a transaction.
-     *         It needs to be called off-chain from address(0).
-     *
-     * @param to                    Destination address.
-     * @param value                 Amount in WEI to transfer.
-     * @param callData              Data payload for the transaction.
-     * @param _nonce                Anti-replay number.
-     * @param maxFeePerGas          Maximum WEI the owner is willing to pay per unit of gas.
-     * @param maxPriorityFeePerGas  Miner's tip.
-     * @param gasLimit              Maximum amount of gas the owner is willing to use for this transaction.
-     * @param relayer               Address to refund for the inclusion of this transaction.
-     * @param signatures            The signature(s) of the hash of this transaction.
-     *
-     * @return gasUsed The gas used for this transaction.
-     */
-    function simulateTransaction(
-        address to,
-        uint256 value,
-        bytes calldata callData,
-        uint256 _nonce,
-        uint256 maxFeePerGas,
-        uint256 maxPriorityFeePerGas,
-        uint256 gasLimit,
-        address relayer,
-        bytes calldata signatures
-    ) external returns (uint256 gasUsed);
-
-    /**
-     * @notice Locks the wallet. Once locked, only the SSR module can unlock it or recover it.
-     *
-     * @dev Can only be called by address(this).
-     */
-    function lock() external;
-
-    /**
-     * @notice Unlocks the wallet. Can only be unlocked or recovered from the SSR module.
-     *
-     * @dev Can only be called by address(this).
-     */
-    function unlock() external;
 
     /**
      * @notice Should return whether the signature provided is valid for the provided hash.
@@ -197,10 +103,7 @@ interface ILaserWallet {
         address to,
         uint256 value,
         bytes calldata callData,
-        uint256 _nonce,
-        uint256 maxFeePerGas,
-        uint256 maxPriorityFeePerGas,
-        uint256 gasLimit
+        uint256 _nonce
     ) external view returns (bytes32);
 
     /**
