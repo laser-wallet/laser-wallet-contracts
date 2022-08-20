@@ -62,12 +62,6 @@ export async function signersForTest(): Promise<SignersForTest> {
     };
 }
 
-export async function initSSR(guardians: Address[], recoveryOwners: Address[]): Promise<string> {
-    const abi = (await deployments.get("LaserModuleSSR")).abi;
-
-    return encodeFunctionData(abi, "initSSR", [guardians, recoveryOwners]);
-}
-
 export async function walletSetup(
     _owner?: Address,
     _recoveryOwners?: Address[],

@@ -57,6 +57,7 @@ contract LaserWallet is ILaserWallet, LaserState {
     ) external {
         // activateWallet verifies that the current owner is address 0, reverts otherwise.
         // This is more than enough to avoid being called after initialization.
+        activateWallet(owner, _guardians, _recoveryOwners);
 
         bytes32 signedHash = keccak256(abi.encodePacked(_guardians, _recoveryOwners, block.chainid, address(this)));
 
