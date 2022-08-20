@@ -10,7 +10,7 @@ import "../interfaces/ILaserWallet.sol";
  *
  * @notice Factory that creates new Laser proxies, and has helper methods.
  */
-contract LaserProxyFactory {
+contract LaserFactory {
     address public immutable singleton;
 
     /**
