@@ -169,7 +169,7 @@ contract LaserWallet is ILaserWallet, LaserState, Handler {
         address signer1 = Utils.returnSigner(hash, signature, 0);
         address signer2 = Utils.returnSigner(hash, signature, 1);
 
-        if (signer1 != owner && guardians[signer2] == address(0)) {
+        if (signer1 != owner || guardians[signer2] == address(0)) {
             revert LaserWallet__invalidSignature();
         }
 

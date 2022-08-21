@@ -83,30 +83,6 @@ describe("Proxy Factory", () => {
             await expect(factory.createProxy(initializer, saltNumber)).to.emit(factory, "LaserCreated");
         });
 
-        it("should precompute the proxy address 'precomputeAddress()'", async () => {
-            const { factory } = await walletSetup();
-            const { owner, recoveryOwners, guardians } = await addressesForTest();
-
-            const saltNumber = Math.floor(Math.random() * 100000);
-
-            const { ownerSigner } = signers;
-
-            const dataHash = ethers.utils.solidityKeccak256(
-                ["address[]", "address[]", "uint256"],
-                [guardians, recoveryOwners, chainId]
-            );
-            const signature = await sign(ownerSigner, dataHash);
-            const initializer = getInitializer(owner, guardians, recoveryOwners, signature);
-
-            const tx = await factory.createProxy(initializer, saltNumber);
-            const receipt = await tx.wait();
-            const address = receipt.events[0].args.laser;
-
-            const preComputedAddress = await factory.preComputeAddress(initializer, saltNumber);
-
-            expect(address).to.equal(preComputedAddress);
-        });
-
         it("should return a different address if we change the salt", async () => {
             const { factory } = await walletSetup();
             const { owner, recoveryOwners, guardians } = await addressesForTest();
