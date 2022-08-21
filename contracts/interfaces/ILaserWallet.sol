@@ -38,7 +38,7 @@ interface ILaserWallet {
     error LW__SIMULATION__refundFailure();
 
     // isValidSignature() Laser custom error.
-    error LaserWallet__notSupported();
+    error LaserWallet__invalidSignature();
 
     struct Transaction {
         address to;

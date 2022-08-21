@@ -8,6 +8,8 @@ import "../interfaces/ILaserMasterGuard.sol";
 import "../interfaces/ILaserState.sol";
 import "../interfaces/ILaserRegistry.sol";
 
+import "hardhat/console.sol";
+
 contract LaserState is ILaserState, Access {
     address internal constant POINTER = address(0x1); // POINTER for the link list.
 
@@ -154,13 +156,13 @@ contract LaserState is ILaserState, Access {
     }
 
     function getRecoveryOwners() external view returns (address[] memory) {
-        address[] memory recoveryOwnersArray = new address[](guardianCount);
-        address currentGuardian = guardians[POINTER];
+        address[] memory recoveryOwnersArray = new address[](recoveryOwnerCount);
+        address currentRecoveryOwner = recoveryOwners[POINTER];
 
         uint256 index = 0;
-        while (currentGuardian != POINTER) {
-            recoveryOwnersArray[index] = currentGuardian;
-            currentGuardian = guardians[currentGuardian];
+        while (currentRecoveryOwner != POINTER) {
+            recoveryOwnersArray[index] = currentRecoveryOwner;
+            currentRecoveryOwner = recoveryOwners[currentRecoveryOwner];
             index++;
         }
         return recoveryOwnersArray;
@@ -200,10 +202,45 @@ contract LaserState is ILaserState, Access {
 
         guardians[currentGuardian] = POINTER;
         guardianCount = guardiansLength;
-        guardianCount = guardiansLength;
     }
 
-    function initRecoveryOwners(address[] calldata _recoveryOwners) internal {}
+    function initRecoveryOwners(address[] calldata _recoveryOwners) internal {
+        uint256 recoveryOwnersLength = _recoveryOwners.length;
+        // @todo custom errors.
+        require(recoveryOwnersLength >= 1);
+        address currentRecoveryOwner = POINTER;
+
+        for (uint256 i = 0; i < recoveryOwnersLength; ) {
+            address recoveryOwner = _recoveryOwners[i];
+            if (
+                recoveryOwner == owner ||
+                recoveryOwner == address(0) ||
+                recoveryOwner == POINTER ||
+                recoveryOwner == currentRecoveryOwner ||
+                recoveryOwners[recoveryOwner] != address(0) ||
+                guardians[recoveryOwner] != address(0)
+                //@todo change this error
+            ) revert LS__initGuardians__invalidAddress();
+
+            if (recoveryOwner.code.length > 0) {
+                // If the recovery owner is a smart contract wallet, it needs to support EIP1271.
+                if (!IERC165(recoveryOwner).supportsInterface(0x1626ba7e)) {
+                    // @todo change this error.
+                    revert LS__initGuardians__invalidAddress();
+                }
+            }
+
+            unchecked {
+                // Won't overflow...
+                ++i;
+            }
+            recoveryOwners[currentRecoveryOwner] = recoveryOwner;
+            currentRecoveryOwner = recoveryOwner;
+        }
+
+        recoveryOwners[currentRecoveryOwner] = POINTER;
+        recoveryOwnerCount = recoveryOwnersLength;
+    }
 
     function activateWallet(
         address _owner,
@@ -211,6 +248,9 @@ contract LaserState is ILaserState, Access {
         address[] calldata _recoveryOwners
     ) internal {
         if (owner != address(0)) revert LS__initOwner__walletInitialized();
+
+        // @todo custom errors.
+        require(_owner.code.length == 0);
 
         // We set the owner. There is no need for further verification.
         owner = _owner;

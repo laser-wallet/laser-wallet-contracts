@@ -5,12 +5,17 @@ import "../interfaces/IERC165.sol";
 import "../interfaces/ILaserFactory.sol";
 import "../interfaces/ILaserWallet.sol";
 
+import "hardhat/console.sol";
+
 /**
  * @title LaserFactory
  *
  * @notice Factory that creates new Laser proxies, and has helper methods.
  */
 contract LaserFactory {
+    // @todo Move this to an interface.
+    event LaserCreated(address laser);
+
     address public immutable singleton;
 
     /**
@@ -19,25 +24,28 @@ contract LaserFactory {
     constructor(address _singleton) {
         // Laser Wallet contract: bytes4(keccak256("I_AM_LASER"))
         //if (!IERC165(_singleton).supportsInterface(0xae029e0b)) revert ProxyFactory__constructor__invalidSingleton();
+        //@todo custom error
+        require(IERC165(_singleton).supportsInterface(0xae029e0b));
         singleton = _singleton;
     }
 
     /**
      * @dev Allows to create new proxy contact and execute a message call to the new proxy within one transaction.
      *
-     * @param initializer  Payload for message call sent to new proxy contract.
+     * @param initializer   Payload for message call sent to new proxy contract.
      * @param saltNonce     Nonce that will be used to generate the salt to calculate the address of the new proxy contract.
      */
-    function createProxyWithNonce(bytes memory initializer, uint256 saltNonce) external returns (LaserProxy proxy) {
-        proxy = deployProxyWithNonce(initializer, saltNonce);
+    function createProxy(bytes memory initializer, uint256 saltNonce) external returns (LaserProxy proxy) {
+        proxy = deployProxy(initializer, saltNonce);
 
-        if (initializer.length > 0)
-            assembly {
-                if eq(call(gas(), proxy, 0, add(initializer, 0x20), mload(initializer), 0, 0), 0) {
-                    revert(0, 0)
-                }
-            }
-        //emit ProxyCreation(address(proxy), singleton);
+        bool success;
+        assembly {
+            // We initialize the wallet in a single call.
+            success := call(gas(), proxy, 0, add(initializer, 0x20), mload(initializer), 0, 0)
+        }
+        //@todo custom error.
+        require(success, "laser creation failed");
+        emit LaserCreated(address(proxy));
     }
 
     /**
@@ -74,11 +82,12 @@ contract LaserFactory {
      * @param initializer Payload for message call sent to new proxy contract.
      * @param saltNonce Nonce that will be used to generate the salt to calculate the address of the new proxy contract.
      */
-    function deployProxyWithNonce(bytes memory initializer, uint256 saltNonce) internal returns (LaserProxy proxy) {
+    function deployProxy(bytes memory initializer, uint256 saltNonce) internal returns (LaserProxy proxy) {
         // If the initializer changes the proxy address should change too. Hashing the initializer data is cheaper than just concatinating it
         bytes32 salt = keccak256(abi.encodePacked(keccak256(initializer), saltNonce));
 
         bytes memory deploymentData = abi.encodePacked(type(LaserProxy).creationCode, uint256(uint160(singleton)));
+
         assembly {
             proxy := create2(0x0, add(0x20, deploymentData), mload(deploymentData), salt)
         }

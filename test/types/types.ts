@@ -20,18 +20,6 @@ export const types = {
             type: "uint256",
             name: "nonce",
         },
-        {
-            type: "uint256",
-            name: "maxFeePerGas",
-        },
-        {
-            type: "uint256",
-            name: "maxPriorityFeePerGas",
-        },
-        {
-            type: "uint256",
-            name: "gasLimit",
-        },
     ],
 };
 
@@ -45,10 +33,6 @@ export type Transaction = {
     value: BigNumberish;
     callData: string;
     nonce: BigNumberish;
-    maxFeePerGas: BigNumberish;
-    maxPriorityFeePerGas: BigNumberish;
-    gasLimit: BigNumberish;
-    relayer: Address;
     signatures: string;
 };
 
@@ -57,7 +41,4 @@ export type LaserTypes = {
     value: BigNumberish;
     callData: string;
     nonce: BigNumberish;
-    maxFeePerGas: BigNumberish;
-    maxPriorityFeePerGas: BigNumberish;
-    gasLimit: BigNumberish;
 };

@@ -1,7 +1,7 @@
 import { expect } from "chai";
 import { deployments, ethers } from "hardhat";
 import { encodeFunctionData, walletSetup } from "../utils";
-import { LaserHelper__factory, LaserHelper, LaserModuleSSR__factory } from "../../typechain-types";
+import { LaserHelper__factory, LaserHelper } from "../../typechain-types";
 
 const { abi } = require("../../artifacts/contracts/LaserWallet.sol/LaserWallet.json");
 
@@ -60,12 +60,10 @@ describe("LaserHelper", () => {
         it("should return correct guardians", async () => {
             const { address, wallet } = await walletSetup();
 
-            const _ssr = await deployments.get("LaserModuleSSR");
-            const ssr = LaserModuleSSR__factory.connect(_ssr.address, ethers.provider);
-            const payload = encodeFunctionData(LaserModuleSSR__factory.abi, "getGuardians", [address]);
+            const payload = encodeFunctionData(abi, "getGuardians", []);
 
             const payloads = [payload];
-            const to = [ssr.address];
+            const to = [address];
 
             const result = await helper.getRequests(payloads, to);
 
@@ -73,7 +71,7 @@ describe("LaserHelper", () => {
             const guardian2 = `0x${result[0].slice(218)}`;
             const guardians = [guardian1, guardian2];
 
-            const walletGuardians = await ssr.getGuardians(address);
+            const walletGuardians = await wallet.getGuardians();
 
             for (let i = 0; i < walletGuardians.length; i++) {
                 const guardian = walletGuardians[i].toLowerCase();

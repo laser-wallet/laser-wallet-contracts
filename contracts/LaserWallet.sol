@@ -1,9 +1,12 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 pragma solidity 0.8.16;
 
+import "./handlers/Handler.sol";
 import "./interfaces/ILaserGuard.sol";
 import "./interfaces/ILaserWallet.sol";
 import "./state/LaserState.sol";
+
+import "hardhat/console.sol";
 
 /**
  * @title  LaserWallet
@@ -13,7 +16,7 @@ import "./state/LaserState.sol";
  * @notice Laser is a modular smart contract wallet made for the Ethereum Virtual Machine.
  *         It has modularity (programmability) and security at its core.
  */
-contract LaserWallet is ILaserWallet, LaserState {
+contract LaserWallet is ILaserWallet, LaserState, Handler {
     /*//////////////////////////////////////////////////////////////
                             Laser metadata
     //////////////////////////////////////////////////////////////*/
@@ -57,13 +60,16 @@ contract LaserWallet is ILaserWallet, LaserState {
     ) external {
         // activateWallet verifies that the current owner is address 0, reverts otherwise.
         // This is more than enough to avoid being called after initialization.
-        activateWallet(owner, _guardians, _recoveryOwners);
+        activateWallet(_owner, _guardians, _recoveryOwners);
 
-        bytes32 signedHash = keccak256(abi.encodePacked(_guardians, _recoveryOwners, block.chainid, address(this)));
+        // This is just to verify that the _owner address is correct.
+        bytes32 signedHash = keccak256(abi.encodePacked(_guardians, _recoveryOwners, block.chainid));
 
         address signer = Utils.returnSigner(signedHash, ownerSignature, 0);
+
         if (signer != _owner) revert LW__init__notOwner();
 
+        // check custom errors.
         //emit Setup(_owner, laserModule);
     }
 
@@ -102,6 +108,9 @@ contract LaserWallet is ILaserWallet, LaserState {
 
         // Signer1 must be the owner.
         if (signer1 != owner) revert LW__exec__notOwner();
+
+        // custom error
+        require(guardians[signer2] != address(0), "exec not guardian");
 
         // We execute the main transaction but we keep 10_000 units of gas for the remaining operations.
         success = Utils.call(to, value, callData, gasleft());
@@ -145,11 +154,27 @@ contract LaserWallet is ILaserWallet, LaserState {
     }
 
     /**
-     * @notice Implementation of EIP1271. Laser does not support it due to the fact
-     *         that it acts as a secure vault, only for storage purposes.
+     * @notice Should return whether the signature provided is valid for the provided hash.
+     *
+     * @param hash      Hash of the data to be signed.
+     * @param signature Signature byte array associated with hash.
+     *
+     * MUST return the bytes4 magic value 0x1626ba7e when function passes.
+     * MUST NOT modify state (using STATICCALL for solc < 0.5, view modifier for solc > 0.5)
+     * MUST allow external calls
+     *
+     * @return Magic value if signature matches the owner's address and the wallet is not locked.
      */
     function isValidSignature(bytes32 hash, bytes memory signature) external view returns (bytes4) {
-        revert LaserWallet__notSupported();
+        address signer1 = Utils.returnSigner(hash, signature, 0);
+        address signer2 = Utils.returnSigner(hash, signature, 1);
+
+        if (signer1 != owner && guardians[signer2] == address(0)) {
+            revert LaserWallet__invalidSignature();
+        }
+
+        // bytes4(keccak256("isValidSignature(bytes32,bytes)")
+        return 0x1626ba7e;
     }
 
     /**

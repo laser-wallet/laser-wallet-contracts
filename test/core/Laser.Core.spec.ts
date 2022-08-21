@@ -1,14 +1,7 @@
 import { expect } from "chai";
 import { deployments, ethers } from "hardhat";
 import { Contract } from "ethers";
-import {
-    walletSetup,
-    addressesForTest,
-    AddressesForTest,
-    signersForTest,
-    getRecoveryOwners,
-    getGuardians,
-} from "../utils";
+import { walletSetup, addressesForTest, AddressesForTest, signersForTest } from "../utils";
 import { Address } from "../types";
 import { addrZero } from "../constants/constants";
 
@@ -26,10 +19,11 @@ describe("Core", () => {
     describe("init()", async () => {
         it("shoculd not allow to call init after initialization", async () => {
             const { wallet } = await walletSetup();
+
             const random = ethers.Wallet.createRandom().address;
-            await expect(
-                wallet.init(random, 0, 0, 0, random, random, random, random, random, "0x", "0x")
-            ).to.be.revertedWith("'LaserState__initOwner__walletInitialized()'");
+            await expect(wallet.init(random, [random], [random], "0x")).to.be.revertedWith(
+                "'LS__initOwner__walletInitialized()'"
+            );
         });
 
         it("should revert if we provide an address with code for the owner", async () => {
@@ -117,25 +111,22 @@ describe("Core", () => {
                 } else if (i > 1 && i < 5) recoveryOwners.push(randomSigner.address);
                 else guardians.push(randomSigner.address);
             }
-            const { address, wallet, SSR } = await walletSetup(
+            const { address, wallet } = await walletSetup(
                 owner,
                 recoveryOwners,
                 guardians,
-                0,
-                0,
-                0,
                 undefined,
                 undefined,
                 ownerSigner
             );
             expect(await wallet.owner()).to.equal(owner);
-            const outputROwners = await getRecoveryOwners(SSR, address);
+            const outputROwners = await wallet.getRecoveryOwners();
             for (let i = 0; i < outputROwners.length; i++) {
                 const recoveryOwnerA = outputROwners[i];
                 const recoveryOwnerB = recoveryOwners[i];
                 expect(recoveryOwnerA).to.equal(recoveryOwnerB);
             }
-            const outputGuardians = await getGuardians(SSR, address);
+            const outputGuardians = await wallet.getGuardians();
             for (let i = 0; i < outputGuardians.length; i++) {
                 const guardianA = outputGuardians[i];
                 const guardianB = guardians[i];
@@ -153,20 +144,10 @@ describe("Core", () => {
             const ownerAddress = ownerSigner.address;
             const rOwners = [contract1.address, recoveryOwners[0]]; // recovery owners
             let gs = [contract2.address, guardians[0]]; // guardians
-            const { address, wallet, SSR } = await walletSetup(
-                ownerAddress,
-                rOwners,
-                gs,
-                0,
-                0,
-                0,
-                undefined,
-                undefined,
-                ownerSigner
-            );
+            const { address, wallet } = await walletSetup(ownerAddress, rOwners, gs, undefined, undefined, ownerSigner);
             expect(await wallet.owner()).to.equal(ownerAddress);
-            const outputROwners = await getRecoveryOwners(SSR, address);
-            const outputGuardians = await getGuardians(SSR, address);
+            const outputROwners = await wallet.getRecoveryOwners();
+            const outputGuardians = await wallet.getGuardians();
 
             for (let i = 0; i < 2; i++) {
                 const guardianA = outputGuardians[i];

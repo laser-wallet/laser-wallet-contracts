@@ -5,6 +5,7 @@ import { HardhatRuntimeEnvironment } from "hardhat/types";
 import { Address } from "../types";
 import fs from "fs";
 
+// Function from: https://github.com/safe-global/safe-contracts/tree/main/test
 async function contractStorage(smartContractName: Address) {
     const { sourceName, contractName } = await hre.artifacts.readArtifact(smartContractName);
 

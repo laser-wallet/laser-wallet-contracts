@@ -8,8 +8,7 @@ import {
     signersForTest,
     SignersForTest,
     sign,
-    initSSR,
-    preComputeAddress,
+    getInitializer,
 } from "../utils";
 import { Address } from "../types";
 import { addrZero } from "../constants/constants";
@@ -18,10 +17,6 @@ describe("Proxy Factory", () => {
     let addresses: AddressesForTest;
     let signers: SignersForTest;
     let chainId: number;
-    let laserModule: Address;
-    let laserMasterGuard: Address;
-    let laserRegistry: Address;
-    let laserVault: Address;
 
     beforeEach(async () => {
         await deployments.fixture();
@@ -29,11 +24,6 @@ describe("Proxy Factory", () => {
         signers = await signersForTest();
         const network = await ethers.provider.getNetwork();
         chainId = network.chainId;
-
-        laserModule = (await deployments.get("LaserModuleSSR")).address;
-        laserMasterGuard = (await deployments.get("LaserMasterGuard")).address;
-        laserRegistry = (await deployments.get("LaserRegistry")).address;
-        laserVault = (await deployments.get("LaserVault")).address;
     });
 
     describe("Proxy Factory creation and interaction", () => {
@@ -44,273 +34,184 @@ describe("Proxy Factory", () => {
         });
 
         it("should revert by providing an invalid singleton (EOA)", async () => {
-            const randy = ethers.Wallet.createRandom();
-            const Factory = await ethers.getContractFactory("LaserFactory");
-            await expect(Factory.deploy(randy.address, addrZero, addrZero)).to.be.reverted;
+            const random = ethers.Wallet.createRandom();
+            const factory = await ethers.getContractFactory("LaserFactory");
+            await expect(factory.deploy(random.address)).to.be.reverted;
         });
 
         it("should revert by providing an invalid singleton (contract)", async () => {
             const Caller = await ethers.getContractFactory("Caller");
             const caller = await Caller.deploy();
-            const Factory = await ethers.getContractFactory("LaserFactory");
-            await expect(Factory.deploy(caller.address, addrZero, addrZero)).to.be.reverted;
+            const factory = await ethers.getContractFactory("LaserFactory");
+            await expect(factory.deploy(caller.address)).to.be.reverted;
         });
 
         it("should revert if the owner signs with an invalid chain id", async () => {
             const { factory } = await walletSetup();
-            const { owner, recoveryOwners, guardians, relayer } = await addressesForTest();
+            const { owner, recoveryOwners, guardians } = await addressesForTest();
 
             const saltNumber = Math.floor(Math.random() * 100000);
 
             const { ownerSigner } = signers;
 
             const invalidChainId = 1234;
-            const preComputedAddress = await preComputeAddress(factory, owner, guardians, recoveryOwners, saltNumber);
-            const abiCoder = new ethers.utils.AbiCoder();
             const dataHash = ethers.utils.solidityKeccak256(
-                ["uint256", "uint256", "uint256", "uint256", "address"],
-                [0, 0, 0, invalidChainId, preComputedAddress]
+                ["address[]", "address[]", "uint256"],
+                [guardians, recoveryOwners, invalidChainId]
             );
-            const initData = await initSSR(guardians, recoveryOwners);
             const signature = await sign(ownerSigner, dataHash);
+            const initializer = getInitializer(owner, guardians, recoveryOwners, signature);
 
-            await expect(
-                factory.deployProxyAndRefund(owner, 0, 0, 0, relayer, laserModule, initData, saltNumber, signature)
-            ).to.be.reverted;
+            await expect(factory.createProxy(initializer, saltNumber)).to.be.reverted;
         });
 
-        it("should deploy a proxy with 'deployProxyAndRefund()'", async () => {
+        it("should deploy a proxy with 'createProxy()' create2", async () => {
             const { factory } = await walletSetup();
-            const { owner, recoveryOwners, guardians, relayer } = await addressesForTest();
+            const { owner, recoveryOwners, guardians } = await addressesForTest();
 
             const saltNumber = Math.floor(Math.random() * 100000);
 
             const { ownerSigner } = signers;
-            const preComputedAddress = await preComputeAddress(factory, owner, guardians, recoveryOwners, saltNumber);
 
-            const abiCoder = new ethers.utils.AbiCoder();
             const dataHash = ethers.utils.solidityKeccak256(
-                ["uint256", "uint256", "uint256", "uint256", "address"],
-                [0, 0, 0, chainId, preComputedAddress]
+                ["address[]", "address[]", "uint256"],
+                [guardians, recoveryOwners, chainId]
             );
-
-            const initData = await initSSR(guardians, recoveryOwners);
             const signature = await sign(ownerSigner, dataHash);
+            const initializer = getInitializer(owner, guardians, recoveryOwners, signature);
 
-            await expect(
-                factory.deployProxyAndRefund(
-                    owner,
-                    0,
-                    0,
-                    0,
-                    relayer,
-                    laserModule,
-                    laserVault,
-                    initData,
-                    saltNumber,
-                    signature
-                )
-            ).to.emit(factory, "ProxyCreation");
+            await expect(factory.createProxy(initializer, saltNumber)).to.emit(factory, "LaserCreated");
         });
 
         it("should precompute the proxy address 'precomputeAddress()'", async () => {
             const { factory } = await walletSetup();
-            const { owner, recoveryOwners, guardians, relayer } = await addressesForTest();
+            const { owner, recoveryOwners, guardians } = await addressesForTest();
 
             const saltNumber = Math.floor(Math.random() * 100000);
 
             const { ownerSigner } = signers;
 
-            const abiCoder = new ethers.utils.AbiCoder();
-            const _preComputedAddress = await preComputeAddress(factory, owner, guardians, recoveryOwners, saltNumber);
-
             const dataHash = ethers.utils.solidityKeccak256(
-                ["uint256", "uint256", "uint256", "uint256", "address"],
-                [0, 0, 0, chainId, _preComputedAddress]
+                ["address[]", "address[]", "uint256"],
+                [guardians, recoveryOwners, chainId]
             );
-
-            const initData = await initSSR(guardians, recoveryOwners);
             const signature = await sign(ownerSigner, dataHash);
+            const initializer = getInitializer(owner, guardians, recoveryOwners, signature);
 
-            const tx = await factory.deployProxyAndRefund(
-                owner,
-                0,
-                0,
-                0,
-                relayer,
-                laserModule,
-                laserVault,
-                initData,
-                saltNumber,
-                signature
-            );
+            const tx = await factory.createProxy(initializer, saltNumber);
             const receipt = await tx.wait();
-            const address = receipt.events[0].args.proxy;
+            const address = receipt.events[0].args.laser;
 
-            const preComputedAddress = await factory.preComputeAddress(owner, laserModule, initData, saltNumber);
+            const preComputedAddress = await factory.preComputeAddress(initializer, saltNumber);
 
             expect(address).to.equal(preComputedAddress);
         });
 
         it("should return a different address if we change the salt", async () => {
             const { factory } = await walletSetup();
-            const { owner, recoveryOwners, guardians, relayer } = await addressesForTest();
+            const { owner, recoveryOwners, guardians } = await addressesForTest();
 
             const saltNumber = Math.floor(Math.random() * 100000);
 
-            const initData = await initSSR(guardians, recoveryOwners);
-            const preComputedAddress = await factory.preComputeAddress(owner, laserModule, initData, 123123);
-
             const { ownerSigner } = signers;
 
-            const _preComputedAddress = await preComputeAddress(factory, owner, guardians, recoveryOwners, saltNumber);
-
-            const abiCoder = new ethers.utils.AbiCoder();
             const dataHash = ethers.utils.solidityKeccak256(
-                ["uint256", "uint256", "uint256", "uint256", "address"],
-                [0, 0, 0, chainId, _preComputedAddress]
+                ["address[]", "address[]", "uint256"],
+                [guardians, recoveryOwners, chainId]
             );
-
             const signature = await sign(ownerSigner, dataHash);
+            const initializer = getInitializer(owner, guardians, recoveryOwners, signature);
 
-            const tx = await factory.deployProxyAndRefund(
-                owner,
-                0,
-                0,
-                0,
-                relayer,
-                laserModule,
-                laserVault,
-                initData,
-                saltNumber,
-                signature
-            );
+            const tx = await factory.createProxy(initializer, saltNumber);
             const receipt = await tx.wait();
-            const address = receipt.events[0].args.proxy;
+            const address = receipt.events[0].args.laser;
+
+            const preComputedAddress = await factory.preComputeAddress(initializer, 123123);
 
             expect(address).to.not.equal(preComputedAddress);
         });
 
         it("should return a different address if we change the owner", async () => {
             const { factory } = await walletSetup();
-            const { owner, recoveryOwners, guardians, relayer } = await addressesForTest();
+            const { owner, recoveryOwners, guardians } = await addressesForTest();
 
             const saltNumber = Math.floor(Math.random() * 100000);
 
-            const initData = await initSSR(guardians, recoveryOwners);
-            const preComputedAddress = await factory.preComputeAddress(
-                ethers.Wallet.createRandom().address,
-                laserModule,
-                initData,
-                saltNumber
-            );
-
             const { ownerSigner } = signers;
 
-            const _preComputedAddress = await preComputeAddress(factory, owner, guardians, recoveryOwners, saltNumber);
-
-            const abiCoder = new ethers.utils.AbiCoder();
             const dataHash = ethers.utils.solidityKeccak256(
-                ["uint256", "uint256", "uint256", "uint256", "address"],
-                [0, 0, 0, chainId, _preComputedAddress]
+                ["address[]", "address[]", "uint256"],
+                [guardians, recoveryOwners, chainId]
             );
-
             const signature = await sign(ownerSigner, dataHash);
+            let initializer = getInitializer(owner, guardians, recoveryOwners, signature);
 
-            const tx = await factory.deployProxyAndRefund(
-                owner,
-                0,
-                0,
-                0,
-                relayer,
-                laserModule,
-                laserVault,
-                initData,
-                saltNumber,
-                signature
-            );
+            const tx = await factory.createProxy(initializer, saltNumber);
             const receipt = await tx.wait();
-            const address = receipt.events[0].args.proxy;
+            const address = receipt.events[0].args.laser;
+
+            initializer = getInitializer(ethers.Wallet.createRandom().address, guardians, recoveryOwners, signature);
+            const preComputedAddress = await factory.preComputeAddress(initializer, saltNumber);
 
             expect(address).to.not.equal(preComputedAddress);
         });
 
         it("should return a different address if we change a guardain", async () => {
             const { factory } = await walletSetup();
-            const { owner, recoveryOwners, guardians, relayer } = await addressesForTest();
+            const { owner, recoveryOwners, guardians } = await addressesForTest();
 
             const saltNumber = Math.floor(Math.random() * 100000);
 
-            const initData = await initSSR(guardians, recoveryOwners);
-            const initData2 = await initSSR([ethers.Wallet.createRandom().address], recoveryOwners);
-            const preComputedAddress = await factory.preComputeAddress(owner, laserModule, initData2, saltNumber);
-
             const { ownerSigner } = signers;
 
-            const abiCoder = new ethers.utils.AbiCoder();
-            const _preComputedAddress = await preComputeAddress(factory, owner, guardians, recoveryOwners, saltNumber);
-
-            const dataHash = ethers.utils.solidityKeccak256(
-                ["uint256", "uint256", "uint256", "uint256", "address"],
-                [0, 0, 0, chainId, _preComputedAddress]
+            let dataHash = ethers.utils.solidityKeccak256(
+                ["address[]", "address[]", "uint256"],
+                [guardians, recoveryOwners, chainId]
             );
+            let signature = await sign(ownerSigner, dataHash);
+            let initializer = getInitializer(owner, guardians, recoveryOwners, signature);
 
-            const signature = await sign(ownerSigner, dataHash);
-
-            const tx = await factory.deployProxyAndRefund(
-                owner,
-                0,
-                0,
-                0,
-                relayer,
-                laserModule,
-                laserVault,
-                initData,
-                saltNumber,
-                signature
-            );
+            const tx = await factory.createProxy(initializer, saltNumber);
             const receipt = await tx.wait();
-            const address = receipt.events[0].args.proxy;
+            const address = receipt.events[0].args.laser;
+
+            dataHash = ethers.utils.solidityKeccak256(
+                ["address[]", "address[]", "uint256"],
+                [[ethers.Wallet.createRandom().address], recoveryOwners, chainId]
+            );
+            signature = await sign(ownerSigner, dataHash);
+            initializer = getInitializer(owner, guardians, recoveryOwners, signature);
+            const preComputedAddress = await factory.preComputeAddress(initializer, saltNumber);
 
             expect(address).to.not.equal(preComputedAddress);
         });
 
         it("should return a different address if we change a recovery owner", async () => {
             const { factory } = await walletSetup();
-            const { owner, recoveryOwners, guardians, relayer } = await addressesForTest();
+            const { owner, recoveryOwners, guardians } = await addressesForTest();
 
             const saltNumber = Math.floor(Math.random() * 100000);
 
-            const initData = await initSSR(guardians, recoveryOwners);
-            const initData2 = await initSSR(guardians, [ethers.Wallet.createRandom().address]);
-            const preComputedAddress = await factory.preComputeAddress(owner, laserModule, initData2, saltNumber);
-
             const { ownerSigner } = signers;
 
-            const _preComputedAddress = await preComputeAddress(factory, owner, guardians, recoveryOwners, saltNumber);
-
-            const abiCoder = new ethers.utils.AbiCoder();
-            const dataHash = ethers.utils.solidityKeccak256(
-                ["uint256", "uint256", "uint256", "uint256", "address"],
-                [0, 0, 0, chainId, _preComputedAddress]
+            let dataHash = ethers.utils.solidityKeccak256(
+                ["address[]", "address[]", "uint256"],
+                [guardians, recoveryOwners, chainId]
             );
+            let signature = await sign(ownerSigner, dataHash);
+            let initializer = getInitializer(owner, guardians, recoveryOwners, signature);
 
-            const signature = await sign(ownerSigner, dataHash);
-
-            const tx = await factory.deployProxyAndRefund(
-                owner,
-                0,
-                0,
-                0,
-                relayer,
-                laserModule,
-                laserVault,
-                initData,
-                saltNumber,
-                signature
-            );
+            const tx = await factory.createProxy(initializer, saltNumber);
             const receipt = await tx.wait();
-            const address = receipt.events[0].args.proxy;
+            const address = receipt.events[0].args.laser;
+
+            dataHash = ethers.utils.solidityKeccak256(
+                ["address[]", "address[]", "uint256"],
+                [guardians, [ethers.Wallet.createRandom().address], chainId]
+            );
+            signature = await sign(ownerSigner, dataHash);
+            initializer = getInitializer(owner, guardians, recoveryOwners, signature);
+            const preComputedAddress = await factory.preComputeAddress(initializer, saltNumber);
 
             expect(address).to.not.equal(preComputedAddress);
         });
@@ -319,52 +220,24 @@ describe("Proxy Factory", () => {
             // When deploying a contract, the EVM checks if the address has code,
             // if it does, it reverts.
             const { factory } = await walletSetup();
-            const { owner, recoveryOwners, guardians, relayer } = await addressesForTest();
+            const { owner, recoveryOwners, guardians } = await addressesForTest();
 
             const saltNumber = Math.floor(Math.random() * 100000);
 
-            const initData = await initSSR(guardians, recoveryOwners);
-            const preComputedAddress = await factory.preComputeAddress(owner, laserModule, initData, saltNumber);
-
             const { ownerSigner } = signers;
 
-            const abiCoder = new ethers.utils.AbiCoder();
-            const dataHash = ethers.utils.solidityKeccak256(
-                ["uint256", "uint256", "uint256", "uint256", "address"],
-                [0, 0, 0, chainId, preComputedAddress]
+            let dataHash = ethers.utils.solidityKeccak256(
+                ["address[]", "address[]", "uint256"],
+                [guardians, recoveryOwners, chainId]
             );
-
-            const signature = await sign(ownerSigner, dataHash);
+            let signature = await sign(ownerSigner, dataHash);
+            let initializer = getInitializer(owner, guardians, recoveryOwners, signature);
 
             // first transaction
-            await factory.deployProxyAndRefund(
-                owner,
-                0,
-                0,
-                0,
-                relayer,
-                laserModule,
-                laserVault,
-                initData,
-                saltNumber,
-                signature
-            );
+            await factory.createProxy(initializer, saltNumber);
 
             // second transaction
-            await expect(
-                factory.deployProxyAndRefund(
-                    owner,
-                    0,
-                    0,
-                    0,
-                    relayer,
-                    laserModule,
-                    laserVault,
-                    initData,
-                    saltNumber,
-                    signature
-                )
-            ).to.be.reverted;
+            await expect(factory.createProxy(initializer, saltNumber)).to.be.reverted;
         });
     });
 });

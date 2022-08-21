@@ -8,9 +8,6 @@ export async function signTypedData(signer: Wallet, domain: Domain, transaction:
         value: transaction.value,
         callData: transaction.callData,
         nonce: transaction.nonce,
-        maxFeePerGas: transaction.maxFeePerGas,
-        maxPriorityFeePerGas: transaction.maxPriorityFeePerGas,
-        gasLimit: transaction.gasLimit,
     };
     return signer._signTypedData(domain, types, laserTypes);
 }
