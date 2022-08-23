@@ -5,8 +5,6 @@ import "./handlers/Handler.sol";
 import "./interfaces/ILaserWallet.sol";
 import "./state/LaserState.sol";
 
-import "hardhat/console.sol";
-
 /**
  * @title  LaserWallet
  *
@@ -161,6 +159,8 @@ contract LaserWallet is ILaserWallet, LaserState, Handler {
         address signer1 = Utils.returnSigner(signedHash, signatures, 0);
         address signer2 = Utils.returnSigner(signedHash, signatures, 1);
 
+        if (signer1 == signer2) revert LW__recovery__duplicateSigner();
+
         if (functionSelector == 0xf83d08ba) {
             // bytes4(keccak256("lock()"))
 
@@ -174,14 +174,17 @@ contract LaserWallet is ILaserWallet, LaserState, Handler {
             // bytes4(keccak256("unlock()"))
 
             // Only the owner + recovery owner || owner + guardian can unlock the wallet.
-            require(signer1 == owner, "unlock() not owner");
-            require(guardians[signer2] != address(0) || recoveryOwners[signer2] != address(0), "unlock signer 2");
+            if (signer1 != owner || (recoveryOwners[signer2] == address(0) && guardians[signer2] == address(0))) {
+                revert LW__recoveryUnlock__invalidSignature();
+            }
         } else if (functionSelector == 0x0cd865ec) {
             // bytes4(keccak256("recover(address)"))
 
             // Only the recovery owner + recovery owner || recovery owner + guardian can recover the wallet.
-            require(recoveryOwners[signer1] != address(0), "recover signer1");
-            require(recoveryOwners[signer2] != address(0) || guardians[signer2] != address(0), "recover signer2");
+            if (
+                recoveryOwners[signer1] == address(0) ||
+                (recoveryOwners[signer2] == address(0) && guardians[signer2] == address(0))
+            ) revert LW__recoveryRecover__invalidSignature();
         } else {
             // Else, the operation is not allowed.
             revert LW__recovery__invalidOperation();

@@ -45,7 +45,13 @@ interface ILaserWallet {
 
     error LW__recovery__invalidSignatureLength();
 
+    error LW__recovery__duplicateSigner();
+
     error LW__recoveryLock__invalidSignature();
+
+    error LW__recoveryUnlock__invalidSignature();
+
+    error LW__recoveryRecover__invalidSignature();
 
     error LW__recovery__invalidOperation();
 

@@ -22,7 +22,7 @@ describe("Core", () => {
 
             const random = ethers.Wallet.createRandom().address;
             await expect(wallet.init(random, [random], [random], "0x")).to.be.revertedWith(
-                "'LS__initOwner__walletInitialized()'"
+                "'LS__activateWallet__walletInitialized()'"
             );
         });
 

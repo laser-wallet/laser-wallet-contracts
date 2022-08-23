@@ -4,7 +4,9 @@ pragma solidity 0.8.16;
 import "../interfaces/IEIP1271.sol";
 
 /**
- * @title Utils - Helper functions for Laser wallet and modules.
+ * @title Utils
+ *
+ * @notice Helper functions for Laser wallet.
  */
 library Utils {
     /*//////////////////////////////////////////////////////////////

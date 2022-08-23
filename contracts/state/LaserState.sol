@@ -6,8 +6,14 @@ import "../common/Utils.sol";
 import "../interfaces/IERC165.sol";
 import "../interfaces/ILaserState.sol";
 
-import "hardhat/console.sol";
-
+/**
+ * @title   LaserState
+ *
+ * @author  Rodrigo Herrera I.
+ *
+ * @notice  Has all the state(storage) for a Laser wallet and implements
+ *          Smart Social Recovery.
+ */
 contract LaserState is ILaserState, Access {
     address internal constant POINTER = address(0x1); // POINTER for the link list.
 
@@ -67,11 +73,16 @@ contract LaserState is ILaserState, Access {
      */
     function recover(address newOwner) external access {
         uint256 elapsedTime = block.timestamp - walletConfig.timestamp;
-        //@todo custom errors.
-        require(elapsedTime > 5 days);
 
-        require(newOwner.code.length == 0 && newOwner != owner && newOwner != address(0));
+        if (5 days > elapsedTime) revert LS__recover__timeLock();
+
+        if (newOwner.code.length != 0 || newOwner == owner || newOwner == address(0)) {
+            revert LS__recover__invalidAddress();
+        }
+
         owner = newOwner;
+        walletConfig.isLocked = false;
+        walletConfig.timestamp = 0;
 
         emit WalletRecovered(newOwner);
     }
@@ -85,18 +96,42 @@ contract LaserState is ILaserState, Access {
      * @param newOwner  Address of the new owner.
      */
     function changeOwner(address newOwner) external access {
-        require(newOwner.code.length == 0 && newOwner != owner && newOwner != address(0));
+        if (newOwner.code.length != 0 || newOwner == owner || newOwner == address(0)) {
+            revert LS__changeOwner__invalidAddress();
+        }
+
         owner = newOwner;
+
         emit OwnerChanged(newOwner);
     }
 
+    /**
+     * @notice Changes the singleton. Can only be called by the owner + recovery owner
+     *         or owner + guardian.
+     *
+     * @dev   Restricted, can only be called by address(this).
+     *
+     * @param newSingleton  Address of the new singleton.
+     */
     function changeSingleton(address newSingleton) external access {
-        //@todo Change require for custom errrors.
-        require(newSingleton != address(this), "Invalid singleton");
+        //bytes4(keccak256("I_AM_LASER"))
+        if (newSingleton == address(this) || !IERC165(newSingleton).supportsInterface(0xae029e0b)) {
+            revert LS__changeSingleton__invalidAddress();
+        }
+
         singleton = newSingleton;
+
         emit SingletonChanged(newSingleton);
     }
 
+    /**
+     * @notice Adds a new guardian. Can only be called by the owner + recovery owner
+     *         or owner + guardian.
+     *
+     * @dev   Restricted, can only be called by address(this).
+     *
+     * @param newGuardian  Address of the new guardian.
+     */
     function addGuardian(address newGuardian) external access {
         if (
             newGuardian == address(0) ||
@@ -122,6 +157,15 @@ contract LaserState is ILaserState, Access {
         emit NewGuardian(newGuardian);
     }
 
+    /**
+     * @notice Removes a guardian. Can only be called by the owner + recovery owner
+     *         or owner + guardian.
+     *
+     * @dev   Restricted, can only be called by address(this).
+     *
+     * @param prevGuardian      Address of the previous guardian in the linked list.
+     * @param guardianToRemove  Address of the guardian to be removed.
+     */
     function removeGuardian(address prevGuardian, address guardianToRemove) external access {
         if (guardianToRemove == POINTER) {
             revert LS__removeGuardian__invalidAddress();
@@ -144,6 +188,14 @@ contract LaserState is ILaserState, Access {
         emit GuardianRemoved(guardianToRemove);
     }
 
+    /**
+     * @notice Adds a new recovery owner. Can only be called by the owner + recovery owner
+     *         or owner + guardian.
+     *
+     * @dev   Restricted, can only be called by address(this).
+     *
+     * @param newRecoveryOwner  Address of the new recovery owner.
+     */
     function addRecoveryOwner(address newRecoveryOwner) external access {
         if (
             newRecoveryOwner == address(0) ||
@@ -151,12 +203,11 @@ contract LaserState is ILaserState, Access {
             recoveryOwners[newRecoveryOwner] != address(0) ||
             guardians[newRecoveryOwner] != address(0) ||
             newRecoveryOwner == POINTER
-        ) revert LS__addGuardian__invalidAddress();
+        ) revert LS__addRecoveryOwner__invalidAddress();
 
         if (newRecoveryOwner.code.length > 0) {
             if (!IERC165(newRecoveryOwner).supportsInterface(0x1626ba7e)) {
-                //@todo change the error.
-                revert LS__addGuardian__invalidAddress();
+                revert LS__addRecoveryOwner__invalidAddress();
             }
         }
 
@@ -170,18 +221,26 @@ contract LaserState is ILaserState, Access {
         emit NewRecoveryOwner(newRecoveryOwner);
     }
 
+    /**
+     * @notice Removes a recovery owner. Can only be called by the owner + recovery owner
+     *         or owner + guardian.
+     *
+     * @dev   Restricted, can only be called by address(this).
+     *
+     * @param prevRecoveryOwner      Address of the previous recovery owner in the linked list.
+     * @param recoveryOwnerToRemove  Address of the recovery owner to be removed.
+     */
     function removeRecoveryOwner(address prevRecoveryOwner, address recoveryOwnerToRemove) external access {
         if (recoveryOwnerToRemove == POINTER) {
-            revert LS__removeGuardian__invalidAddress();
+            revert LS__removeRecoveryOwner__invalidAddress();
         }
 
         if (recoveryOwners[prevRecoveryOwner] != recoveryOwnerToRemove) {
-            //@todo change the error
-            revert LS__removeGuardian__incorrectPreviousGuardian();
+            revert LS__removeRecoveryOwner__incorrectPreviousGuardian();
         }
 
         // There needs to be at least 1 recovery owner.
-        if (recoveryOwnerCount - 1 < 1) revert LS__removeGuardian__underflow();
+        if (recoveryOwnerCount - 1 < 1) revert LS__removeRecoveryOwner__underflow();
 
         recoveryOwners[prevRecoveryOwner] = recoveryOwners[recoveryOwnerToRemove];
         recoveryOwners[recoveryOwnerToRemove] = address(0);
@@ -193,6 +252,9 @@ contract LaserState is ILaserState, Access {
         emit RecoveryOwnerRemoved(recoveryOwnerToRemove);
     }
 
+    /**
+     * @return Array of guardians for this wallet.
+     */
     function getGuardians() external view returns (address[] memory) {
         address[] memory guardiansArray = new address[](guardianCount);
         address currentGuardian = guardians[POINTER];
@@ -206,6 +268,9 @@ contract LaserState is ILaserState, Access {
         return guardiansArray;
     }
 
+    /**
+     * @return Array of recovery owners for this wallet.
+     */
     function getRecoveryOwners() external view returns (address[] memory) {
         address[] memory recoveryOwnersArray = new address[](recoveryOwnerCount);
         address currentRecoveryOwner = recoveryOwners[POINTER];
@@ -219,14 +284,25 @@ contract LaserState is ILaserState, Access {
         return recoveryOwnersArray;
     }
 
+    /**
+     * @return Boolean if the wallet is locked.
+     */
     function isLocked() external view returns (bool) {
         return walletConfig.isLocked;
     }
 
+    /**
+     * @return The time (block.timestamp) when the wallet was locked.
+     */
     function getConfigTimestamp() external view returns (uint256) {
         return walletConfig.timestamp;
     }
 
+    /**
+     * @notice Inits the guardians.
+     *
+     * @param _guardians Array of guardian addresses.
+     */
     function initGuardians(address[] calldata _guardians) internal {
         uint256 guardiansLength = _guardians.length;
         // There needs to be at least 1 guardian.
@@ -262,10 +338,16 @@ contract LaserState is ILaserState, Access {
         guardianCount = guardiansLength;
     }
 
+    /**
+     * @notice Inits the recovery owners.
+     *
+     * @param _recoveryOwners Array of recovery owner addresses.
+     */
     function initRecoveryOwners(address[] calldata _recoveryOwners) internal {
         uint256 recoveryOwnersLength = _recoveryOwners.length;
-        // @todo custom errors.
-        require(recoveryOwnersLength >= 1);
+        // There needs to be at least 1 recovery owner.
+        if (recoveryOwnersLength < 1) revert LS__initRecoveryOwners__underflow();
+
         address currentRecoveryOwner = POINTER;
 
         for (uint256 i = 0; i < recoveryOwnersLength; ) {
@@ -277,14 +359,12 @@ contract LaserState is ILaserState, Access {
                 recoveryOwner == currentRecoveryOwner ||
                 recoveryOwners[recoveryOwner] != address(0) ||
                 guardians[recoveryOwner] != address(0)
-                //@todo change this error
-            ) revert LS__initGuardians__invalidAddress();
+            ) revert LS__initRecoveryOwners__invalidAddress();
 
             if (recoveryOwner.code.length > 0) {
                 // If the recovery owner is a smart contract wallet, it needs to support EIP1271.
                 if (!IERC165(recoveryOwner).supportsInterface(0x1626ba7e)) {
-                    // @todo change this error.
-                    revert LS__initGuardians__invalidAddress();
+                    revert LS__initRecoveryOwners__invalidAddress();
                 }
             }
 
@@ -299,15 +379,22 @@ contract LaserState is ILaserState, Access {
         recoveryOwnerCount = recoveryOwnersLength;
     }
 
+    /**
+     * @notice Activates the wallet for the first time.
+     *
+     * @dev    Cannot be called after initialization.
+     */
     function activateWallet(
         address _owner,
         address[] calldata _guardians,
         address[] calldata _recoveryOwners
     ) internal {
-        if (owner != address(0)) revert LS__initOwner__walletInitialized();
+        // If owner is not address(0), the wallet is already active.
+        if (owner != address(0)) revert LS__activateWallet__walletInitialized();
 
-        // @todo custom errors.
-        require(_owner.code.length == 0);
+        if (_owner.code.length != 0) {
+            revert LS__activateWallet__invalidOwnerAddress();
+        }
 
         // We set the owner. There is no need for further verification.
         owner = _owner;
