@@ -4,39 +4,29 @@ pragma solidity 0.8.16;
 import "../proxies/LaserProxy.sol";
 
 interface ILaserFactory {
-    event ProxyCreation(address proxy);
+    /*//////////////////////////////////////////////////////////////
+                                 EVENTS
+    //////////////////////////////////////////////////////////////*/
 
-    ///@dev constructor() custom error.
-    error LaserFactory__constructor__invalidSingleton();
+    event LaserCreated(address laser);
 
-    ///@dev createProxyWithCreate2() custom error.
-    error LaserFactory__create2Failed();
+    /*//////////////////////////////////////////////////////////////
+                                 ERRORS
+    //////////////////////////////////////////////////////////////*/
 
-    ///@dev Creates a new proxy with create 2, initializes the wallet and refunds the relayer.
-    function deployProxyAndRefund(
-        address owner,
-        uint256 maxFeePerGas,
-        uint256 maxPriorityFeePerGas,
-        uint256 gasLimit,
-        address relayer,
-        address smartSocialRecoveryModule,
-        address laserVault,
-        bytes calldata smartSocialRecoveryInitData,
-        uint256 saltNumber,
-        bytes memory ownerSignature
-    ) external returns (LaserProxy proxy);
+    error LF__constructor__invalidSingleton();
 
-    ///@dev Precomputes the address of a proxy that is created through 'create2'.
-    function preComputeAddress(
-        address owner,
-        address laserModule,
-        bytes calldata laserModuleData,
-        uint256 saltNumber
-    ) external view returns (address);
+    error LF__createProxy__creationFailed();
 
-    ///@dev Allows to retrieve the runtime code of a deployed Proxy. This can be used to check that the expected Proxy was deployed.
-    function proxyRuntimeCode() external pure returns (bytes memory);
+    error LF__deployProxy__create2Failed();
 
-    ///@dev Allows to retrieve the creation code used for the Proxy deployment. With this it is easily possible to calculate predicted address.
-    function proxyCreationCode() external pure returns (bytes memory);
+    /*//////////////////////////////////////////////////////////////
+                                 STATE
+    //////////////////////////////////////////////////////////////*/
+
+    function singleton() external view returns (address);
+
+    /*//////////////////////////////////////////////////////////////
+                                EXTERNAL
+    //////////////////////////////////////////////////////////////*/
 }

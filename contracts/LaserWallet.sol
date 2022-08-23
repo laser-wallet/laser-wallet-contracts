@@ -2,23 +2,19 @@
 pragma solidity 0.8.16;
 
 import "./handlers/Handler.sol";
-import "./interfaces/ILaserGuard.sol";
 import "./interfaces/ILaserWallet.sol";
 import "./state/LaserState.sol";
-
-import "hardhat/console.sol";
 
 /**
  * @title  LaserWallet
  *
  * @author Rodrigo Herrera I.
  *
- * @notice Laser is a modular smart contract wallet made for the Ethereum Virtual Machine.
- *         It has modularity (programmability) and security at its core.
+ * @notice Laser is a secure smart contract wallet (vault) made for the Ethereum Virtual Machine.
  */
 contract LaserWallet is ILaserWallet, LaserState, Handler {
     /*//////////////////////////////////////////////////////////////
-                            Laser metadata
+                             LASER METADATA
     //////////////////////////////////////////////////////////////*/
 
     string public constant VERSION = "1.0.0";
@@ -26,7 +22,7 @@ contract LaserWallet is ILaserWallet, LaserState, Handler {
     string public constant NAME = "Laser Wallet";
 
     /*//////////////////////////////////////////////////////////////
-                        Signature constant helpers
+                            SIGNATURE TYPES
     //////////////////////////////////////////////////////////////*/
 
     bytes32 private constant DOMAIN_SEPARATOR_TYPEHASH =
@@ -50,7 +46,9 @@ contract LaserWallet is ILaserWallet, LaserState, Handler {
      *         It can't be called after initialization.
      *
      * @param _owner           The owner of the wallet.
-     * @param ownerSignature   Signature of the owner that validates approval for initialization.
+     * @param _guardians       Array of guardians.
+     * @param _recoveryOwners  Array of recovery owners.
+     * @param ownerSignature   Signature of the owner that validates the correctness of the address.
      */
     function init(
         address _owner,
@@ -68,22 +66,18 @@ contract LaserWallet is ILaserWallet, LaserState, Handler {
         address signer = Utils.returnSigner(signedHash, ownerSignature, 0);
 
         if (signer != _owner) revert LW__init__notOwner();
-
-        // check custom errors.
-        //emit Setup(_owner, laserModule);
     }
 
     /**
      * @notice Executes a generic transaction.
-     *         If 'gasLimit' does not match the actual gas limit of the transaction, the relayer can incur losses.
-     *         It is the relayer's responsability to make sure that they are the same,
-     *         the user does not get affected if a mistake is made.
+     *         The transaction is required to be signed by the owner + recovery owner or owner + guardian
+     *         while the wallet is not locked.
      *
-     * @param to                    Destination address.
-     * @param value                 Amount in WEI to transfer.
-     * @param callData              Data payload for the transaction.
-     * @param _nonce                Anti-replay number.
-     * @param signatures            The signature(s) of the hash of this transaction.
+     * @param to         Destination address.
+     * @param value      Amount in WEI to transfer.
+     * @param callData   Data payload to send.
+     * @param _nonce     Anti-replay number.
+     * @param signatures Signatures of the hash of the transaction.
      */
     function exec(
         address to,
@@ -98,27 +92,23 @@ contract LaserWallet is ILaserWallet, LaserState, Handler {
         }
 
         // If the wallet is locked, further transactions cannot be executed from 'exec'.
-        if (isLocked) revert LW__exec__walletLocked();
+        if (walletConfig.isLocked) revert LW__exec__walletLocked();
 
         // We get the hash for this transaction.
         bytes32 signedHash = keccak256(encodeOperation(to, value, callData, _nonce));
 
         address signer1 = Utils.returnSigner(signedHash, signatures, 0);
-        address signer2 = Utils.returnSigner(signedHash, signatures, 1);
-
-        // Signer1 must be the owner.
         if (signer1 != owner) revert LW__exec__notOwner();
 
-        // custom error
-        require(guardians[signer2] != address(0), "exec not guardian");
+        address signer2 = Utils.returnSigner(signedHash, signatures, 1);
+        if (recoveryOwners[signer2] == address(0) && guardians[signer2] == address(0)) {
+            revert LW__exec__incorrectSigner2();
+        }
 
-        // We execute the main transaction but we keep 10_000 units of gas for the remaining operations.
         success = Utils.call(to, value, callData, gasleft());
+        if (!success) revert LW__exec__callFailed();
 
-        require(success, "failed");
-
-        if (success) emit ExecSuccess(to, value, nonce);
-        else emit ExecFailure(to, value, nonce);
+        emit ExecSuccess(to, value, nonce, bytes4(callData));
     }
 
     /**
@@ -139,6 +129,63 @@ contract LaserWallet is ILaserWallet, LaserState, Handler {
                 ++i;
             }
         }
+    }
+
+    /**
+     * @notice Triggers the recovery mechanism.
+     *
+     * @param callData   Data payload, can only be either lock(), unlock() or recover(address).
+     * @param signatures Signatures of the hash of the transaction.
+     */
+    function recovery(
+        uint256 _nonce,
+        bytes calldata callData,
+        bytes calldata signatures
+    ) external {
+        // We immediately increase the nonce to avoid replay attacks.
+        unchecked {
+            if (nonce++ != _nonce) revert LW__recovery__invalidNonce();
+        }
+
+        bytes4 functionSelector = bytes4(callData);
+
+        // All calls require at least 2 signatures.
+        if (signatures.length < 130) revert LW__recovery__invalidSignature();
+
+        bytes32 signedHash = keccak256(abi.encodePacked(_nonce, keccak256(callData), address(this), block.chainid));
+
+        address signer1 = Utils.returnSigner(signedHash, signatures, 0);
+        address signer2 = Utils.returnSigner(signedHash, signatures, 1);
+
+        if (functionSelector == 0xf83d08ba) {
+            // bytes4(keccak256("lock()"))
+
+            // Only a recovery owner + recovery owner || recovery owner + guardian
+            // can lock the wallet.
+            require(recoveryOwners[signer1] != address(0), "Lock(), not recovery owner");
+            require(
+                recoveryOwners[signer2] != address(0) || guardians[signer2] != address(0),
+                "Lock() invalid signer2"
+            );
+        } else if (functionSelector == 0xa69df4b5) {
+            // bytes4(keccak256("unlock()"))
+
+            // Only the owner + recovery owner || owner + guardian can unlock the wallet.
+            require(signer1 == owner, "unlock() not owner");
+            require(guardians[signer2] != address(0) || recoveryOwners[signer2] != address(0), "unlock signer 2");
+        } else if (functionSelector == 0x0cd865ec) {
+            // bytes4(keccak256("recover(address)"))
+
+            // Only the recovery owner + recovery owner || recovery owner + guardian can recover the wallet.
+            require(recoveryOwners[signer1] != address(0), "recover signer1");
+            require(recoveryOwners[signer2] != address(0) || guardians[signer2] != address(0), "recover signer2");
+        } else {
+            // Else, the operation is not allowed.
+            revert LW__recovery__invalidOperation();
+        }
+
+        bool success = Utils.call(address(this), 0, callData, gasleft());
+        if (!success) revert LW__recovery__callFailed();
     }
 
     /**
@@ -163,7 +210,7 @@ contract LaserWallet is ILaserWallet, LaserState, Handler {
      * MUST NOT modify state (using STATICCALL for solc < 0.5, view modifier for solc > 0.5)
      * MUST allow external calls
      *
-     * @return Magic value if signature matches the owner's address and the wallet is not locked.
+     * @return Magic value.
      */
     function isValidSignature(bytes32 hash, bytes memory signature) external view returns (bytes4) {
         address signer1 = Utils.returnSigner(hash, signature, 0);

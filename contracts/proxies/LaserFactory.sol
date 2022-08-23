@@ -5,27 +5,22 @@ import "../interfaces/IERC165.sol";
 import "../interfaces/ILaserFactory.sol";
 import "../interfaces/ILaserWallet.sol";
 
-import "hardhat/console.sol";
-
 /**
  * @title LaserFactory
  *
  * @notice Factory that creates new Laser proxies, and has helper methods.
  */
-contract LaserFactory {
-    // @todo Move this to an interface.
-    event LaserCreated(address laser);
-
+contract LaserFactory is ILaserFactory {
     address public immutable singleton;
 
     /**
-     * @param _singleton Master copy of the proxy.
+     * @param _singleton Base contract.
      */
     constructor(address _singleton) {
         // Laser Wallet contract: bytes4(keccak256("I_AM_LASER"))
-        //if (!IERC165(_singleton).supportsInterface(0xae029e0b)) revert ProxyFactory__constructor__invalidSingleton();
-        //@todo custom error
-        require(IERC165(_singleton).supportsInterface(0xae029e0b));
+        if (!IERC165(_singleton).supportsInterface(0xae029e0b)) {
+            revert LF__constructor__invalidSingleton();
+        }
         singleton = _singleton;
     }
 
@@ -43,8 +38,9 @@ contract LaserFactory {
             // We initialize the wallet in a single call.
             success := call(gas(), proxy, 0, add(initializer, 0x20), mload(initializer), 0, 0)
         }
-        //@todo custom error.
-        require(success, "laser creation failed");
+
+        if (!success) revert LF__createProxy__creationFailed();
+
         emit LaserCreated(address(proxy));
     }
 
@@ -92,7 +88,6 @@ contract LaserFactory {
             proxy := create2(0x0, add(0x20, deploymentData), mload(deploymentData), salt)
         }
 
-        //@todo Custom errror.
-        require(address(proxy) != address(0), "Create2 call failed");
+        if (address(proxy) == address(0)) revert LF__deployProxy__create2Failed();
     }
 }

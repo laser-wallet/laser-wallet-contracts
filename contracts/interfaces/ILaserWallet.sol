@@ -1,59 +1,68 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.16;
 
+struct Transaction {
+    address to;
+    uint256 value;
+    bytes callData;
+    uint256 nonce;
+    bytes signatures;
+}
+
 /**
  * @title  ILaserWallet
  *
  * @author Rodrigo Herrera I.
  *
- * @notice Laser is a modular smart contract wallet made for the Ethereum Virtual Machine.
- *         It has modularity (programmability) and security at its core.
+ * @notice Laser is a secure smart contract wallet (vault) made for the Ethereum Virtual Machine.
  *
  * @dev    This interface has all events, errors, and external function for LaserWallet.
  */
 interface ILaserWallet {
-    event Setup(address owner, address laserModule);
-    event ExecSuccess(address to, uint256 value, uint256 nonce);
-    event ExecFailure(address to, uint256 value, uint256 nonce);
+    /*//////////////////////////////////////////////////////////////
+                                 EVENTS
+    //////////////////////////////////////////////////////////////*/
 
-    // init() custom errors.
+    event ExecSuccess(address to, uint256 value, uint256 nonce, bytes4 funcSig);
+
+    /*//////////////////////////////////////////////////////////////
+                                 ERRORS
+    //////////////////////////////////////////////////////////////*/
+
     error LW__init__notOwner();
-    error LW__init__refundFailure();
 
-    // exec() custom errors.
     error LW__exec__invalidNonce();
+
     error LW__exec__walletLocked();
+
     error LW__exec__notOwner();
-    error LW__exec__refundFailure();
 
-    // execFromModule() custom errors.
-    error LW__execFromModule__unauthorizedModule();
-    error LW__execFromModule__mainCallFailed();
-    error LW__execFromModule__refundFailure();
+    error LW__exec__incorrectSigner2();
 
-    // simulateTransaction() custom errors.
-    error LW__SIMULATION__invalidNonce();
-    error LW__SIMULATION__walletLocked();
-    error LW__SIMULATION__notOwner();
-    error LW__SIMULATION__refundFailure();
+    error LW__exec__callFailed();
 
-    // isValidSignature() Laser custom error.
+    error LW__recovery__invalidNonce();
+
+    error LW__recovery__invalidSignature();
+
+    error LW__recovery__invalidOperation();
+
+    error LW__recovery__callFailed();
+
     error LaserWallet__invalidSignature();
 
-    struct Transaction {
-        address to;
-        uint256 value;
-        bytes callData;
-        uint256 nonce;
-        bytes signatures;
-    }
+    /*//////////////////////////////////////////////////////////////
+                                EXTERNAL
+    //////////////////////////////////////////////////////////////*/
 
     /**
      * @notice Setup function, sets initial storage of the wallet.
      *         It can't be called after initialization.
      *
      * @param _owner           The owner of the wallet.
-     * @param ownerSignature   Signature of the owner that validates approval for initialization.
+     * @param _guardians       Array of guardians.
+     * @param _recoveryOwners  Array of recovery owners.
+     * @param ownerSignature   Signature of the owner that validates the correctness of the address.
      */
     function init(
         address _owner,
@@ -64,15 +73,14 @@ interface ILaserWallet {
 
     /**
      * @notice Executes a generic transaction.
-     *         If 'gasLimit' does not match the actual gas limit of the transaction, the relayer can incur losses.
-     *         It is the relayer's responsability to make sure that they are the same,
-     *         the user does not get affected if a mistake is made.
+     *         The transaction is required to be signed by the owner + recovery owner or owner + guardian
+     *         while the wallet is not locked.
      *
-     * @param to                    Destination address.
-     * @param value                 Amount in WEI to transfer.
-     * @param callData              Data payload for the transaction.
-     * @param _nonce                Anti-replay number.
-     * @param signatures            The signature(s) of the hash of this transaction.
+     * @param to         Destination address.
+     * @param value      Amount in WEI to transfer.
+     * @param callData   Data payload to send.
+     * @param _nonce     Anti-replay number.
+     * @param signatures Signatures of the hash of the transaction.
      */
     function exec(
         address to,
@@ -81,6 +89,35 @@ interface ILaserWallet {
         uint256 _nonce,
         bytes calldata signatures
     ) external returns (bool success);
+
+    /**
+     * @notice Executes a batch of transactions.
+     *
+     * @param transactions An array of Laser transactions.
+     */
+    function multiCall(Transaction[] calldata transactions) external;
+
+    /**
+     * @notice Triggers the recovery mechanism.
+     *
+     * @param callData   Data payload, can only be either lock(), unlock() or recover().
+     * @param signatures Signatures of the hash of the transaction.
+     */
+    function recovery(
+        uint256 _nonce,
+        bytes calldata callData,
+        bytes calldata signatures
+    ) external;
+
+    /**
+     * @notice Returns the hash to be signed to execute a transaction.
+     */
+    function operationHash(
+        address to,
+        uint256 value,
+        bytes calldata callData,
+        uint256 _nonce
+    ) external view returns (bytes32);
 
     /**
      * @notice Should return whether the signature provided is valid for the provided hash.
@@ -92,19 +129,9 @@ interface ILaserWallet {
      * MUST NOT modify state (using STATICCALL for solc < 0.5, view modifier for solc > 0.5)
      * MUST allow external calls
      *
-     * @return Magic value if signature matches the owner's address and the wallet is not locked.
+     * @return Magic value.
      */
     function isValidSignature(bytes32 hash, bytes memory signature) external view returns (bytes4);
-
-    /**
-     * @notice Returns the hash to be signed to execute a transaction.
-     */
-    function operationHash(
-        address to,
-        uint256 value,
-        bytes calldata callData,
-        uint256 _nonce
-    ) external view returns (bytes32);
 
     /**
      * @return chainId The chain id of this.

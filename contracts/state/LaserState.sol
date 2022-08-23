@@ -4,26 +4,20 @@ pragma solidity 0.8.16;
 import "../access/Access.sol";
 import "../common/Utils.sol";
 import "../interfaces/IERC165.sol";
-import "../interfaces/ILaserMasterGuard.sol";
 import "../interfaces/ILaserState.sol";
-import "../interfaces/ILaserRegistry.sol";
-
-import "hardhat/console.sol";
 
 contract LaserState is ILaserState, Access {
     address internal constant POINTER = address(0x1); // POINTER for the link list.
 
     /*//////////////////////////////////////////////////////////////
-                         Laser Wallet storage
+                          LASER WALLET STORAGE
     //////////////////////////////////////////////////////////////*/
 
-    address public singleton; // Base contract.
+    address public singleton;
 
-    address public owner; // Owner of the wallet.
+    address public owner;
 
-    bool public isLocked; // If the wallet is locked, only certain operations can unlock it.
-
-    uint256 public nonce; // Anti-replay number for signed transactions.
+    uint256 public nonce;
 
     uint256 internal guardianCount;
 
@@ -33,12 +27,63 @@ contract LaserState is ILaserState, Access {
 
     mapping(address => address) public recoveryOwners;
 
+    WalletConfig walletConfig;
+
     /**
-     * @notice Restricted, can only be called by the wallet 'address(this)' or module.
+     * @notice Locks the wallet. Can only be called by a recovery owner + recovery owner
+     *         or recovery owner + guardian.
+     *
+     * @dev    Restricted, can only be called by address(this).
+     */
+    function lock() external access {
+        walletConfig.isLocked = true;
+        walletConfig.timestamp = block.timestamp;
+
+        emit WalletLocked();
+    }
+
+    /**
+     * @notice Unlocks the wallet. Can only be called by the owner + recovery owner
+     *         or owner + guardian.
+     *
+     * @dev    Restricted, can only be called by address(this).
+     */
+    function unlock() external access {
+        walletConfig.isLocked = false;
+        walletConfig.timestamp = 0;
+
+        emit WalletUnlocked();
+    }
+
+    /**
+     * @notice Recovers the wallet. Can only be called by the recovery owner + recovery owner
+     *         or recovery owner + guardian.
+     *
+     * @dev   Restricted, can only be called by address(this).
+     *
+     * @param newOwner  Address of the new owner.
+     */
+    function recover(address newOwner) external access {
+        uint256 elapsedTime = block.timestamp - walletConfig.timestamp;
+        //@todo custom errors.
+        require(elapsedTime > 5 days);
+
+        require(newOwner.code.length == 0 && newOwner != owner && newOwner != address(0));
+        owner = newOwner;
+
+        emit WalletRecovered(newOwner);
+    }
+
+    /**
+     * @notice Changes the owner of the wallet. Can only be called by the owner + recovery owner
+     *         or owner + guardian.
+     *
+     * @dev   Restricted, can only be called by address(this).
      *
      * @param newOwner  Address of the new owner.
      */
     function changeOwner(address newOwner) external access {
+        require(newOwner.code.length == 0 && newOwner != owner && newOwner != address(0));
         owner = newOwner;
         emit OwnerChanged(newOwner);
     }
@@ -193,8 +238,7 @@ contract LaserState is ILaserState, Access {
             }
 
             unchecked {
-                // Won't overflow...
-                ++i;
+                i++;
             }
             guardians[currentGuardian] = guardian;
             currentGuardian = guardian;
@@ -231,8 +275,7 @@ contract LaserState is ILaserState, Access {
             }
 
             unchecked {
-                // Won't overflow...
-                ++i;
+                i++;
             }
             recoveryOwners[currentRecoveryOwner] = recoveryOwner;
             currentRecoveryOwner = recoveryOwner;
