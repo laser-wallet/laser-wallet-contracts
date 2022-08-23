@@ -5,6 +5,8 @@ import "./handlers/Handler.sol";
 import "./interfaces/ILaserWallet.sol";
 import "./state/LaserState.sol";
 
+import "hardhat/console.sol";
+
 /**
  * @title  LaserWallet
  *
@@ -60,7 +62,8 @@ contract LaserWallet is ILaserWallet, LaserState, Handler {
         // This is more than enough to avoid being called after initialization.
         activateWallet(_owner, _guardians, _recoveryOwners);
 
-        // This is just to verify that the _owner address is correct.
+        // This is primarily to verify that the owner address is correct.
+        // It also provides some extra security guarantes (the owner really approved the guardians and recovery owners).
         bytes32 signedHash = keccak256(abi.encodePacked(_guardians, _recoveryOwners, block.chainid));
 
         address signer = Utils.returnSigner(signedHash, ownerSignature, 0);
@@ -97,12 +100,13 @@ contract LaserWallet is ILaserWallet, LaserState, Handler {
         // We get the hash for this transaction.
         bytes32 signedHash = keccak256(encodeOperation(to, value, callData, _nonce));
 
-        address signer1 = Utils.returnSigner(signedHash, signatures, 0);
-        if (signer1 != owner) revert LW__exec__notOwner();
+        if (signatures.length < 130) revert LW__exec__invalidSignatureLength();
 
+        address signer1 = Utils.returnSigner(signedHash, signatures, 0);
         address signer2 = Utils.returnSigner(signedHash, signatures, 1);
-        if (recoveryOwners[signer2] == address(0) && guardians[signer2] == address(0)) {
-            revert LW__exec__incorrectSigner2();
+
+        if (signer1 != owner || (recoveryOwners[signer2] == address(0) && guardians[signer2] == address(0))) {
+            revert LW__exec__invalidSignature();
         }
 
         success = Utils.call(to, value, callData, gasleft());
@@ -150,7 +154,7 @@ contract LaserWallet is ILaserWallet, LaserState, Handler {
         bytes4 functionSelector = bytes4(callData);
 
         // All calls require at least 2 signatures.
-        if (signatures.length < 130) revert LW__recovery__invalidSignature();
+        if (signatures.length < 130) revert LW__recovery__invalidSignatureLength();
 
         bytes32 signedHash = keccak256(abi.encodePacked(_nonce, keccak256(callData), address(this), block.chainid));
 
@@ -162,11 +166,10 @@ contract LaserWallet is ILaserWallet, LaserState, Handler {
 
             // Only a recovery owner + recovery owner || recovery owner + guardian
             // can lock the wallet.
-            require(recoveryOwners[signer1] != address(0), "Lock(), not recovery owner");
-            require(
-                recoveryOwners[signer2] != address(0) || guardians[signer2] != address(0),
-                "Lock() invalid signer2"
-            );
+            if (
+                recoveryOwners[signer1] == address(0) ||
+                (recoveryOwners[signer2] == address(0) && guardians[signer2] == address(0))
+            ) revert LW__recoveryLock__invalidSignature();
         } else if (functionSelector == 0xa69df4b5) {
             // bytes4(keccak256("unlock()"))
 
@@ -216,7 +219,7 @@ contract LaserWallet is ILaserWallet, LaserState, Handler {
         address signer1 = Utils.returnSigner(hash, signature, 0);
         address signer2 = Utils.returnSigner(hash, signature, 1);
 
-        if (signer1 != owner || guardians[signer2] == address(0)) {
+        if (signer1 != owner || (recoveryOwners[signer2] == address(0) && guardians[signer2] == address(0))) {
             revert LaserWallet__invalidSignature();
         }
 

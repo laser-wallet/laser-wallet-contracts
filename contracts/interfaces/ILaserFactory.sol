@@ -29,4 +29,22 @@ interface ILaserFactory {
     /*//////////////////////////////////////////////////////////////
                                 EXTERNAL
     //////////////////////////////////////////////////////////////*/
+
+    /**
+     * @dev Allows to create new proxy contact and execute a message call to the new proxy within one transaction.
+     *
+     * @param initializer   Payload for message call sent to new proxy contract.
+     * @param saltNonce     Nonce that will be used to generate the salt to calculate the address of the new proxy contract.
+     */
+    function createProxy(bytes memory initializer, uint256 saltNonce) external returns (LaserProxy proxy);
+
+    /**
+     * @dev Precomputes the address of a proxy that is created through 'create2'.
+     */
+    function preComputeAddress(bytes memory initializer, uint256 saltNonce) external view returns (address);
+
+    /**
+     * @dev Allows to retrieve the runtime code of a deployed Proxy. This can be used to check that the expected Proxy was deployed.
+     */
+    function proxyRuntimeCode() external pure returns (bytes memory);
 }

@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 pragma solidity 0.8.16;
 
+import {WalletConfig} from "../interfaces/ILaserState.sol";
+
 /**
  * @title LaserWalletStorage
  *
@@ -12,8 +14,6 @@ abstract contract LaserWalletStorage {
 
     address public owner;
 
-    bool public isLocked;
-
     uint256 public nonce;
 
     uint256 internal guardianCount;
@@ -23,4 +23,6 @@ abstract contract LaserWalletStorage {
     mapping(address => address) public guardians;
 
     mapping(address => address) public recoveryOwners;
+
+    WalletConfig walletConfig;
 }

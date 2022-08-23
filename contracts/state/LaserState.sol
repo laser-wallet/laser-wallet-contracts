@@ -6,6 +6,8 @@ import "../common/Utils.sol";
 import "../interfaces/IERC165.sol";
 import "../interfaces/ILaserState.sol";
 
+import "hardhat/console.sol";
+
 contract LaserState is ILaserState, Access {
     address internal constant POINTER = address(0x1); // POINTER for the link list.
 
@@ -100,6 +102,7 @@ contract LaserState is ILaserState, Access {
             newGuardian == address(0) ||
             newGuardian == owner ||
             guardians[newGuardian] != address(0) ||
+            recoveryOwners[newGuardian] != address(0) ||
             newGuardian == POINTER
         ) revert LS__addGuardian__invalidAddress();
 
@@ -146,20 +149,22 @@ contract LaserState is ILaserState, Access {
             newRecoveryOwner == address(0) ||
             newRecoveryOwner == owner ||
             recoveryOwners[newRecoveryOwner] != address(0) ||
+            guardians[newRecoveryOwner] != address(0) ||
             newRecoveryOwner == POINTER
         ) revert LS__addGuardian__invalidAddress();
 
         if (newRecoveryOwner.code.length > 0) {
             if (!IERC165(newRecoveryOwner).supportsInterface(0x1626ba7e)) {
+                //@todo change the error.
                 revert LS__addGuardian__invalidAddress();
             }
         }
 
-        recoveryOwners[newRecoveryOwner] = guardians[POINTER];
+        recoveryOwners[newRecoveryOwner] = recoveryOwners[POINTER];
         recoveryOwners[POINTER] = newRecoveryOwner;
 
         unchecked {
-            guardianCount++;
+            recoveryOwnerCount++;
         }
 
         emit NewRecoveryOwner(newRecoveryOwner);
@@ -170,12 +175,13 @@ contract LaserState is ILaserState, Access {
             revert LS__removeGuardian__invalidAddress();
         }
 
-        if (guardians[prevRecoveryOwner] != recoveryOwnerToRemove) {
+        if (recoveryOwners[prevRecoveryOwner] != recoveryOwnerToRemove) {
+            //@todo change the error
             revert LS__removeGuardian__incorrectPreviousGuardian();
         }
 
         // There needs to be at least 1 recovery owner.
-        if (guardianCount - 1 < 1) revert LS__removeGuardian__underflow();
+        if (recoveryOwnerCount - 1 < 1) revert LS__removeGuardian__underflow();
 
         recoveryOwners[prevRecoveryOwner] = recoveryOwners[recoveryOwnerToRemove];
         recoveryOwners[recoveryOwnerToRemove] = address(0);
@@ -211,6 +217,14 @@ contract LaserState is ILaserState, Access {
             index++;
         }
         return recoveryOwnersArray;
+    }
+
+    function isLocked() external view returns (bool) {
+        return walletConfig.isLocked;
+    }
+
+    function getConfigTimestamp() external view returns (uint256) {
+        return walletConfig.timestamp;
     }
 
     function initGuardians(address[] calldata _guardians) internal {

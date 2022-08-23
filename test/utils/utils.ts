@@ -1,5 +1,6 @@
 import { Wallet, Contract, BigNumber, Signer, BigNumberish } from "ethers";
 import { ethers, deployments } from "hardhat";
+import { LaserWallet } from "../../typechain-types";
 import { addrZero } from "../constants/constants";
 import { Address, LaserTypes, Transaction } from "../types";
 import { addressesForTest } from "./setup";
@@ -12,9 +13,20 @@ export function encodeFunctionData(abi: any, functionName: string, ..._params: a
     return data;
 }
 
-export async function getHash(wallet: Contract, transaction: Transaction): Promise<string> {
-    const hash = await wallet.operationHash(transaction.to, transaction.value, transaction.callData, transaction.nonce);
-    return hash;
+export async function getHash(wallet: LaserWallet, transaction: Transaction): Promise<string> {
+    return wallet.operationHash(transaction.to, transaction.value, transaction.callData, transaction.nonce);
+}
+
+export async function getRecoveryHash(wallet: LaserWallet, callData: string): Promise<string> {
+    const chainId = await wallet.getChainId();
+    const nonce = await wallet.nonce();
+    const address = wallet.address;
+
+    const dataHash = ethers.utils.solidityKeccak256(
+        ["uint256", "bytes", "address", "uint256"],
+        [nonce, ethers.utils.keccak256(callData), address, chainId]
+    );
+    return dataHash;
 }
 
 export async function sendTx(wallet: Contract, transaction: Transaction, signer?: Signer) {
@@ -37,7 +49,7 @@ export async function sendTx(wallet: Contract, transaction: Transaction, signer?
     }
 }
 
-export async function generateTransaction(): Promise<Transaction> {
+export function generateTransaction(): Transaction {
     return {
         to: "",
         value: 0,

@@ -100,8 +100,4 @@ library Utils {
             success := call(txGas, to, value, add(callData, 0x20), mload(callData), 0, 0)
         }
     }
-
-    function min(uint256 a, uint256 b) internal pure returns (uint256) {
-        return a < b ? a : b;
-    }
 }

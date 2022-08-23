@@ -35,15 +35,17 @@ interface ILaserWallet {
 
     error LW__exec__walletLocked();
 
-    error LW__exec__notOwner();
+    error LW__exec__invalidSignatureLength();
 
-    error LW__exec__incorrectSigner2();
+    error LW__exec__invalidSignature();
 
     error LW__exec__callFailed();
 
     error LW__recovery__invalidNonce();
 
-    error LW__recovery__invalidSignature();
+    error LW__recovery__invalidSignatureLength();
+
+    error LW__recoveryLock__invalidSignature();
 
     error LW__recovery__invalidOperation();
 

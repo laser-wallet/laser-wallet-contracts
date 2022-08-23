@@ -73,8 +73,9 @@ contract LaserFactory is ILaserFactory {
     }
 
     /**
-     * @dev Allows to create new proxy contact using CREATE2 but it doesn't run the initializer.
-     * This method is only meant as an utility to be called from other methods.
+     * @notice Allows to create new proxy contact using CREATE2 but it doesn't run the initializer.
+     *         This method is only meant as an utility to be called from other methods.
+     *
      * @param initializer Payload for message call sent to new proxy contract.
      * @param saltNonce Nonce that will be used to generate the salt to calculate the address of the new proxy contract.
      */

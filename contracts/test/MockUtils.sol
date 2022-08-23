@@ -4,21 +4,29 @@ pragma solidity 0.8.16;
 import "../interfaces/IEIP1271.sol";
 
 /**
- * @title MockUtils - Mocks utils library for testing.
+ * @title Utils - Helper functions for Laser wallet and modules.
  */
 contract MockUtils {
+    /*//////////////////////////////////////////////////////////////
+                                 ERRORS
+    //////////////////////////////////////////////////////////////*/
+
     error Utils__returnSigner__invalidSignature();
+
     error Utils__returnSigner__invalidContractSignature();
 
     /**
-     * @dev Returns the signer of the hash.
-     * @param signedHash The hash that was signed.
+     * @param signedHash  The hash that was signed.
+     * @param signatures  Result of signing the has.
+     * @param pos         Position of the signer.
+     *
+     * @return signer      Address that signed the hash.
      */
     function returnSigner(
         bytes32 signedHash,
         bytes memory signatures,
         uint256 pos
-    ) public view returns (address signer) {
+    ) external view returns (address signer) {
         bytes32 r;
         bytes32 s;
         uint8 v;
@@ -54,8 +62,8 @@ contract MockUtils {
     }
 
     /**
-     * @dev Returns the r, s and v of the signature.
-     * @param signatures Signature.
+     * @dev Returns the r, s and v values of the signature.
+     *
      * @param pos Which signature to read.
      */
     function splitSigs(bytes memory signatures, uint256 pos)
@@ -77,31 +85,19 @@ contract MockUtils {
 
     /**
      * @dev Calls a target address, sends value and / or data payload.
-     * @param to Destination address.
-     * @param value Amount to send in ETH.
-     * @param data Data payload.
-     * @param txGas Amount of gas to forward.
+     *
+     * @param to        Destination address.
+     * @param value     Amount in WEI to transfer.
+     * @param callData  Data payload for the transaction.
      */
     function call(
         address to,
         uint256 value,
-        bytes memory data,
+        bytes memory callData,
         uint256 txGas
-    ) public returns (bool success) {
+    ) external returns (bool success) {
         assembly {
-            // We execute a call to the target address and return a boolean (success, false).
-            success := call(txGas, to, value, add(data, 0x20), mload(data), 0, 0)
+            success := call(txGas, to, value, add(callData, 0x20), mload(callData), 0, 0)
         }
-    }
-
-    /**
-     * @dev Calculates the gas price.
-     */
-    function calculateGasPrice(uint256 maxFeePerGas) public view returns (uint256 gasPrice) {
-        return min(maxFeePerGas, tx.gasprice);
-    }
-
-    function min(uint256 a, uint256 b) public pure returns (uint256) {
-        return a < b ? a : b;
     }
 }
