@@ -1,4 +1,4 @@
-![laser-wallet](https://github.com/laser-wallet/laser-wallet-contracts/blob/logo/docs/Logo%20Vertical.png)
+![laser-wallet](https://github.com/laser-wallet/laser-wallet-contracts/blob/logo2/docs/Logomark.png)
 
 
 # Laser Wallet Contracts
