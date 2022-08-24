@@ -121,7 +121,8 @@ contract LaserWallet is ILaserWallet, LaserState, Handler {
     function multiCall(Transaction[] calldata transactions) external {
         uint256 transactionsLength = transactions.length;
 
-        //@todo custom errors and optimization.
+        // @todo custom errors and optimization.
+        // This is a mockup, not final.
         for (uint256 i = 0; i < transactionsLength; ) {
             Transaction calldata transaction = transactions[i];
 

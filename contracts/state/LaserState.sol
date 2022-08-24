@@ -115,9 +115,11 @@ contract LaserState is ILaserState, Access {
      */
     function changeSingleton(address newSingleton) external access {
         //bytes4(keccak256("I_AM_LASER"))
-        if (newSingleton == address(this) || !IERC165(newSingleton).supportsInterface(0xae029e0b)) {
-            revert LS__changeSingleton__invalidAddress();
-        }
+        if (
+            newSingleton == singleton ||
+            newSingleton == address(this) ||
+            !IERC165(newSingleton).supportsInterface(0xae029e0b)
+        ) revert LS__changeSingleton__invalidAddress();
 
         singleton = newSingleton;
 

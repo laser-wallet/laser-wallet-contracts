@@ -1,19 +1,36 @@
 import { expect } from "chai";
 import { deployments, ethers } from "hardhat";
 import { Contract } from "ethers";
-import { walletSetup, addressesForTest, AddressesForTest, signersForTest } from "../utils";
-import { Address } from "../types";
+import {
+    walletSetup,
+    addressesForTest,
+    AddressesForTest,
+    signersForTest,
+    generateTransaction,
+    encodeFunctionData,
+    getRecoveryHash,
+    signAndBundle,
+    SignersForTest,
+    getHash,
+    sign,
+    fundWallet,
+} from "../utils";
+import { Address, Transaction } from "../types";
 import { addrZero } from "../constants/constants";
 
 const { abi } = require("../../artifacts/contracts/LaserWallet.sol/LaserWallet.json");
 
 describe("Core", () => {
     let addresses: AddressesForTest;
+    let signers: SignersForTest;
     let factory: Contract;
+    let tx: Transaction;
 
     beforeEach(async () => {
         await deployments.fixture();
         addresses = await addressesForTest();
+        signers = await signersForTest();
+        tx = generateTransaction();
     });
 
     describe("init()", async () => {
@@ -162,6 +179,156 @@ describe("Core", () => {
         it("should init and emit event", async () => {
             const { owner, recoveryOwners, guardians } = addresses;
             expect(await walletSetup(owner, recoveryOwners, guardians)).to.emit(abi, "Setup");
+        });
+    });
+
+    describe("exec()", () => {
+        it("should revert if the nonce is incorrect", async () => {
+            const { wallet } = await walletSetup();
+
+            tx.to = ethers.Wallet.createRandom().address;
+            tx.value = 10;
+            tx.callData = "0x";
+            tx.nonce = 5;
+            tx.signatures = "0x";
+
+            await expect(wallet.exec(tx.to, tx.value, tx.callData, tx.nonce, tx.signatures)).to.be.revertedWith(
+                "LW__exec__invalidNonce()"
+            );
+        });
+
+        it("should revert if the wallet is locked", async () => {
+            const { wallet } = await walletSetup();
+
+            const callData = encodeFunctionData(abi, "lock", []);
+            const hash = await getRecoveryHash(wallet, callData);
+            const signatures = await signAndBundle(signers.recoveryOwner1Signer, signers.guardian1Signer, hash);
+            await wallet.recovery(await wallet.nonce(), callData, signatures);
+
+            // Should be locked.
+            expect(await wallet.isLocked()).to.equal(true);
+
+            tx.to = ethers.Wallet.createRandom().address;
+            tx.value = 10;
+            tx.callData = "0x";
+            tx.nonce = await wallet.nonce();
+            tx.signatures = "0x";
+
+            await expect(wallet.exec(tx.to, tx.value, tx.callData, tx.nonce, tx.signatures)).to.be.revertedWith(
+                "LW__exec__walletLocked()"
+            );
+        });
+
+        it("should revert if the signature is too short", async () => {
+            const { wallet } = await walletSetup();
+
+            tx.to = ethers.Wallet.createRandom().address;
+            tx.value = 10;
+            tx.callData = "0x";
+            tx.nonce = await wallet.nonce();
+            const hash = await getHash(wallet, tx);
+            tx.signatures = await sign(signers.ownerSigner, hash);
+
+            await expect(wallet.exec(tx.to, tx.value, tx.callData, tx.nonce, tx.signatures)).to.be.revertedWith(
+                "LW__exec__invalidSignatureLength()"
+            );
+        });
+
+        it("should revert if the first signer is not the owner", async () => {
+            const { wallet } = await walletSetup();
+
+            tx.to = ethers.Wallet.createRandom().address;
+            tx.value = 10;
+            tx.callData = "0x";
+            tx.nonce = await wallet.nonce();
+            const hash = await getHash(wallet, tx);
+            tx.signatures = await signAndBundle(signers.recoveryOwner1Signer, signers.guardian1Signer, hash);
+
+            await expect(wallet.exec(tx.to, tx.value, tx.callData, tx.nonce, tx.signatures)).to.be.revertedWith(
+                "LW__exec__invalidSignature()"
+            );
+        });
+
+        it("should revert if the second signer is a random signer", async () => {
+            const { wallet } = await walletSetup();
+
+            tx.to = ethers.Wallet.createRandom().address;
+            tx.value = 10;
+            tx.callData = "0x";
+            tx.nonce = await wallet.nonce();
+            const hash = await getHash(wallet, tx);
+            const signer = ethers.Wallet.createRandom();
+            tx.signatures = await signAndBundle(signers.ownerSigner, signer, hash);
+
+            await expect(wallet.exec(tx.to, tx.value, tx.callData, tx.nonce, tx.signatures)).to.be.revertedWith(
+                "LW__exec__invalidSignature()"
+            );
+        });
+
+        it("should revert if the owner signs two times", async () => {
+            const { wallet } = await walletSetup();
+
+            tx.to = ethers.Wallet.createRandom().address;
+            tx.value = 10;
+            tx.callData = "0x";
+            tx.nonce = await wallet.nonce();
+            const hash = await getHash(wallet, tx);
+            tx.signatures = await signAndBundle(signers.ownerSigner, signers.ownerSigner, hash);
+
+            await expect(wallet.exec(tx.to, tx.value, tx.callData, tx.nonce, tx.signatures)).to.be.revertedWith(
+                "LW__exec__invalidSignature()"
+            );
+        });
+
+        it("should send eth (owner + recovery owner)", async () => {
+            const { address, wallet } = await walletSetup();
+            await fundWallet(signers.ownerSigner, address);
+
+            tx.to = ethers.Wallet.createRandom().address;
+            expect(await ethers.provider.getBalance(tx.to)).to.equal(0);
+            tx.value = 10;
+            tx.callData = "0x";
+            tx.nonce = await wallet.nonce();
+            const hash = await getHash(wallet, tx);
+            tx.signatures = await signAndBundle(signers.ownerSigner, signers.recoveryOwner1Signer, hash);
+
+            await wallet.exec(tx.to, tx.value, tx.callData, tx.nonce, tx.signatures);
+            expect(await ethers.provider.getBalance(tx.to)).to.equal(tx.value);
+        });
+
+        it("should send eth (owner + guardian)", async () => {
+            const { address, wallet } = await walletSetup();
+            await fundWallet(signers.ownerSigner, address);
+
+            tx.to = ethers.Wallet.createRandom().address;
+            expect(await ethers.provider.getBalance(tx.to)).to.equal(0);
+            tx.value = 10;
+            tx.callData = "0x";
+            tx.nonce = await wallet.nonce();
+            const hash = await getHash(wallet, tx);
+            tx.signatures = await signAndBundle(signers.ownerSigner, signers.guardian1Signer, hash);
+
+            await wallet.exec(tx.to, tx.value, tx.callData, tx.nonce, tx.signatures);
+            expect(await ethers.provider.getBalance(tx.to)).to.equal(tx.value);
+        });
+
+        it("should send eth and emit event", async () => {
+            const { address, wallet } = await walletSetup();
+            await fundWallet(signers.ownerSigner, address);
+
+            tx.to = ethers.Wallet.createRandom().address;
+            expect(await ethers.provider.getBalance(tx.to)).to.equal(0);
+            tx.value = 10;
+            tx.callData = "0x";
+            tx.nonce = await wallet.nonce();
+            const hash = await getHash(wallet, tx);
+            tx.signatures = await signAndBundle(signers.ownerSigner, signers.guardian1Signer, hash);
+
+            expect(await wallet.exec(tx.to, tx.value, tx.callData, tx.nonce, tx.signatures)).to.emit(
+                abi,
+                "ExecSuccess"
+            );
+            expect(await ethers.provider.getBalance(tx.to)).to.equal(tx.value);
         });
     });
 });
