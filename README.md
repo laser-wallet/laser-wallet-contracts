@@ -2,6 +2,7 @@
   <img src="https://github.com/laser-wallet/laser-wallet-contracts/blob/logo2/docs/Logomark.png" width=280>
 </p>
 
+<br>
 
 # Laser Wallet Contracts
 
