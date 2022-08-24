@@ -1,4 +1,6 @@
-src="https://github.com/laser-wallet/laser-wallet-contracts/blob/logo2/docs/Logomark.png" width="250" height="250" />
+<p align="center">
+  <img src="https://github.com/laser-wallet/laser-wallet-contracts/blob/logo2/docs/Logomark.png" width=280>
+</p>
 
 
 # Laser Wallet Contracts
