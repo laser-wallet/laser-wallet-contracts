@@ -4,7 +4,11 @@
 
 <br>
 
-# Laser Wallet Contracts
+## Laser Wallet Contracts
+
+
+This repository contains all the smart contract from Laser. 
+
 
 ## Laser is a modular non-custodial smart contract wallet made for the EVM.
 
