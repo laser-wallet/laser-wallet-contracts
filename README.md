@@ -1,4 +1,4 @@
-![laser-wallet](https://github.com/laser-wallet/laser-wallet-contracts/blob/logo2/docs/Logomark.png = =250x250)
+![laser-wallet](https://github.com/laser-wallet/laser-wallet-contracts/blob/logo2/docs/Logomark.png  =250x250)
 
 
 # Laser Wallet Contracts
