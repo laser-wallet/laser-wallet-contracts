@@ -1,9 +1,6 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 pragma solidity 0.8.16;
 
-import "../interfaces/ILaserModuleSSR.sol";
-import "../interfaces/ILaserState.sol";
-
 /**
  * @title LaserHelper
  *

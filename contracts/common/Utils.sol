@@ -4,11 +4,13 @@ pragma solidity 0.8.16;
 import "../interfaces/IEIP1271.sol";
 
 /**
- * @title Utils - Helper functions for Laser wallet and modules.
+ * @title Utils
+ *
+ * @notice Helper functions for Laser wallet.
  */
 library Utils {
     /*//////////////////////////////////////////////////////////////
-                            Errors
+                                 ERRORS
     //////////////////////////////////////////////////////////////*/
 
     error Utils__returnSigner__invalidSignature();
@@ -86,9 +88,9 @@ library Utils {
     /**
      * @dev Calls a target address, sends value and / or data payload.
      *
-     * @param to     Destination address.
-     * @param value  Amount in WEI to transfer.
-     * @param callData   Data payload for the transaction.
+     * @param to        Destination address.
+     * @param value     Amount in WEI to transfer.
+     * @param callData  Data payload for the transaction.
      */
     function call(
         address to,
@@ -99,27 +101,5 @@ library Utils {
         assembly {
             success := call(txGas, to, value, add(callData, 0x20), mload(callData), 0, 0)
         }
-    }
-
-    /**
-     * @dev Calculates the gas price for the transaction.
-     */
-    function calculateGasPrice(uint256 maxFeePerGas, uint256 maxPriorityFeePerGas) internal view returns (uint256) {
-        if (maxFeePerGas == maxPriorityFeePerGas) {
-            // Legacy mode (pre-EIP1559)
-            return min(maxFeePerGas, tx.gasprice);
-        }
-
-        // EIP-1559
-        // priority_fee_per_gas = min(transaction.max_priority_fee_per_gas, transaction.max_fee_per_gas - block.base_fee_per_gas)
-        // effective_gas_price = priority_fee_per_gas + block.base_fee_per_gas
-        uint256 priorityFeePerGas = min(maxPriorityFeePerGas, maxFeePerGas - block.basefee);
-
-        // effective_gas_price
-        return priorityFeePerGas + block.basefee;
-    }
-
-    function min(uint256 a, uint256 b) internal pure returns (uint256) {
-        return a < b ? a : b;
     }
 }

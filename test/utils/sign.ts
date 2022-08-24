@@ -8,9 +8,6 @@ export async function signTypedData(signer: Wallet, domain: Domain, transaction:
         value: transaction.value,
         callData: transaction.callData,
         nonce: transaction.nonce,
-        maxFeePerGas: transaction.maxFeePerGas,
-        maxPriorityFeePerGas: transaction.maxPriorityFeePerGas,
-        gasLimit: transaction.gasLimit,
     };
     return signer._signTypedData(domain, types, laserTypes);
 }
@@ -19,4 +16,11 @@ export async function sign(signer: Signer, hash: string): Promise<string> {
     const typedDataHash = ethers.utils.arrayify(hash);
     const signature = (await signer.signMessage(typedDataHash)).replace(/1b$/, "1f").replace(/1c$/, "20");
     return signature;
+}
+
+export async function signAndBundle(signer1: Signer, signer2: Signer, hash: string): Promise<string> {
+    const sig1 = await sign(signer1, hash);
+    const sig2 = await sign(signer2, hash);
+
+    return sig1 + sig2.slice(2);
 }

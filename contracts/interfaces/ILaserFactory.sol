@@ -3,40 +3,60 @@ pragma solidity 0.8.16;
 
 import "../proxies/LaserProxy.sol";
 
+/**
+ * @title  LaserFactory
+ *
+ * @notice Factory that creates new Laser proxies, and has helper methods.
+ *
+ * @dev    This interface has all events, errors, and external function for LaserFactory.
+ */
 interface ILaserFactory {
-    event ProxyCreation(address proxy);
+    /*//////////////////////////////////////////////////////////////
+                                 EVENTS
+    //////////////////////////////////////////////////////////////*/
 
-    ///@dev constructor() custom error.
-    error LaserFactory__constructor__invalidSingleton();
+    event LaserCreated(address laser);
 
-    ///@dev createProxyWithCreate2() custom error.
-    error LaserFactory__create2Failed();
+    /*//////////////////////////////////////////////////////////////
+                                 ERRORS
+    //////////////////////////////////////////////////////////////*/
 
-    ///@dev Creates a new proxy with create 2, initializes the wallet and refunds the relayer.
-    function deployProxyAndRefund(
-        address owner,
-        uint256 maxFeePerGas,
-        uint256 maxPriorityFeePerGas,
-        uint256 gasLimit,
-        address relayer,
-        address smartSocialRecoveryModule,
-        address laserVault,
-        bytes calldata smartSocialRecoveryInitData,
-        uint256 saltNumber,
-        bytes memory ownerSignature
-    ) external returns (LaserProxy proxy);
+    error LF__constructor__invalidSingleton();
 
-    ///@dev Precomputes the address of a proxy that is created through 'create2'.
-    function preComputeAddress(
-        address owner,
-        address laserModule,
-        bytes calldata laserModuleData,
-        uint256 saltNumber
-    ) external view returns (address);
+    error LF__createProxy__creationFailed();
 
-    ///@dev Allows to retrieve the runtime code of a deployed Proxy. This can be used to check that the expected Proxy was deployed.
+    error LF__deployProxy__create2Failed();
+
+    /*//////////////////////////////////////////////////////////////
+                                 STATE
+    //////////////////////////////////////////////////////////////*/
+
+    function singleton() external view returns (address);
+
+    /*//////////////////////////////////////////////////////////////
+                                EXTERNAL
+    //////////////////////////////////////////////////////////////*/
+
+    /**
+     * @dev Allows to create new proxy contact and execute a message call to the new proxy within one transaction.
+     *
+     * @param initializer   Payload for message call sent to new proxy contract.
+     * @param saltNonce     Nonce that will be used to generate the salt to calculate the address of the new proxy contract.
+     */
+    function createProxy(bytes memory initializer, uint256 saltNonce) external returns (LaserProxy proxy);
+
+    /**
+     * @dev Precomputes the address of a proxy that is created through 'create2'.
+     */
+    function preComputeAddress(bytes memory initializer, uint256 saltNonce) external view returns (address);
+
+    /**
+     * @dev Allows to retrieve the runtime code of a deployed Proxy. This can be used to check that the expected Proxy was deployed.
+     */
     function proxyRuntimeCode() external pure returns (bytes memory);
 
-    ///@dev Allows to retrieve the creation code used for the Proxy deployment. With this it is easily possible to calculate predicted address.
+    /**
+     *  @dev Allows to retrieve the creation code used for the Proxy deployment. With this it is easily possible to calculate predicted address.
+     */
     function proxyCreationCode() external pure returns (bytes memory);
 }

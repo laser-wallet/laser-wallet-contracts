@@ -41,15 +41,7 @@ describe("Setup", () => {
             const { ownerSigner } = await signersForTest();
             const tx = await generateTransaction();
             tx.to = address;
-            const hash = await wallet.operationHash(
-                tx.to,
-                tx.value,
-                tx.callData,
-                tx.nonce,
-                tx.maxFeePerGas,
-                tx.maxPriorityFeePerGas,
-                tx.gasLimit
-            );
+            const hash = await wallet.operationHash(tx.to, tx.value, tx.callData, tx.nonce);
             const sig = await sign(ownerSigner, hash);
             const signer = await utils.returnSigner(hash, sig, 0);
             expect(signer).to.equal(owner);
@@ -66,15 +58,7 @@ describe("Setup", () => {
             };
 
             const sig = await signTypedData(ownerWallet, domain, tx);
-            const hash = await wallet.operationHash(
-                tx.to,
-                tx.value,
-                tx.callData,
-                tx.nonce,
-                tx.maxFeePerGas,
-                tx.maxPriorityFeePerGas,
-                tx.gasLimit
-            );
+            const hash = await wallet.operationHash(tx.to, tx.value, tx.callData, tx.nonce);
             const signer = await utils.returnSigner(hash, sig, 0);
             expect(signer).to.equal(owner);
         });

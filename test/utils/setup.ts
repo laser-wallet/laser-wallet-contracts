@@ -1,9 +1,9 @@
-import { BigNumberish, Contract, Signer } from "ethers";
+import { BigNumberish, Contract, Signer, Wallet } from "ethers";
 import { ethers, deployments, getNamedAccounts } from "hardhat";
 import { encodeFunctionData } from "./utils";
 import { sign } from "./sign";
 import { Address } from "../types";
-import { LaserWallet } from "../../typechain-types";
+import { LaserWallet, LaserWallet__factory } from "../../typechain-types";
 import { LaserFactory } from "../../typechain-types";
 import { addrZero, ownerWallet } from "../constants/constants";
 
@@ -14,14 +14,12 @@ type ReturnWalletSetup = {
     wallet: LaserWallet;
     factoryAddress: Address;
     factory: Contract;
-    SSR: Address;
 };
 
 export type AddressesForTest = {
     owner: Address;
     recoveryOwners: Address[];
     guardians: Address[];
-    relayer: Address;
 };
 
 export type SignersForTest = {
@@ -30,137 +28,89 @@ export type SignersForTest = {
     recoveryOwner2Signer: Signer;
     guardian1Signer: Signer;
     guardian2Signer: Signer;
-    relayerSigner: Signer;
 };
 
 export async function addressesForTest(): Promise<AddressesForTest> {
-    const [owner, recoveryOwner1, recoveryOwner2, guardian1, guardian2, relayer] = await ethers.getSigners();
+    const [owner, recoveryOwner1, recoveryOwner2, guardian1, guardian2] = await ethers.getSigners();
     const ownerAddress = await owner.getAddress();
 
     const recoveryOwners = [await recoveryOwner1.getAddress(), await recoveryOwner2.getAddress()];
 
     const guardians = [await guardian1.getAddress(), await guardian2.getAddress()];
 
-    const relayerAddress = await relayer.getAddress();
     return {
         owner: ownerAddress,
         recoveryOwners: recoveryOwners,
         guardians: guardians,
-        relayer: relayerAddress,
     };
 }
 
+export function getInitializer(
+    owner: Address,
+    guardians: Address[],
+    recoveryOwners: Address[],
+    ownerSignature: string
+): string {
+    return encodeFunctionData(LaserWallet__factory.abi, "init", [owner, guardians, recoveryOwners, ownerSignature]);
+}
+
 export async function signersForTest(): Promise<SignersForTest> {
-    const [owner, recoveryOwner1, recoveryOwner2, guardian1, guardian2, relayer] = await ethers.getSigners();
+    const [owner, recoveryOwner1, recoveryOwner2, guardian1, guardian2] = await ethers.getSigners();
     return {
         ownerSigner: owner,
         recoveryOwner1Signer: recoveryOwner1,
         recoveryOwner2Signer: recoveryOwner2,
         guardian1Signer: guardian1,
         guardian2Signer: guardian2,
-        relayerSigner: relayer,
     };
-}
-
-export async function initSSR(guardians: Address[], recoveryOwners: Address[]): Promise<string> {
-    const abi = (await deployments.get("LaserModuleSSR")).abi;
-
-    return encodeFunctionData(abi, "initSSR", [guardians, recoveryOwners]);
 }
 
 export async function walletSetup(
     _owner?: Address,
     _recoveryOwners?: Address[],
     _guardians?: Address[],
-    _maxFeePerGas?: BigNumberish,
-    _maxPriorityFeePerGas?: BigNumberish,
-    _gasLimit?: BigNumberish,
-    _relayer?: Address,
     ownerSignature?: string,
-    _ownerSigner?: Signer,
     saltNumber?: BigNumberish,
-    fundWallet?: boolean
+    _ownerSigner?: Wallet
 ): Promise<ReturnWalletSetup> {
     // deployments.fixture() needs to be called prior to the execution of this function.
-    const _LaserWallet = await deployments.get("LaserWallet");
-    const abi = _LaserWallet.abi;
-    const singleton = (await ethers.getContractAt(abi, _LaserWallet.address)) as LaserWallet;
+    const _singleton = await deployments.get("LaserWallet");
+    const abi = _singleton.abi;
+    const singleton = (await ethers.getContractAt(abi, _singleton.address)) as LaserWallet;
 
-    const Factory = await deployments.get("LaserFactory");
-    const factory = await ethers.getContractAt(Factory.abi, Factory.address);
+    const _factory = await deployments.get("LaserFactory");
+    const factory = await ethers.getContractAt(_factory.abi, _factory.address);
 
-    let { owner, recoveryOwners, guardians, relayer } = await addressesForTest();
+    let { owner, recoveryOwners, guardians } = await addressesForTest();
     let { ownerSigner } = await signersForTest();
 
-    const maxFeePerGas = _maxFeePerGas ? _maxFeePerGas : 0;
-    const maxPriorityFeePerGas = _maxPriorityFeePerGas ? _maxPriorityFeePerGas : 0;
-    const gasLimit = _gasLimit ? _gasLimit : 0;
-
-    const abiCoder = new ethers.utils.AbiCoder();
     const chainId = (await ethers.provider.getNetwork()).chainId;
 
     owner = _owner ? _owner : owner;
-    ownerSigner = _ownerSigner ? _ownerSigner : ownerSigner;
     recoveryOwners = _recoveryOwners ? _recoveryOwners : recoveryOwners;
     guardians = _guardians ? _guardians : guardians;
-    relayer = _relayer ? _relayer : relayer;
+
     const salt = saltNumber ? saltNumber : 1111;
 
-    const ssrInitData = initSSR(guardians, recoveryOwners);
-    const LaserSSRModuleAddress = (await deployments.get("LaserModuleSSR")).address;
-    const preComputedAddress = await factory.preComputeAddress(owner, LaserSSRModuleAddress, ssrInitData, salt);
-
     const dataHash = ethers.utils.solidityKeccak256(
-        ["uint256", "uint256", "uint256", "uint256", "address"],
-        [maxFeePerGas, maxPriorityFeePerGas, gasLimit, chainId, preComputedAddress]
+        ["address[]", "address[]", "uint256"],
+        [guardians, recoveryOwners, chainId]
     );
-    const laserVaultAddress = (await deployments.get("LaserVault")).address;
 
-    if (fundWallet) {
-        await ownerSigner.sendTransaction({
-            to: preComputedAddress,
-            value: ethers.utils.parseEther("10"),
-        });
-    }
+    const signature = ownerSignature ? ownerSignature : await sign(_ownerSigner ? _ownerSigner : ownerSigner, dataHash);
 
-    const signature = ownerSignature ? ownerSignature : await sign(ownerSigner, dataHash);
+    const initializer = getInitializer(owner, guardians, recoveryOwners, signature);
 
-    const transaction = await factory.deployProxyAndRefund(
-        owner,
-        maxFeePerGas,
-        maxPriorityFeePerGas,
-        gasLimit,
-        relayer,
-        LaserSSRModuleAddress,
-        laserVaultAddress,
-        ssrInitData,
-        salt,
-        signature,
-        { gasLimit: gasLimit > 0 ? gasLimit : 10000000 }
-    );
+    const transaction = await factory.createProxy(initializer, salt);
 
     const receipt = await transaction.wait();
-    const proxyAddress = receipt.events[0].args.proxy;
-
+    const proxyAddress = receipt.events[0].args.laser;
     const wallet = (await ethers.getContractAt(abi, proxyAddress)) as LaserWallet;
 
     return {
         address: proxyAddress,
         wallet: wallet,
-        factoryAddress: Factory.address,
+        factoryAddress: factory.address,
         factory: factory,
-        SSR: LaserSSRModuleAddress,
     };
-}
-
-export async function getRecoveryOwners(module: Address, wallet: Address): Promise<Address[]> {
-    const abi = ["function getRecoveryOwners(address) external view returns (address[] memory)"];
-    const contract = new ethers.Contract(module, abi, ethers.provider);
-    return contract.getRecoveryOwners(wallet);
-}
-
-export async function getGuardians(module: Address, wallet: Address): Promise<Address[]> {
-    const abi = ["function getGuardians(address) external view returns (address[] memory)"];
-    const contract = new ethers.Contract(module, abi, ethers.provider);
-    return contract.getGuardians(wallet);
 }

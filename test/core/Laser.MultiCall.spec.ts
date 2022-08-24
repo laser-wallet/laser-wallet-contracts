@@ -6,8 +6,6 @@ import {
     addressesForTest,
     AddressesForTest,
     signersForTest,
-    getRecoveryOwners,
-    getGuardians,
     generateTransaction,
     SignersForTest,
     fundWallet,
@@ -31,31 +29,6 @@ describe("MultiCall", () => {
     });
 
     describe("multiCall()", () => {
-        it("should exec a batch of transactions", async () => {
-            const { address, wallet } = await walletSetup();
-            await fundWallet(signers.ownerSigner, address);
-
-            const tx = await generateTransaction();
-
-            const targetTxCount = 10;
-
-            const val = 100;
-
-            const to = ethers.Wallet.createRandom().address;
-
-            let transactions = [];
-            for (let i = 0; i < 2; i++) {
-                tx.to = to;
-                tx.value = val;
-                const nonce = i;
-                tx.nonce = nonce;
-
-                const hash = await getHash(wallet, tx);
-                tx.signatures = await sign(signers.ownerSigner, hash);
-                transactions.push(tx);
-                await wallet.multiCall(transactions, { gasLimit: tx.gasLimit });
-                break;
-            }
-        });
+        it("should exec a batch of transactions", async () => {});
     });
 });

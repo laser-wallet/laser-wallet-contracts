@@ -1,10 +1,10 @@
 import { Wallet, Contract, BigNumber, Signer, BigNumberish } from "ethers";
 import { ethers, deployments } from "hardhat";
+import { LaserWallet } from "../../typechain-types";
 import { addrZero } from "../constants/constants";
 import { Address, LaserTypes, Transaction } from "../types";
 import { addressesForTest } from "./setup";
 import { sign } from "./sign";
-import { initSSR } from "./setup";
 
 export function encodeFunctionData(abi: any, functionName: string, ..._params: any[]): string {
     const params = _params[0];
@@ -13,36 +13,27 @@ export function encodeFunctionData(abi: any, functionName: string, ..._params: a
     return data;
 }
 
-export async function getHash(wallet: Contract, transaction: Transaction): Promise<string> {
-    const hash = await wallet.operationHash(
-        transaction.to,
-        transaction.value,
-        transaction.callData,
-        transaction.nonce,
-        transaction.maxFeePerGas,
-        transaction.maxPriorityFeePerGas,
-        transaction.gasLimit
+export async function getHash(wallet: LaserWallet, transaction: Transaction): Promise<string> {
+    return wallet.operationHash(transaction.to, transaction.value, transaction.callData, transaction.nonce);
+}
+
+export async function getRecoveryHash(wallet: LaserWallet, callData: string): Promise<string> {
+    const chainId = await wallet.getChainId();
+    const nonce = await wallet.nonce();
+    const address = wallet.address;
+
+    const dataHash = ethers.utils.solidityKeccak256(
+        ["uint256", "bytes", "address", "uint256"],
+        [nonce, ethers.utils.keccak256(callData), address, chainId]
     );
-    return hash;
+    return dataHash;
 }
 
 export async function sendTx(wallet: Contract, transaction: Transaction, signer?: Signer) {
     if (signer) {
         const tx = await wallet
             .connect(signer)
-            .exec(
-                transaction.to,
-                transaction.value,
-                transaction.callData,
-                transaction.nonce,
-                transaction.maxFeePerGas,
-                transaction.maxPriorityFeePerGas,
-                transaction.gasLimit,
-                transaction.signatures,
-                {
-                    gasLimit: transaction.gasLimit,
-                }
-            );
+            .exec(transaction.to, transaction.value, transaction.callData, transaction.nonce, transaction.signatures);
         const receipt = await tx.wait();
         return receipt;
     } else {
@@ -51,34 +42,19 @@ export async function sendTx(wallet: Contract, transaction: Transaction, signer?
             transaction.value,
             transaction.callData,
             transaction.nonce,
-            transaction.maxFeePerGas,
-            transaction.maxPriorityFeePerGas,
-            transaction.gasLimit,
-            transaction.relayer,
-            transaction.signatures,
-            {
-                gasLimit: transaction.gasLimit,
-            }
+            transaction.signatures
         );
         const receipt = await tx.wait();
         return receipt;
     }
 }
 
-export async function generateTransaction(): Promise<Transaction> {
-    const baseFee = (await ethers.provider.send("eth_getBlockByNumber", ["latest", true])).baseFeePerGas;
-    const _maxPriorityFeePerGas = 2000000000;
-    const _maxFeePerGas = 2 * baseFee + _maxPriorityFeePerGas;
-    const { relayer } = await addressesForTest();
+export function generateTransaction(): Transaction {
     return {
         to: "",
         value: 0,
         callData: "0x",
         nonce: 0,
-        maxFeePerGas: _maxFeePerGas,
-        maxPriorityFeePerGas: _maxPriorityFeePerGas,
-        gasLimit: 500000,
-        relayer: relayer,
         signatures: "0x",
     };
 }
@@ -101,43 +77,4 @@ export function isAddress(addresses: Address[], address: Address): boolean {
     });
 
     return _isAddress;
-}
-
-export function addTokensToVault(token: Address, amount: BigNumberish): string {
-    const abi = ["function addTokensToVault(address token, uint256 amount) external"];
-
-    return encodeFunctionData(abi, "addTokensToVault", [token, amount]);
-}
-
-export function removeTokensFromVault(token: Address, amount: BigNumberish, guardianSignature: string): string {
-    const abi = ["function removeTokensFromVault(address token, uint256 amount, bytes) external"];
-    return encodeFunctionData(abi, "removeTokensFromVault", [token, amount, guardianSignature]);
-}
-
-export function removeTokensFromVaultHash(
-    tokenAddress: Address,
-    amount: BigNumber,
-    chainId: number,
-    walletAddress: Address,
-    walletNonce: number
-): string {
-    const dataHash = ethers.utils.solidityKeccak256(
-        ["address", "uint256", "uint256", "address", "uint256"],
-        [tokenAddress, amount, chainId, walletAddress, walletNonce]
-    );
-    return dataHash;
-}
-
-export async function preComputeAddress(
-    factory: Contract,
-    owner: Address,
-    guardians: Address[],
-    recoveryOwners: Address[],
-    salt: Number
-): Promise<string> {
-    const LaserSSRModuleAddress = (await deployments.get("LaserModuleSSR")).address;
-
-    const ssrInitData = initSSR(guardians, recoveryOwners);
-
-    return factory.preComputeAddress(owner, LaserSSRModuleAddress, ssrInitData, salt);
 }
