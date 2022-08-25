@@ -1,27 +1,51 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 pragma solidity 0.8.16;
 
+interface ILaser {
+    function owner() external view returns (address);
+
+    function getGuardians() external view returns (address[] memory);
+
+    function getRecoveryOwners() external view returns (address[] memory);
+
+    function singleton() external view returns (address);
+
+    function isLocked() external view returns (bool);
+
+    function getConfigTimestamp() external view returns (uint256);
+
+    function nonce() external view returns (uint256);
+}
+
 /**
  * @title LaserHelper
  *
  * @notice Allows to batch multiple requests in a single rpc call.
  */
 contract LaserHelper {
-    function getRequests(bytes[] calldata payload, address[] calldata _to) external view returns (bytes[] memory) {
-        require(payload.length == _to.length, "Invalid request");
+    function getLaserState(address laserWallet)
+        external
+        view
+        returns (
+            address owner,
+            address[] memory guardians,
+            address[] memory recoveryOwners,
+            address singleton,
+            bool isLocked,
+            uint256 configTimestamp,
+            uint256 nonce,
+            uint256 balance
+        )
+    {
+        ILaser laser = ILaser(laserWallet);
 
-        bytes[] memory results = new bytes[](payload.length);
-
-        for (uint256 i = 0; i < payload.length; i++) {
-            address to = _to[i];
-
-            bytes calldata callData = payload[i];
-
-            (, bytes memory result) = to.staticcall(callData);
-
-            results[i] = result;
-        }
-
-        return results;
+        owner = laser.owner();
+        guardians = laser.getGuardians();
+        recoveryOwners = laser.getRecoveryOwners();
+        singleton = laser.singleton();
+        isLocked = laser.isLocked();
+        configTimestamp = laser.getConfigTimestamp();
+        nonce = laser.nonce();
+        balance = address(laserWallet).balance;
     }
 }
