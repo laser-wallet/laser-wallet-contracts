@@ -114,3 +114,42 @@ export async function walletSetup(
         factory: factory,
     };
 }
+
+export async function mockSetup(
+    owner: Address,
+    recoveryOwners: Address[],
+    guardians: Address[],
+    ownerSigner: Wallet
+): Promise<{ address2: string; wallet2: Contract }> {
+    // deployments.fixture() needs to be called prior to the execution of this function.
+    const _singleton = await deployments.get("LaserWallet");
+    const abi = _singleton.abi;
+    const singleton = (await ethers.getContractAt(abi, _singleton.address)) as LaserWallet;
+
+    const _factory = await deployments.get("LaserFactory");
+    const factory = await ethers.getContractAt(_factory.abi, _factory.address);
+
+    const chainId = (await ethers.provider.getNetwork()).chainId;
+
+    const salt = 1111;
+
+    const dataHash = ethers.utils.solidityKeccak256(
+        ["address[]", "address[]", "uint256"],
+        [guardians, recoveryOwners, chainId]
+    );
+
+    const signature = await sign(ownerSigner, dataHash);
+
+    const initializer = getInitializer(owner, guardians, recoveryOwners, signature);
+
+    const transaction = await factory.createProxy(initializer, salt);
+
+    const receipt = await transaction.wait();
+    const proxyAddress = receipt.events[0].args.laser;
+    const wallet = (await ethers.getContractAt(abi, proxyAddress)) as LaserWallet;
+
+    return {
+        address2: proxyAddress,
+        wallet2: wallet,
+    };
+}

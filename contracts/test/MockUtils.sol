@@ -41,7 +41,7 @@ contract MockUtils {
             bytes memory contractSignature;
 
             assembly {
-                contractSignature := add(add(signatures, s), 0x20)
+                contractSignature := add(signatures, s)
             }
 
             if (IEIP1271(signer).isValidSignature(signedHash, contractSignature) != 0x1626ba7e) {

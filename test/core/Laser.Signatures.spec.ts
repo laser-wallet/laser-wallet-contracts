@@ -9,20 +9,49 @@ import {
     addressesForTest,
     signersForTest,
     AddressesForTest,
+    mockSetup,
 } from "../utils";
 import { Address, Domain, Transaction, types } from "../types";
 import { ownerWallet } from "../constants/constants";
 
 const MAGIC_VALUE = "0x1626ba7e";
 
+type ContractSig = {
+    r: string;
+    s: string;
+    v: string;
+    signatureLength: string;
+};
+function generateContractSignature(walletAddress: Address, walletSignatures: string): ContractSig {
+    const r = "000000000000000000000000" + walletAddress.replace("0x", "");
+
+    const s = "0000000000000000000000000000000000000000000000000000000000000%&/";
+    const v = "00";
+
+    const signatureLength = `00000000000000000000000000000000000000000000000000000000000000${Math.abs(
+        walletSignatures.length / 2
+    ).toString(16)}`;
+
+    return {
+        r,
+        s,
+        v,
+        signatureLength,
+    };
+}
+
 describe("Signatures", () => {
     let addresses: AddressesForTest;
     let tx: Transaction;
+    let mockUtils: Contract;
 
     beforeEach(async () => {
         await deployments.fixture();
         addresses = await addressesForTest();
         tx = await generateTransaction();
+
+        const _mockUtils = await ethers.getContractFactory("MockUtils");
+        mockUtils = await _mockUtils.deploy();
     });
 
     describe("Correct data", () => {
@@ -63,75 +92,130 @@ describe("Signatures", () => {
         // });
     });
 
-    describe("contract signatures 'EIP 1271", () => {
+    describe("Contract signatures", () => {
         let mockHash: string;
+        let owner: Wallet;
+        let recoveryOwner: Wallet;
+        let guardian: Wallet;
 
-        beforeEach(() => {
-            mockHash = ethers.utils.keccak256("0x1234");
+        beforeEach(async () => {
+            mockHash = ethers.utils.keccak256("0x123456");
+            owner = ethers.Wallet.createRandom();
+            recoveryOwner = ethers.Wallet.createRandom();
+            guardian = ethers.Wallet.createRandom();
         });
 
-        // it("should revert if a guardian signs the hash", async () => {
-        //     const { wallet } = await walletSetup();
-        //     const { guardian1Signer } = await signersForTest();
-        //     const sig = await sign(guardian1Signer, mockHash);
+        it("should sign (normal EOA + contract signature)", async () => {
+            const { address2, wallet2 } = await mockSetup(
+                owner.address,
+                [recoveryOwner.address],
+                [guardian.address],
+                owner
+            );
 
-        //     await expect(wallet.isValidSignature(mockHash, sig)).to.be.revertedWith(
-        //         "'LaserWallet__invalidSignature()'"
-        //     );
-        // });
+            const sig1 = await sign(owner, mockHash);
+            const sig2 = await sign(recoveryOwner, mockHash);
+            const contractSigs = sig1.slice(2) + sig2.slice(2);
+            expect(await wallet2.isValidSignature(mockHash, "0x" + contractSigs)).to.equal(MAGIC_VALUE);
 
-        // it("should revert if a recovery owner signs the hash", async () => {
-        //     const { wallet } = await walletSetup();
-        //     const { recoveryOwner1Signer } = await signersForTest();
-        //     const sig = await sign(recoveryOwner1Signer, mockHash);
+            // data position is encoded into s.
+            let { r, s, v, signatureLength } = generateContractSignature(address2, contractSigs);
+            s = s.replace("%&/", "0A2");
 
-        //     await expect(wallet.isValidSignature(mockHash, sig)).to.be.revertedWith(
-        //         "'LaserWallet__invalidSignature()'"
-        //     );
-        // });
-
-        // it("should revert if random signers sign the hash", async () => {
-        //     const { wallet } = await walletSetup();
-
-        //     for (let i = 0; i < 10; i++) {
-        //         const randomSigner = ethers.Wallet.createRandom();
-        //         const sig = await sign(randomSigner, mockHash);
-        //         await expect(wallet.isValidSignature(mockHash, sig)).to.be.revertedWith(
-        //             "'LaserWallet__invalidSignature()'"
-        //         );
-        //     }
-        // });
-
-        // it("should return magic value if it is signed by the owner", async () => {
-        //     const { wallet } = await walletSetup();
-        //     const { ownerSigner } = await signersForTest();
-        //     const sig = await sign(ownerSigner, mockHash);
-
-        //     expect(await wallet.isValidSignature(mockHash, sig)).to.equal(MAGIC_VALUE);
-        // });
-
-        it("should ..", async () => {
-            const { address, wallet } = await walletSetup();
-            const hash = ethers.utils.keccak256("0x1234");
+            // We generate the owner signature.
+            const { address, wallet } = await walletSetup(undefined, [address2]);
             const { ownerSigner } = await signersForTest();
+            const ownerSignature = await sign(ownerSigner, mockHash);
 
-            const sig = await sign(ownerSigner, hash);
-            let newSig = sig.slice(0, sig.length - 2);
-            const finalSig = (newSig += "00");
-            const sigs = contractSig(address, sig);
-            // const [r, s, v] = await wallet.splitSigs(sigs, 0);
-            // await wallet.returnSigner(hash, r, s, v, sigs);
+            // We concatenate the signatures.
+            const signatures = ownerSignature + r + s + v + signatureLength + contractSigs;
+
+            expect(await wallet.isValidSignature(mockHash, signatures)).to.equal(MAGIC_VALUE);
         });
+
+        it("should sign (contract signature + normal EOA)", async () => {
+            const { address2, wallet2 } = await mockSetup(
+                owner.address,
+                [recoveryOwner.address],
+                [guardian.address],
+                owner
+            );
+
+            const sig1 = await sign(owner, mockHash);
+            const sig2 = await sign(recoveryOwner, mockHash);
+            const contractSigs = sig1.slice(2) + sig2.slice(2);
+            expect(await wallet2.isValidSignature(mockHash, "0x" + contractSigs)).to.equal(MAGIC_VALUE);
+
+            // data position is encoded into s.
+            let { r, s, v, signatureLength } = generateContractSignature(address2, contractSigs);
+            s = s.replace("%&/", "0B2");
+
+            // We generate the owner signature.
+            const { address, wallet } = await walletSetup(undefined, [address2]);
+            const { ownerSigner } = await signersForTest();
+            const ownerSignature = await sign(ownerSigner, mockHash);
+
+            const scratchSpace = "00000000000000000000000000000000";
+            // We concatenate the signatures.
+            const signatures =
+                "0x" + r + s + v + ownerSignature.slice(2) + scratchSpace + signatureLength + contractSigs;
+            const signer1 = await mockUtils.returnSigner(mockHash, signatures, 0);
+            expect(signer1).to.equal(address2);
+            const signer2 = await mockUtils.returnSigner(mockHash, signatures, 1);
+            expect(signer2).to.equal(await wallet.owner());
+        });
+
+        it("should sign (contract signature + contract signature)", async () => {
+            // recovery owner
+            const rOwner = ethers.Wallet.createRandom();
+            const rrOwner = ethers.Wallet.createRandom();
+            const rGuardian = ethers.Wallet.createRandom();
+            const recoveryOwner = await mockSetup(rOwner.address, [rrOwner.address], [rGuardian.address], rOwner);
+
+            // guardian
+            const gOwner = ethers.Wallet.createRandom();
+            const rgOwner = ethers.Wallet.createRandom();
+            const gGuardian = ethers.Wallet.createRandom();
+            const guardian = await mockSetup(gOwner.address, [rgOwner.address], [gGuardian.address], gOwner);
+
+            // Signature of the recovery owner.
+            const rsig1 = await sign(rOwner, mockHash);
+            const rsig2 = await sign(rrOwner, mockHash);
+            const rSigs = rsig1.slice(2) + rsig2.slice(2);
+            expect(await recoveryOwner.wallet2.isValidSignature(mockHash, "0x" + rSigs)).to.equal(MAGIC_VALUE);
+            let rSignatures = generateContractSignature(recoveryOwner.address2, rSigs);
+            rSignatures.s = rSignatures.s.replace("%&/", "0A2");
+
+            // Signature of the guardian.
+            const gsig1 = await sign(gOwner, mockHash);
+            const gsig2 = await sign(rgOwner, mockHash);
+            const gSigs = gsig1.slice(2) + gsig2.slice(2);
+            expect(await guardian.wallet2.isValidSignature(mockHash, "0x" + gSigs)).to.equal(MAGIC_VALUE);
+            let gSignatures = generateContractSignature(guardian.address2, gSigs);
+            gSignatures.s = gSignatures.s.replace("%&/", "154");
+            const scratchSpace = "00000000000000000000000000000000";
+            const completeSigs =
+                "0x" +
+                rSignatures.r +
+                rSignatures.s +
+                rSignatures.v +
+                gSignatures.r +
+                gSignatures.s +
+                gSignatures.v +
+                rSignatures.signatureLength +
+                rSigs +
+                scratchSpace +
+                gSignatures.signatureLength +
+                gSigs;
+
+            const signer1 = await mockUtils.returnSigner(mockHash, completeSigs, 0);
+            expect(signer1).to.equal(recoveryOwner.address2);
+
+            const signer2 = await mockUtils.returnSigner(mockHash, completeSigs, 1);
+            expect(signer2).to.equal(guardian.address2);
+        });
+
+        it("should sign (contract signature inside of another contract signature)", async () => {});
+        // @TODO: more complex signature setups (a contract signature has another contract signature ..)
     });
 });
-
-function contractSig(ownerAddress: Address, ownerSig: string): string {
-    let sig = "0x";
-    const r = "000000000000000000000000" + ownerAddress.replace("0x", ""); // r
-    const s = "00000000000000000000000000000000000000000000000000000000000000a2"; // s
-    const v = "00";
-    sig += r + s + v;
-
-    sig += "0000000000000000000000000000000000000000000000000000000000000000" + ownerSig.replace("0x", "");
-    return sig;
-}
