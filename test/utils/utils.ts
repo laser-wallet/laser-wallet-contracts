@@ -78,3 +78,18 @@ export function isAddress(addresses: Address[], address: Address): boolean {
 
     return _isAddress;
 }
+
+export async function getConfigTimestamp(wallet: LaserWallet): Promise<BigNumber> {
+    const config = await wallet.getConfig();
+    return config.configTimestamp;
+}
+
+export async function getNewOwner(wallet: LaserWallet): Promise<Address> {
+    const config = await wallet.getConfig();
+    return config.newOwner;
+}
+
+export async function isWalletLocked(wallet: LaserWallet): Promise<boolean> {
+    const config = await wallet.getConfig();
+    return config._isLocked;
+}

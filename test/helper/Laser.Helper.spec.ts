@@ -1,6 +1,6 @@
 import { expect } from "chai";
 import { deployments, ethers } from "hardhat";
-import { encodeFunctionData, walletSetup } from "../utils";
+import { encodeFunctionData, getConfigTimestamp, isWalletLocked, walletSetup } from "../utils";
 import { LaserHelper__factory, LaserHelper } from "../../typechain-types";
 import { providers } from "ethers";
 
@@ -20,15 +20,15 @@ describe("LaserHelper", () => {
         it("shoud return correct state", async () => {
             const { address, wallet } = await walletSetup();
 
-            const { owner, guardians, recoveryOwners, singleton, isLocked, configTimestamp, nonce, balance } =
+            const { owner, guardians, recoveryOwners, singleton, _isLocked, configTimestamp, nonce, balance } =
                 await helper.getLaserState(address);
 
             expect(owner).to.equal(await wallet.owner());
             expect(JSON.stringify(guardians)).to.equal(JSON.stringify(await wallet.getGuardians()));
             expect(JSON.stringify(recoveryOwners)).to.equal(JSON.stringify(await wallet.getRecoveryOwners()));
             expect(singleton).to.equal(await wallet.singleton());
-            expect(isLocked).to.equal(await wallet.isLocked());
-            expect(configTimestamp).to.equal(await wallet.getConfigTimestamp());
+            expect(_isLocked).to.equal(await isWalletLocked(wallet));
+            expect(configTimestamp).to.equal(await getConfigTimestamp(wallet));
             expect(nonce).to.equal(await wallet.nonce());
             expect(balance).to.equal(await ethers.provider.getBalance(address));
         });

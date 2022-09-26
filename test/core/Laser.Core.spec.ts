@@ -14,6 +14,7 @@ import {
     getHash,
     sign,
     fundWallet,
+    isWalletLocked,
 } from "../utils";
 import { Address, Transaction } from "../types";
 import { addrZero } from "../constants/constants";
@@ -200,13 +201,13 @@ describe("Core", () => {
         it("should revert if the wallet is locked", async () => {
             const { wallet } = await walletSetup();
 
-            const callData = encodeFunctionData(abi, "lock", []);
+            const callData = encodeFunctionData(abi, "recover", [ethers.Wallet.createRandom().address]);
             const hash = await getRecoveryHash(wallet, callData);
             const signatures = await signAndBundle(signers.recoveryOwner1Signer, signers.guardian1Signer, hash);
             await wallet.recovery(await wallet.nonce(), callData, signatures);
 
             // Should be locked.
-            expect(await wallet.isLocked()).to.equal(true);
+            expect(await isWalletLocked(wallet)).to.equal(true);
 
             tx.to = ethers.Wallet.createRandom().address;
             tx.value = 10;
@@ -215,7 +216,7 @@ describe("Core", () => {
             tx.signatures = "0x";
 
             await expect(wallet.exec(tx.to, tx.value, tx.callData, tx.nonce, tx.signatures)).to.be.revertedWith(
-                "LW__exec__walletLocked()"
+                "LS__activateRecovery__timeLock()"
             );
         });
 
