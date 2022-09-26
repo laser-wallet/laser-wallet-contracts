@@ -1,0 +1,192 @@
+{
+  "address": "0x4F03b9360F95ad7e443bb4E9147048f0F80967f8",
+  "abi": [
+    {
+      "inputs": [],
+      "name": "Utils__returnSigner__invalidContractSignature",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "Utils__returnSigner__invalidSignature",
+      "type": "error"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "laserWallet",
+          "type": "address"
+        }
+      ],
+      "name": "getLaserState",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "owner",
+          "type": "address"
+        },
+        {
+          "internalType": "address[]",
+          "name": "guardians",
+          "type": "address[]"
+        },
+        {
+          "internalType": "address[]",
+          "name": "recoveryOwners",
+          "type": "address[]"
+        },
+        {
+          "internalType": "address",
+          "name": "singleton",
+          "type": "address"
+        },
+        {
+          "internalType": "bool",
+          "name": "_isLocked",
+          "type": "bool"
+        },
+        {
+          "internalType": "uint256",
+          "name": "configTimestamp",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "nonce",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "balance",
+          "type": "uint256"
+        },
+        {
+          "internalType": "address",
+          "name": "oldOwner",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "signedHash",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "bytes",
+          "name": "signatures",
+          "type": "bytes"
+        },
+        {
+          "internalType": "uint256",
+          "name": "pos",
+          "type": "uint256"
+        }
+      ],
+      "name": "returnSigner",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "signer",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes",
+          "name": "signatures",
+          "type": "bytes"
+        },
+        {
+          "internalType": "uint256",
+          "name": "pos",
+          "type": "uint256"
+        }
+      ],
+      "name": "splitSigs",
+      "outputs": [
+        {
+          "internalType": "bytes32",
+          "name": "r",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "bytes32",
+          "name": "s",
+          "type": "bytes32"
+        },
+        {
+          "internalType": "uint8",
+          "name": "v",
+          "type": "uint8"
+        }
+      ],
+      "stateMutability": "pure",
+      "type": "function"
+    }
+  ],
+  "transactionHash": "0x1818d93375029b59528d198ae105ccc23d1dafe90d18c21ea734bd3060eb9d87",
+  "receipt": {
+    "to": "0x4e59b44847b379578588920cA78FbF26c0B4956C",
+    "from": "0x7681C78fb672024C8ACce686cc9A7Acf7F07640d",
+    "contractAddress": null,
+    "transactionIndex": 8,
+    "gasUsed": "619826",
+    "logsBloom": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+    "blockHash": "0xee94fd9e6d067837134b7df0adf6f65cab0ef4d974e0f11224c890d9e749c568",
+    "transactionHash": "0x1818d93375029b59528d198ae105ccc23d1dafe90d18c21ea734bd3060eb9d87",
+    "logs": [],
+    "blockNumber": 7665046,
+    "cumulativeGasUsed": "3721109",
+    "status": 1,
+    "byzantium": true
+  },
+  "args": [],
+  "numDeployments": 1,
+  "solcInputHash": "7eb8752ed2d5dba4b164cdb27ab6f43b",
+  "metadata": "{\"compiler\":{\"version\":\"0.8.16+commit.07a7930e\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[],\"name\":\"Utils__returnSigner__invalidContractSignature\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"Utils__returnSigner__invalidSignature\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"laserWallet\",\"type\":\"address\"}],\"name\":\"getLaserState\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"owner\",\"type\":\"address\"},{\"internalType\":\"address[]\",\"name\":\"guardians\",\"type\":\"address[]\"},{\"internalType\":\"address[]\",\"name\":\"recoveryOwners\",\"type\":\"address[]\"},{\"internalType\":\"address\",\"name\":\"singleton\",\"type\":\"address\"},{\"internalType\":\"bool\",\"name\":\"_isLocked\",\"type\":\"bool\"},{\"internalType\":\"uint256\",\"name\":\"configTimestamp\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"nonce\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"balance\",\"type\":\"uint256\"},{\"internalType\":\"address\",\"name\":\"oldOwner\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes32\",\"name\":\"signedHash\",\"type\":\"bytes32\"},{\"internalType\":\"bytes\",\"name\":\"signatures\",\"type\":\"bytes\"},{\"internalType\":\"uint256\",\"name\":\"pos\",\"type\":\"uint256\"}],\"name\":\"returnSigner\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"signer\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes\",\"name\":\"signatures\",\"type\":\"bytes\"},{\"internalType\":\"uint256\",\"name\":\"pos\",\"type\":\"uint256\"}],\"name\":\"splitSigs\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"r\",\"type\":\"bytes32\"},{\"internalType\":\"bytes32\",\"name\":\"s\",\"type\":\"bytes32\"},{\"internalType\":\"uint8\",\"name\":\"v\",\"type\":\"uint8\"}],\"stateMutability\":\"pure\",\"type\":\"function\"}],\"devdoc\":{\"kind\":\"dev\",\"methods\":{\"returnSigner(bytes32,bytes,uint256)\":{\"params\":{\"pos\":\"Position of the signer.\",\"signatures\":\"Result of signing the has.\",\"signedHash\":\"The hash that was signed.\"},\"returns\":{\"signer\":\"     Address that signed the hash.\"}},\"splitSigs(bytes,uint256)\":{\"details\":\"Returns the r, s and v values of the signature.\",\"params\":{\"pos\":\"Which signature to read.\"}}},\"title\":\"LaserHelper\",\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{},\"notice\":\"Allows to batch multiple requests in a single rpc call.\",\"version\":1}},\"settings\":{\"compilationTarget\":{\"contracts/helper/LaserHelper.sol\":\"LaserHelper\"},\"evmVersion\":\"london\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\",\"useLiteralContent\":true},\"optimizer\":{\"enabled\":true,\"runs\":800},\"remappings\":[]},\"sources\":{\"contracts/helper/LaserHelper.sol\":{\"content\":\"// SPDX-License-Identifier: LGPL-3.0-only\\npragma solidity 0.8.16;\\n\\nimport \\\"../interfaces/IEIP1271.sol\\\";\\nimport \\\"../interfaces/ILaserState.sol\\\";\\n\\n/**\\n * @title LaserHelper\\n *\\n * @notice Allows to batch multiple requests in a single rpc call.\\n */\\ncontract LaserHelper {\\n    error Utils__returnSigner__invalidSignature();\\n\\n    error Utils__returnSigner__invalidContractSignature();\\n\\n    // @notice This is temporary, all of this code does not go here.\\n\\n    /**\\n     * @param signedHash  The hash that was signed.\\n     * @param signatures  Result of signing the has.\\n     * @param pos         Position of the signer.\\n     *\\n     * @return signer      Address that signed the hash.\\n     */\\n    function returnSigner(\\n        bytes32 signedHash,\\n        bytes memory signatures,\\n        uint256 pos\\n    ) external view returns (address signer) {\\n        bytes32 r;\\n        bytes32 s;\\n        uint8 v;\\n        (r, s, v) = splitSigs(signatures, pos);\\n\\n        if (v == 0) {\\n            // If v is 0, then it is a contract signature.\\n            // The address of the contract is encoded into r.\\n            signer = address(uint160(uint256(r)));\\n\\n            // The signature(s) of the EOA's that control the target contract.\\n            bytes memory contractSignature;\\n\\n            assembly {\\n                contractSignature := add(signatures, s)\\n            }\\n\\n            if (IEIP1271(signer).isValidSignature(signedHash, contractSignature) != 0x1626ba7e) {\\n                revert Utils__returnSigner__invalidContractSignature();\\n            }\\n        } else if (v > 30) {\\n            signer = ecrecover(\\n                keccak256(abi.encodePacked(\\\"\\\\x19Ethereum Signed Message:\\\\n32\\\", signedHash)),\\n                v - 4,\\n                r,\\n                s\\n            );\\n        } else {\\n            signer = ecrecover(signedHash, v, r, s);\\n        }\\n\\n        if (signer == address(0)) revert Utils__returnSigner__invalidSignature();\\n    }\\n\\n    /**\\n     * @dev Returns the r, s and v values of the signature.\\n     *\\n     * @param pos Which signature to read.\\n     */\\n    function splitSigs(bytes memory signatures, uint256 pos)\\n        public\\n        pure\\n        returns (\\n            bytes32 r,\\n            bytes32 s,\\n            uint8 v\\n        )\\n    {\\n        assembly {\\n            let sigPos := mul(0x41, pos)\\n            r := mload(add(signatures, add(sigPos, 0x20)))\\n            s := mload(add(signatures, add(sigPos, 0x40)))\\n            v := byte(0, mload(add(signatures, add(sigPos, 0x60))))\\n        }\\n    }\\n\\n    function getLaserState(address laserWallet)\\n        external\\n        view\\n        returns (\\n            address owner,\\n            address[] memory guardians,\\n            address[] memory recoveryOwners,\\n            address singleton,\\n            bool _isLocked,\\n            uint256 configTimestamp,\\n            uint256 nonce,\\n            uint256 balance,\\n            address oldOwner\\n        )\\n    {\\n        ILaserState laser = ILaserState(laserWallet);\\n\\n        owner = laser.owner();\\n        guardians = laser.getGuardians();\\n        recoveryOwners = laser.getRecoveryOwners();\\n        singleton = laser.singleton();\\n        (configTimestamp, _isLocked, oldOwner) = laser.getConfig();\\n        nonce = laser.nonce();\\n        balance = address(laserWallet).balance;\\n    }\\n}\\n\",\"keccak256\":\"0xf82843f9fa20d8ef76a6fb3eac50b61634bc650ec24eedb3d40f43d7f61245a9\",\"license\":\"LGPL-3.0-only\"},\"contracts/interfaces/IEIP1271.sol\":{\"content\":\"// SPDX-License-Identifier: LGPL-3.0-only\\npragma solidity 0.8.16;\\n\\n/**\\n * @title IEIP1271\\n *\\n * @notice Interface to call external contracts to validate signature.\\n */\\ninterface IEIP1271 {\\n    /**\\n     * @notice Should return whether the signature provided is valid for the provided hash.\\n     *\\n     * @param hash      Hash of the data to be signed.\\n     * @param signature Signature byte array associated with hash.\\n     *\\n     * MUST return the bytes4 magic value 0x1626ba7e when function passes.\\n     * MUST NOT modify state (using STATICCALL for solc < 0.5, view modifier for solc > 0.5)\\n     * MUST allow external calls\\n     *\\n     * @return Magic value.\\n     */\\n    function isValidSignature(bytes32 hash, bytes memory signature) external view returns (bytes4);\\n}\\n\",\"keccak256\":\"0x0576a589fc9ac4ea83c174f0a1cb6ec51b3d82e9d595263ecd037ccbdef3e7ca\",\"license\":\"LGPL-3.0-only\"},\"contracts/interfaces/ILaserState.sol\":{\"content\":\"// SPDX-License-Identifier: LGPL-3.0-only\\npragma solidity 0.8.16;\\n\\n/**\\n * @notice Wallet configuration for the recovery mechanism.\\n *\\n * @param isLocked  Boolean if the wallet is currently locked.\\n * @param timestamp The time (block.timestamp) when the wallet was locked.\\n */\\nstruct WalletConfig {\\n    bool isLocked;\\n    uint256 timestamp;\\n    address oldOwner;\\n}\\n\\n/**\\n * @title   LaserState\\n *\\n * @author  Rodrigo Herrera I.\\n *\\n * @notice  Has all the state(storage) for a Laser wallet and implements\\n *          Smart Social Recovery.\\n *\\n * @dev    This interface has all events, errors, and external function for LaserState.\\n */\\ninterface ILaserState {\\n    /*//////////////////////////////////////////////////////////////\\n                                 EVENTS\\n    //////////////////////////////////////////////////////////////*/\\n\\n    event WalletUnlocked();\\n\\n    event RecoverActivated(address newOwner);\\n\\n    event OwnerChanged(address newOwner);\\n\\n    event SingletonChanged(address newSingleton);\\n\\n    event NewGuardian(address newGuardian);\\n\\n    event GuardianRemoved(address removedGuardian);\\n\\n    event NewRecoveryOwner(address NewRecoveryOwner);\\n\\n    event RecoveryOwnerRemoved(address removedRecoveryOwner);\\n\\n    /*//////////////////////////////////////////////////////////////\\n                                 ERRORS\\n    //////////////////////////////////////////////////////////////*/\\n\\n    error LS__recover__invalidAddress();\\n\\n    error LS__changeOwner__invalidAddress();\\n\\n    error LS__changeSingleton__invalidAddress();\\n\\n    error LS__addGuardian__invalidAddress();\\n\\n    error LS__removeGuardian__invalidAddress();\\n\\n    error LS__removeGuardian__incorrectPreviousGuardian();\\n\\n    error LS__removeGuardian__underflow();\\n\\n    error LS__addRecoveryOwner__invalidAddress();\\n\\n    error LS__removeRecoveryOwner__invalidAddress();\\n\\n    error LS__removeRecoveryOwner__incorrectPreviousGuardian();\\n\\n    error LS__verifyTimeLock__timeLock();\\n\\n    error LS__removeRecoveryOwner__underflow();\\n\\n    error LS__initGuardians__underflow();\\n\\n    error LS__initGuardians__invalidAddress();\\n\\n    error LS__initRecoveryOwners__underflow();\\n\\n    error LS__initRecoveryOwners__invalidAddress();\\n\\n    error LS__activateWallet__walletInitialized();\\n\\n    error LS__activateWallet__invalidOwnerAddress();\\n\\n    /*//////////////////////////////////////////////////////////////\\n                                 STATE\\n    //////////////////////////////////////////////////////////////*/\\n\\n    function singleton() external view returns (address);\\n\\n    function owner() external view returns (address);\\n\\n    function nonce() external view returns (uint256);\\n\\n    /*//////////////////////////////////////////////////////////////\\n                                EXTERNAL\\n    //////////////////////////////////////////////////////////////*/\\n\\n    /**\\n     * @notice Unlocks the wallet. Can only be called by the owner + recovery owner\\n     *         or owner + guardian.\\n     *\\n     * @dev    Restricted, can only be called by address(this).\\n     */\\n    function unlock() external;\\n\\n    /**\\n     * @notice Recovers the wallet. Can only be called by the recovery owner + recovery owner\\n     *         or recovery owner + guardian.\\n     *\\n     * @dev   Restricted, can only be called by address(this).\\n     *\\n     * @param newOwner  Address of the new owner.\\n     */\\n    function recover(address newOwner) external;\\n\\n    /**\\n     * @notice Changes the owner of the wallet. Can only be called by the owner + recovery owner\\n     *         or owner + guardian.\\n     *\\n     * @dev   Restricted, can only be called by address(this).\\n     *\\n     * @param newOwner  Address of the new owner.\\n     */\\n    function changeOwner(address newOwner) external;\\n\\n    /**\\n     * @notice Changes the singleton. Can only be called by the owner + recovery owner\\n     *         or owner + guardian.\\n     *\\n     * @dev   Restricted, can only be called by address(this).\\n     *\\n     * @param newSingleton  Address of the new singleton.\\n     */\\n    function changeSingleton(address newSingleton) external;\\n\\n    /**\\n     * @notice Adds a new guardian. Can only be called by the owner + recovery owner\\n     *         or owner + guardian.\\n     *\\n     * @dev   Restricted, can only be called by address(this).\\n     *\\n     * @param newGuardian  Address of the new guardian.\\n     */\\n    function addGuardian(address newGuardian) external;\\n\\n    /**\\n     * @notice Removes a guardian. Can only be called by the owner + recovery owner\\n     *         or owner + guardian.\\n     *\\n     * @dev   Restricted, can only be called by address(this).\\n     *\\n     * @param prevGuardian      Address of the previous guardian in the linked list.\\n     * @param guardianToRemove  Address of the guardian to be removed.\\n     */\\n    function removeGuardian(address prevGuardian, address guardianToRemove) external;\\n\\n    /**\\n     * @notice Adds a new recovery owner. Can only be called by the owner + recovery owner\\n     *         or owner + guardian.\\n     *\\n     * @dev   Restricted, can only be called by address(this).\\n     *\\n     * @param newRecoveryOwner  Address of the new recovery owner.\\n     */\\n    function addRecoveryOwner(address newRecoveryOwner) external;\\n\\n    /**\\n     * @notice Removes a recovery owner. Can only be called by the owner + recovery owner\\n     *         or owner + guardian.\\n     *\\n     * @dev   Restricted, can only be called by address(this).\\n     *\\n     * @param prevRecoveryOwner      Address of the previous recovery owner in the linked list.\\n     * @param recoveryOwnerToRemove  Address of the recovery owner to be removed.\\n     */\\n    function removeRecoveryOwner(address prevRecoveryOwner, address recoveryOwnerToRemove) external;\\n\\n    /**\\n     * @return Array of guardians for this wallet.\\n     */\\n    function getGuardians() external view returns (address[] memory);\\n\\n    /**\\n     * @return Array of recovery owners for this wallet.\\n     */\\n    function getRecoveryOwners() external view returns (address[] memory);\\n\\n    /**\\n     * @return\\n     * configTimestamp  Time when the recover was triggered.\\n     * _isLocked        Boolean if the wallet is currently locked.\\n     */\\n    function getConfig()\\n        external\\n        view\\n        returns (\\n            uint256 configTimestamp,\\n            bool _isLocked,\\n            address oldOwner\\n        );\\n}\\n\",\"keccak256\":\"0xf713fbe1993dcf3309b3ef68a7d69bbd36767cfb57ad68074d82ec531cc6535c\",\"license\":\"LGPL-3.0-only\"}},\"version\":1}",
+  "bytecode": "0x608060405234801561001057600080fd5b50610a3d806100206000396000f3fe608060405234801561001057600080fd5b50600436106100415760003560e01c806316017b4714610046578063956ccd7614610076578063deb5530f146100c1575b600080fd5b61005961005436600461068d565b6100e9565b6040516001600160a01b0390911681526020015b60405180910390f35b6100a36100843660046106dd565b6041020160208101516040820151606090920151909260009190911a90565b60408051938452602084019290925260ff169082015260600161006d565b6100d46100cf36600461073a565b61033e565b60405161006d999897969594939291906107a2565b60008060008061011386866041020160208101516040820151606090920151909260009190911a90565b9194509250905060ff81166000036101e857604051630b135d3f60e11b81529293508392868301906001600160a01b03851690631626ba7e9061015c908b908590600401610812565b602060405180830381865afa158015610179573d6000803e3d6000fd5b505050506040513d601f19601f8201168201806040525081019061019d9190610868565b7bffffffffffffffffffffffffffffffffffffffffffffffffffffffff1916631626ba7e60e01b146101e2576040516340aec60f60e11b815260040160405180910390fd5b5061030d565b601e8160ff1611156102ad576040517f19457468657265756d205369676e6564204d6573736167653a0a3332000000006020820152603c8101889052600190605c016040516020818303038152906040528051906020012060048361024d91906108aa565b6040805160008152602081018083529390935260ff90911690820152606081018590526080810184905260a0016020604051602081039080840390855afa15801561029c573d6000803e3d6000fd5b50505060206040510351935061030d565b60408051600081526020810180835289905260ff831691810191909152606081018490526080810183905260019060a0016020604051602081039080840390855afa158015610300573d6000803e3d6000fd5b5050506020604051035193505b6001600160a01b0384166103345760405163b9bf1d7d60e01b815260040160405180910390fd5b5050509392505050565b600060608060008060008060008060008a9050806001600160a01b0316638da5cb5b6040518163ffffffff1660e01b8152600401602060405180830381865afa15801561038f573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906103b391906108d7565b9950806001600160a01b0316630665f04b6040518163ffffffff1660e01b8152600401600060405180830381865afa1580156103f3573d6000803e3d6000fd5b505050506040513d6000823e601f3d908101601f1916820160405261041b91908101906108f4565b9850806001600160a01b031663c194a0466040518163ffffffff1660e01b8152600401600060405180830381865afa15801561045b573d6000803e3d6000fd5b505050506040513d6000823e601f3d908101601f1916820160405261048391908101906108f4565b9750806001600160a01b031663b62654fb6040518163ffffffff1660e01b8152600401602060405180830381865afa1580156104c3573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906104e791906108d7565b9650806001600160a01b031663c3f909d46040518163ffffffff1660e01b8152600401606060405180830381865afa158015610527573d6000803e3d6000fd5b505050506040513d601f19601f8201168201806040525081019061054b91906109a6565b809450819850829750505050806001600160a01b031663affed0e06040518163ffffffff1660e01b8152600401602060405180830381865afa158015610595573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906105b991906109ee565b93508a6001600160a01b0316319250509193959799909294969850565b634e487b7160e01b600052604160045260246000fd5b604051601f8201601f1916810167ffffffffffffffff81118282101715610615576106156105d6565b604052919050565b600082601f83011261062e57600080fd5b813567ffffffffffffffff811115610648576106486105d6565b61065b601f8201601f19166020016105ec565b81815284602083860101111561067057600080fd5b816020850160208301376000918101602001919091529392505050565b6000806000606084860312156106a257600080fd5b83359250602084013567ffffffffffffffff8111156106c057600080fd5b6106cc8682870161061d565b925050604084013590509250925092565b600080604083850312156106f057600080fd5b823567ffffffffffffffff81111561070757600080fd5b6107138582860161061d565b95602094909401359450505050565b6001600160a01b038116811461073757600080fd5b50565b60006020828403121561074c57600080fd5b813561075781610722565b9392505050565b600081518084526020808501945080840160005b838110156107975781516001600160a01b031687529582019590820190600101610772565b509495945050505050565b60006101206001600160a01b03808d1684528160208501526107c68285018d61075e565b915083820360408501526107da828c61075e565b99811660608501529715156080840152505060a081019490945260c084019290925260e0830152909116610100909101529392505050565b82815260006020604081840152835180604085015260005b818110156108465785810183015185820160600152820161082a565b506000606082860101526060601f19601f830116850101925050509392505050565b60006020828403121561087a57600080fd5b81517fffffffff000000000000000000000000000000000000000000000000000000008116811461075757600080fd5b60ff82811682821603908111156108d157634e487b7160e01b600052601160045260246000fd5b92915050565b6000602082840312156108e957600080fd5b815161075781610722565b6000602080838503121561090757600080fd5b825167ffffffffffffffff8082111561091f57600080fd5b818501915085601f83011261093357600080fd5b815181811115610945576109456105d6565b8060051b91506109568483016105ec565b818152918301840191848101908884111561097057600080fd5b938501935b8385101561099a578451925061098a83610722565b8282529385019390850190610975565b98975050505050505050565b6000806000606084860312156109bb57600080fd5b83519250602084015180151581146109d257600080fd5b60408501519092506109e381610722565b809150509250925092565b600060208284031215610a0057600080fd5b505191905056fea264697066735822122053d3ccc5de75c565ad24c92eb9ce1adc1e98c91670a974d84097c0d37edbd4cd64736f6c63430008100033",
+  "deployedBytecode": "0x608060405234801561001057600080fd5b50600436106100415760003560e01c806316017b4714610046578063956ccd7614610076578063deb5530f146100c1575b600080fd5b61005961005436600461068d565b6100e9565b6040516001600160a01b0390911681526020015b60405180910390f35b6100a36100843660046106dd565b6041020160208101516040820151606090920151909260009190911a90565b60408051938452602084019290925260ff169082015260600161006d565b6100d46100cf36600461073a565b61033e565b60405161006d999897969594939291906107a2565b60008060008061011386866041020160208101516040820151606090920151909260009190911a90565b9194509250905060ff81166000036101e857604051630b135d3f60e11b81529293508392868301906001600160a01b03851690631626ba7e9061015c908b908590600401610812565b602060405180830381865afa158015610179573d6000803e3d6000fd5b505050506040513d601f19601f8201168201806040525081019061019d9190610868565b7bffffffffffffffffffffffffffffffffffffffffffffffffffffffff1916631626ba7e60e01b146101e2576040516340aec60f60e11b815260040160405180910390fd5b5061030d565b601e8160ff1611156102ad576040517f19457468657265756d205369676e6564204d6573736167653a0a3332000000006020820152603c8101889052600190605c016040516020818303038152906040528051906020012060048361024d91906108aa565b6040805160008152602081018083529390935260ff90911690820152606081018590526080810184905260a0016020604051602081039080840390855afa15801561029c573d6000803e3d6000fd5b50505060206040510351935061030d565b60408051600081526020810180835289905260ff831691810191909152606081018490526080810183905260019060a0016020604051602081039080840390855afa158015610300573d6000803e3d6000fd5b5050506020604051035193505b6001600160a01b0384166103345760405163b9bf1d7d60e01b815260040160405180910390fd5b5050509392505050565b600060608060008060008060008060008a9050806001600160a01b0316638da5cb5b6040518163ffffffff1660e01b8152600401602060405180830381865afa15801561038f573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906103b391906108d7565b9950806001600160a01b0316630665f04b6040518163ffffffff1660e01b8152600401600060405180830381865afa1580156103f3573d6000803e3d6000fd5b505050506040513d6000823e601f3d908101601f1916820160405261041b91908101906108f4565b9850806001600160a01b031663c194a0466040518163ffffffff1660e01b8152600401600060405180830381865afa15801561045b573d6000803e3d6000fd5b505050506040513d6000823e601f3d908101601f1916820160405261048391908101906108f4565b9750806001600160a01b031663b62654fb6040518163ffffffff1660e01b8152600401602060405180830381865afa1580156104c3573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906104e791906108d7565b9650806001600160a01b031663c3f909d46040518163ffffffff1660e01b8152600401606060405180830381865afa158015610527573d6000803e3d6000fd5b505050506040513d601f19601f8201168201806040525081019061054b91906109a6565b809450819850829750505050806001600160a01b031663affed0e06040518163ffffffff1660e01b8152600401602060405180830381865afa158015610595573d6000803e3d6000fd5b505050506040513d601f19601f820116820180604052508101906105b991906109ee565b93508a6001600160a01b0316319250509193959799909294969850565b634e487b7160e01b600052604160045260246000fd5b604051601f8201601f1916810167ffffffffffffffff81118282101715610615576106156105d6565b604052919050565b600082601f83011261062e57600080fd5b813567ffffffffffffffff811115610648576106486105d6565b61065b601f8201601f19166020016105ec565b81815284602083860101111561067057600080fd5b816020850160208301376000918101602001919091529392505050565b6000806000606084860312156106a257600080fd5b83359250602084013567ffffffffffffffff8111156106c057600080fd5b6106cc8682870161061d565b925050604084013590509250925092565b600080604083850312156106f057600080fd5b823567ffffffffffffffff81111561070757600080fd5b6107138582860161061d565b95602094909401359450505050565b6001600160a01b038116811461073757600080fd5b50565b60006020828403121561074c57600080fd5b813561075781610722565b9392505050565b600081518084526020808501945080840160005b838110156107975781516001600160a01b031687529582019590820190600101610772565b509495945050505050565b60006101206001600160a01b03808d1684528160208501526107c68285018d61075e565b915083820360408501526107da828c61075e565b99811660608501529715156080840152505060a081019490945260c084019290925260e0830152909116610100909101529392505050565b82815260006020604081840152835180604085015260005b818110156108465785810183015185820160600152820161082a565b506000606082860101526060601f19601f830116850101925050509392505050565b60006020828403121561087a57600080fd5b81517fffffffff000000000000000000000000000000000000000000000000000000008116811461075757600080fd5b60ff82811682821603908111156108d157634e487b7160e01b600052601160045260246000fd5b92915050565b6000602082840312156108e957600080fd5b815161075781610722565b6000602080838503121561090757600080fd5b825167ffffffffffffffff8082111561091f57600080fd5b818501915085601f83011261093357600080fd5b815181811115610945576109456105d6565b8060051b91506109568483016105ec565b818152918301840191848101908884111561097057600080fd5b938501935b8385101561099a578451925061098a83610722565b8282529385019390850190610975565b98975050505050505050565b6000806000606084860312156109bb57600080fd5b83519250602084015180151581146109d257600080fd5b60408501519092506109e381610722565b809150509250925092565b600060208284031215610a0057600080fd5b505191905056fea264697066735822122053d3ccc5de75c565ad24c92eb9ce1adc1e98c91670a974d84097c0d37edbd4cd64736f6c63430008100033",
+  "devdoc": {
+    "kind": "dev",
+    "methods": {
+      "returnSigner(bytes32,bytes,uint256)": {
+        "params": {
+          "pos": "Position of the signer.",
+          "signatures": "Result of signing the has.",
+          "signedHash": "The hash that was signed."
+        },
+        "returns": {
+          "signer": "     Address that signed the hash."
+        }
+      },
+      "splitSigs(bytes,uint256)": {
+        "details": "Returns the r, s and v values of the signature.",
+        "params": {
+          "pos": "Which signature to read."
+        }
+      }
+    },
+    "title": "LaserHelper",
+    "version": 1
+  },
+  "userdoc": {
+    "kind": "user",
+    "methods": {},
+    "notice": "Allows to batch multiple requests in a single rpc call.",
+    "version": 1
+  },
+  "storageLayout": {
+    "storage": [],
+    "types": null
+  }
+}

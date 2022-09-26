@@ -96,7 +96,7 @@ contract LaserHelper {
             uint256 configTimestamp,
             uint256 nonce,
             uint256 balance,
-            address newOwner
+            address oldOwner
         )
     {
         ILaserState laser = ILaserState(laserWallet);
@@ -105,7 +105,7 @@ contract LaserHelper {
         guardians = laser.getGuardians();
         recoveryOwners = laser.getRecoveryOwners();
         singleton = laser.singleton();
-        (configTimestamp, newOwner, _isLocked) = laser.getConfig();
+        (configTimestamp, _isLocked, oldOwner) = laser.getConfig();
         nonce = laser.nonce();
         balance = address(laserWallet).balance;
     }

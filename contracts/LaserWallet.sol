@@ -93,7 +93,7 @@ contract LaserWallet is ILaserWallet, LaserState, Handler {
         }
 
         if (walletConfig.isLocked) {
-            activateRecovery();
+            verifyTimelock();
         }
 
         // We get the hash for this transaction.
@@ -166,10 +166,18 @@ contract LaserWallet is ILaserWallet, LaserState, Handler {
         if (functionSelector == 0xa69df4b5) {
             // bytes4(keccak256("unlock()"))
 
-            // Only the owner + recovery owner || owner + guardian can unlock the wallet.
-            if (signer1 != owner || (recoveryOwners[signer2] == address(0) && guardians[signer2] == address(0))) {
+            // Only the old owner + recovery owner || old owner + guardian can unlock the wallet.
+
+            if (
+                signer1 != walletConfig.oldOwner ||
+                (recoveryOwners[signer2] == address(0) && guardians[signer2] == address(0))
+            ) {
                 revert LW__recoveryUnlock__invalidSignature();
             }
+
+            // It can only be called during the time delay.
+            uint256 elapsedTime = block.timestamp - walletConfig.timestamp;
+            if (2 days < elapsedTime) revert LW__recoveryUnlock__time();
         } else if (functionSelector == 0x0cd865ec) {
             // bytes4(keccak256("recover(address)"))
 
@@ -178,6 +186,9 @@ contract LaserWallet is ILaserWallet, LaserState, Handler {
                 recoveryOwners[signer1] == address(0) ||
                 (recoveryOwners[signer2] == address(0) && guardians[signer2] == address(0))
             ) revert LW__recoveryRecover__invalidSignature();
+
+            // Can't be called once the recovery period is activated.
+            if (walletConfig.timestamp > 0) revert LW__recoveryRecover__walletLocked();
         } else {
             // Else, the operation is not allowed.
             revert LW__recovery__invalidOperation();

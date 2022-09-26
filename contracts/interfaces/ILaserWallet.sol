@@ -49,7 +49,11 @@ interface ILaserWallet {
 
     error LW__recoveryLock__invalidSignature();
 
+    error LW__recoveryUnlock__time();
+
     error LW__recoveryUnlock__invalidSignature();
+
+    error LW__recoveryRecover__walletLocked();
 
     error LW__recoveryRecover__invalidSignature();
 

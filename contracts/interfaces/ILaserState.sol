@@ -10,7 +10,7 @@ pragma solidity 0.8.16;
 struct WalletConfig {
     bool isLocked;
     uint256 timestamp;
-    address newOwner;
+    address oldOwner;
 }
 
 /**
@@ -44,8 +44,6 @@ interface ILaserState {
 
     event RecoveryOwnerRemoved(address removedRecoveryOwner);
 
-    event RecoveryActivated(address newOwner);
-
     /*//////////////////////////////////////////////////////////////
                                  ERRORS
     //////////////////////////////////////////////////////////////*/
@@ -70,9 +68,7 @@ interface ILaserState {
 
     error LS__removeRecoveryOwner__incorrectPreviousGuardian();
 
-    error LS__activateRecovery__timeLock();
-
-    error LS__activateRecovery__invalidOwnerAddress();
+    error LS__verifyTimeLock__timeLock();
 
     error LS__removeRecoveryOwner__underflow();
 
@@ -195,7 +191,6 @@ interface ILaserState {
     /**
      * @return
      * configTimestamp  Time when the recover was triggered.
-     * newOwner         Address of the new owner.
      * _isLocked        Boolean if the wallet is currently locked.
      */
     function getConfig()
@@ -203,7 +198,7 @@ interface ILaserState {
         view
         returns (
             uint256 configTimestamp,
-            address newOwner,
-            bool _isLocked
+            bool _isLocked,
+            address oldOwner
         );
 }

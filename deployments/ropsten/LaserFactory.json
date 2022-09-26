@@ -1,0 +1,193 @@
+{
+  "address": "0xFb41dbf20eC450C3a5fFE82ef410BaDe83790Cb1",
+  "abi": [
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_singleton",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "constructor"
+    },
+    {
+      "inputs": [],
+      "name": "LF__constructor__invalidSingleton",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "LF__createProxy__creationFailed",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "LF__deployProxy__create2Failed",
+      "type": "error"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "laser",
+          "type": "address"
+        }
+      ],
+      "name": "LaserCreated",
+      "type": "event"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes",
+          "name": "initializer",
+          "type": "bytes"
+        },
+        {
+          "internalType": "uint256",
+          "name": "saltNonce",
+          "type": "uint256"
+        }
+      ],
+      "name": "createProxy",
+      "outputs": [
+        {
+          "internalType": "contract LaserProxy",
+          "name": "proxy",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bytes",
+          "name": "initializer",
+          "type": "bytes"
+        },
+        {
+          "internalType": "uint256",
+          "name": "saltNonce",
+          "type": "uint256"
+        }
+      ],
+      "name": "preComputeAddress",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "proxyCreationCode",
+      "outputs": [
+        {
+          "internalType": "bytes",
+          "name": "",
+          "type": "bytes"
+        }
+      ],
+      "stateMutability": "pure",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "proxyRuntimeCode",
+      "outputs": [
+        {
+          "internalType": "bytes",
+          "name": "",
+          "type": "bytes"
+        }
+      ],
+      "stateMutability": "pure",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "singleton",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    }
+  ],
+  "transactionHash": "0xe73d895d846a4393415547b7a975a85cec50d0713abe123465cfd6b3c01d1de1",
+  "receipt": {
+    "to": "0x4e59b44847b379578588920cA78FbF26c0B4956C",
+    "from": "0x7681C78fb672024C8ACce686cc9A7Acf7F07640d",
+    "contractAddress": null,
+    "transactionIndex": 17,
+    "gasUsed": "429196",
+    "logsBloom": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+    "blockHash": "0x5a743a9c7fd046c95614189871d727c71d93a8db528e09c6c882699567bd69c2",
+    "transactionHash": "0xe73d895d846a4393415547b7a975a85cec50d0713abe123465cfd6b3c01d1de1",
+    "logs": [],
+    "blockNumber": 13051552,
+    "cumulativeGasUsed": "4747996",
+    "status": 1,
+    "byzantium": true
+  },
+  "args": [
+    "0xc0c50cD7b8bD3dd34768418D6Debfb3Cd246E1fA"
+  ],
+  "numDeployments": 1,
+  "solcInputHash": "7eb8752ed2d5dba4b164cdb27ab6f43b",
+  "metadata": "{\"compiler\":{\"version\":\"0.8.16+commit.07a7930e\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_singleton\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"inputs\":[],\"name\":\"LF__constructor__invalidSingleton\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"LF__createProxy__creationFailed\",\"type\":\"error\"},{\"inputs\":[],\"name\":\"LF__deployProxy__create2Failed\",\"type\":\"error\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"laser\",\"type\":\"address\"}],\"name\":\"LaserCreated\",\"type\":\"event\"},{\"inputs\":[{\"internalType\":\"bytes\",\"name\":\"initializer\",\"type\":\"bytes\"},{\"internalType\":\"uint256\",\"name\":\"saltNonce\",\"type\":\"uint256\"}],\"name\":\"createProxy\",\"outputs\":[{\"internalType\":\"contract LaserProxy\",\"name\":\"proxy\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"bytes\",\"name\":\"initializer\",\"type\":\"bytes\"},{\"internalType\":\"uint256\",\"name\":\"saltNonce\",\"type\":\"uint256\"}],\"name\":\"preComputeAddress\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"proxyCreationCode\",\"outputs\":[{\"internalType\":\"bytes\",\"name\":\"\",\"type\":\"bytes\"}],\"stateMutability\":\"pure\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"proxyRuntimeCode\",\"outputs\":[{\"internalType\":\"bytes\",\"name\":\"\",\"type\":\"bytes\"}],\"stateMutability\":\"pure\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"singleton\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"}],\"devdoc\":{\"kind\":\"dev\",\"methods\":{\"constructor\":{\"params\":{\"_singleton\":\"Base contract.\"}},\"createProxy(bytes,uint256)\":{\"details\":\"Allows to create new proxy contact and execute a message call to the new proxy within one transaction.\",\"params\":{\"initializer\":\"Payload for message call sent to new proxy contract.\",\"saltNonce\":\"Nonce that will be used to generate the salt to calculate the address of the new proxy contract.\"}},\"preComputeAddress(bytes,uint256)\":{\"details\":\"Precomputes the address of a proxy that is created through 'create2'.\"},\"proxyCreationCode()\":{\"details\":\"Allows to retrieve the creation code used for the Proxy deployment. With this it is easily possible to calculate predicted address.\"},\"proxyRuntimeCode()\":{\"details\":\"Allows to retrieve the runtime code of a deployed Proxy. This can be used to check that the expected Proxy was deployed.\"}},\"title\":\"LaserFactory\",\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{},\"notice\":\"Factory that creates new Laser proxies, and has helper methods.\",\"version\":1}},\"settings\":{\"compilationTarget\":{\"contracts/proxies/LaserFactory.sol\":\"LaserFactory\"},\"evmVersion\":\"london\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\",\"useLiteralContent\":true},\"optimizer\":{\"enabled\":true,\"runs\":800},\"remappings\":[]},\"sources\":{\"contracts/interfaces/IERC165.sol\":{\"content\":\"// SPDX-License-Identifier: GPL-3.0\\npragma solidity 0.8.16;\\n\\n/**\\n * @title IERC165\\n * @notice Support of ERC165.\\n */\\ninterface IERC165 {\\n    /**\\n     * @notice Query if a contract implements an interface\\n     *\\n     * @param interfaceID The interface identifier, as specified in ERC-165\\n     *\\n     * @dev Interface identification is specified in ERC-165. This function\\n     * uses less than 30,000 gas.\\n     *\\n     * @return `true` if the contract implements `interfaceID` and\\n     * interfaceID` is not 0xffffffff, `false` otherwise\\n     */\\n    function supportsInterface(bytes4 interfaceID) external view returns (bool);\\n}\\n\",\"keccak256\":\"0x0a9cee2d34d68d0705f084c90982c94375bc6d62134978e752f9a9ea43bd0e30\",\"license\":\"GPL-3.0\"},\"contracts/interfaces/ILaserFactory.sol\":{\"content\":\"// SPDX-License-Identifier: LGPL-3.0-only\\npragma solidity 0.8.16;\\n\\nimport \\\"../proxies/LaserProxy.sol\\\";\\n\\n/**\\n * @title  LaserFactory\\n *\\n * @notice Factory that creates new Laser proxies, and has helper methods.\\n *\\n * @dev    This interface has all events, errors, and external function for LaserFactory.\\n */\\ninterface ILaserFactory {\\n    /*//////////////////////////////////////////////////////////////\\n                                 EVENTS\\n    //////////////////////////////////////////////////////////////*/\\n\\n    event LaserCreated(address laser);\\n\\n    /*//////////////////////////////////////////////////////////////\\n                                 ERRORS\\n    //////////////////////////////////////////////////////////////*/\\n\\n    error LF__constructor__invalidSingleton();\\n\\n    error LF__createProxy__creationFailed();\\n\\n    error LF__deployProxy__create2Failed();\\n\\n    /*//////////////////////////////////////////////////////////////\\n                                 STATE\\n    //////////////////////////////////////////////////////////////*/\\n\\n    function singleton() external view returns (address);\\n\\n    /*//////////////////////////////////////////////////////////////\\n                                EXTERNAL\\n    //////////////////////////////////////////////////////////////*/\\n\\n    /**\\n     * @dev Allows to create new proxy contact and execute a message call to the new proxy within one transaction.\\n     *\\n     * @param initializer   Payload for message call sent to new proxy contract.\\n     * @param saltNonce     Nonce that will be used to generate the salt to calculate the address of the new proxy contract.\\n     */\\n    function createProxy(bytes memory initializer, uint256 saltNonce) external returns (LaserProxy proxy);\\n\\n    /**\\n     * @dev Precomputes the address of a proxy that is created through 'create2'.\\n     */\\n    function preComputeAddress(bytes memory initializer, uint256 saltNonce) external view returns (address);\\n\\n    /**\\n     * @dev Allows to retrieve the runtime code of a deployed Proxy. This can be used to check that the expected Proxy was deployed.\\n     */\\n    function proxyRuntimeCode() external pure returns (bytes memory);\\n\\n    /**\\n     *  @dev Allows to retrieve the creation code used for the Proxy deployment. With this it is easily possible to calculate predicted address.\\n     */\\n    function proxyCreationCode() external pure returns (bytes memory);\\n}\\n\",\"keccak256\":\"0x995b57f44e7340c205cad6f99b957ff84c220782999a1f511bc70c56205d8f43\",\"license\":\"LGPL-3.0-only\"},\"contracts/interfaces/ILaserWallet.sol\":{\"content\":\"// SPDX-License-Identifier: GPL-3.0\\npragma solidity 0.8.16;\\n\\nstruct Transaction {\\n    address to;\\n    uint256 value;\\n    bytes callData;\\n    uint256 nonce;\\n    bytes signatures;\\n}\\n\\n/**\\n * @title  ILaserWallet\\n *\\n * @author Rodrigo Herrera I.\\n *\\n * @notice Laser is a secure smart contract wallet (vault) made for the Ethereum Virtual Machine.\\n *\\n * @dev    This interface has all events, errors, and external function for LaserWallet.\\n */\\ninterface ILaserWallet {\\n    /*//////////////////////////////////////////////////////////////\\n                                 EVENTS\\n    //////////////////////////////////////////////////////////////*/\\n\\n    event ExecSuccess(address to, uint256 value, uint256 nonce, bytes4 funcSig);\\n\\n    /*//////////////////////////////////////////////////////////////\\n                                 ERRORS\\n    //////////////////////////////////////////////////////////////*/\\n\\n    error LW__init__notOwner();\\n\\n    error LW__exec__invalidNonce();\\n\\n    error LW__exec__walletLocked();\\n\\n    error LW__exec__invalidSignatureLength();\\n\\n    error LW__exec__invalidSignature();\\n\\n    error LW__exec__callFailed();\\n\\n    error LW__recovery__invalidNonce();\\n\\n    error LW__recovery__invalidSignatureLength();\\n\\n    error LW__recovery__duplicateSigner();\\n\\n    error LW__recoveryLock__invalidSignature();\\n\\n    error LW__recoveryUnlock__time();\\n\\n    error LW__recoveryUnlock__invalidSignature();\\n\\n    error LW__recoveryRecover__walletLocked();\\n\\n    error LW__recoveryRecover__invalidSignature();\\n\\n    error LW__recovery__invalidOperation();\\n\\n    error LW__recovery__callFailed();\\n\\n    error LaserWallet__invalidSignature();\\n\\n    /*//////////////////////////////////////////////////////////////\\n                                EXTERNAL\\n    //////////////////////////////////////////////////////////////*/\\n\\n    /**\\n     * @notice Setup function, sets initial storage of the wallet.\\n     *         It can't be called after initialization.\\n     *\\n     * @param _owner           The owner of the wallet.\\n     * @param _guardians       Array of guardians.\\n     * @param _recoveryOwners  Array of recovery owners.\\n     * @param ownerSignature   Signature of the owner that validates the correctness of the address.\\n     */\\n    function init(\\n        address _owner,\\n        address[] calldata _guardians,\\n        address[] calldata _recoveryOwners,\\n        bytes calldata ownerSignature\\n    ) external;\\n\\n    /**\\n     * @notice Executes a generic transaction.\\n     *         The transaction is required to be signed by the owner + recovery owner or owner + guardian\\n     *         while the wallet is not locked.\\n     *\\n     * @param to         Destination address.\\n     * @param value      Amount in WEI to transfer.\\n     * @param callData   Data payload to send.\\n     * @param _nonce     Anti-replay number.\\n     * @param signatures Signatures of the hash of the transaction.\\n     */\\n    function exec(\\n        address to,\\n        uint256 value,\\n        bytes calldata callData,\\n        uint256 _nonce,\\n        bytes calldata signatures\\n    ) external returns (bool success);\\n\\n    /**\\n     * @notice Executes a batch of transactions.\\n     *\\n     * @param transactions An array of Laser transactions.\\n     */\\n    function multiCall(Transaction[] calldata transactions) external;\\n\\n    /**\\n     * @notice Triggers the recovery mechanism.\\n     *\\n     * @param callData   Data payload, can only be either lock(), unlock() or recover().\\n     * @param signatures Signatures of the hash of the transaction.\\n     */\\n    function recovery(\\n        uint256 _nonce,\\n        bytes calldata callData,\\n        bytes calldata signatures\\n    ) external;\\n\\n    /**\\n     * @notice Returns the hash to be signed to execute a transaction.\\n     */\\n    function operationHash(\\n        address to,\\n        uint256 value,\\n        bytes calldata callData,\\n        uint256 _nonce\\n    ) external view returns (bytes32);\\n\\n    /**\\n     * @notice Should return whether the signature provided is valid for the provided hash.\\n     *\\n     * @param hash      Hash of the data to be signed.\\n     * @param signature Signature byte array associated with hash.\\n     *\\n     * MUST return the bytes4 magic value 0x1626ba7e when function passes.\\n     * MUST NOT modify state (using STATICCALL for solc < 0.5, view modifier for solc > 0.5)\\n     * MUST allow external calls\\n     *\\n     * @return Magic value.\\n     */\\n    function isValidSignature(bytes32 hash, bytes memory signature) external view returns (bytes4);\\n\\n    /**\\n     * @return chainId The chain id of this.\\n     */\\n    function getChainId() external view returns (uint256 chainId);\\n\\n    /**\\n     * @notice Domain separator for this wallet.\\n     */\\n    function domainSeparator() external view returns (bytes32);\\n}\\n\",\"keccak256\":\"0x1c8de99d021bd1469f28511fd3505d156e4b742807dd8d8370940261e64c41f8\",\"license\":\"GPL-3.0\"},\"contracts/proxies/LaserFactory.sol\":{\"content\":\"// SPDX-License-Identifier: LGPL-3.0-only\\npragma solidity 0.8.16;\\n\\nimport \\\"../interfaces/IERC165.sol\\\";\\nimport \\\"../interfaces/ILaserFactory.sol\\\";\\nimport \\\"../interfaces/ILaserWallet.sol\\\";\\n\\n/**\\n * @title LaserFactory\\n *\\n * @notice Factory that creates new Laser proxies, and has helper methods.\\n */\\ncontract LaserFactory is ILaserFactory {\\n    address public immutable singleton;\\n\\n    /**\\n     * @param _singleton Base contract.\\n     */\\n    constructor(address _singleton) {\\n        // Laser Wallet contract: bytes4(keccak256(\\\"I_AM_LASER\\\"))\\n        if (!IERC165(_singleton).supportsInterface(0xae029e0b)) {\\n            revert LF__constructor__invalidSingleton();\\n        }\\n        singleton = _singleton;\\n    }\\n\\n    /**\\n     * @dev Allows to create new proxy contact and execute a message call to the new proxy within one transaction.\\n     *\\n     * @param initializer   Payload for message call sent to new proxy contract.\\n     * @param saltNonce     Nonce that will be used to generate the salt to calculate the address of the new proxy contract.\\n     */\\n    function createProxy(bytes memory initializer, uint256 saltNonce) external returns (LaserProxy proxy) {\\n        proxy = deployProxy(initializer, saltNonce);\\n\\n        bool success;\\n        assembly {\\n            // We initialize the wallet in a single call.\\n            success := call(gas(), proxy, 0, add(initializer, 0x20), mload(initializer), 0, 0)\\n        }\\n\\n        if (!success) revert LF__createProxy__creationFailed();\\n\\n        emit LaserCreated(address(proxy));\\n    }\\n\\n    /**\\n     * @dev Precomputes the address of a proxy that is created through 'create2'.\\n     */\\n    function preComputeAddress(bytes memory initializer, uint256 saltNonce) external view returns (address) {\\n        bytes memory creationCode = proxyCreationCode();\\n        bytes memory data = abi.encodePacked(creationCode, uint256(uint160(singleton)));\\n\\n        bytes32 salt = keccak256(abi.encodePacked(keccak256(initializer), saltNonce));\\n\\n        bytes32 hash = keccak256(abi.encodePacked(bytes1(0xff), address(this), salt, keccak256(data)));\\n\\n        return address(uint160(uint256(hash)));\\n    }\\n\\n    /**\\n     * @dev Allows to retrieve the runtime code of a deployed Proxy. This can be used to check that the expected Proxy was deployed.\\n     */\\n    function proxyRuntimeCode() external pure returns (bytes memory) {\\n        return type(LaserProxy).runtimeCode;\\n    }\\n\\n    /**\\n     *  @dev Allows to retrieve the creation code used for the Proxy deployment. With this it is easily possible to calculate predicted address.\\n     */\\n    function proxyCreationCode() public pure returns (bytes memory) {\\n        return type(LaserProxy).creationCode;\\n    }\\n\\n    /**\\n     * @notice Allows to create new proxy contact using CREATE2 but it doesn't run the initializer.\\n     *         This method is only meant as an utility to be called from other methods.\\n     *\\n     * @param initializer Payload for message call sent to new proxy contract.\\n     * @param saltNonce Nonce that will be used to generate the salt to calculate the address of the new proxy contract.\\n     */\\n    function deployProxy(bytes memory initializer, uint256 saltNonce) internal returns (LaserProxy proxy) {\\n        // If the initializer changes the proxy address should change too. Hashing the initializer data is cheaper than just concatinating it\\n        bytes32 salt = keccak256(abi.encodePacked(keccak256(initializer), saltNonce));\\n\\n        bytes memory deploymentData = abi.encodePacked(type(LaserProxy).creationCode, uint256(uint160(singleton)));\\n\\n        assembly {\\n            proxy := create2(0x0, add(0x20, deploymentData), mload(deploymentData), salt)\\n        }\\n\\n        if (address(proxy) == address(0)) revert LF__deployProxy__create2Failed();\\n    }\\n}\\n\",\"keccak256\":\"0x27970399c6f67974cf05168a8f282cd0d50587bf7740d7f4bf2bebd999208945\",\"license\":\"LGPL-3.0-only\"},\"contracts/proxies/LaserProxy.sol\":{\"content\":\"// SPDX-License-Identifier: LGPL-3.0-only\\npragma solidity 0.8.16;\\n\\n/**\\n * @title LaserProxy\\n *\\n * @notice Proxy contract that delegates all calls to a master copy.\\n */\\ncontract LaserProxy {\\n    // The singleton always needs to be at storage slot 0.\\n    address internal singleton;\\n\\n    /**\\n     * @param _singleton Singleton address.\\n     */\\n    constructor(address _singleton) {\\n        // The proxy creation is done through the LaserProxyFactory.\\n        // The singleton is created at the factory's creation, so there is no need to do checks here.\\n        singleton = _singleton;\\n    }\\n\\n    /**\\n     * @dev Fallback function forwards all transactions and returns all received return data.\\n     */\\n    fallback() external payable {\\n        address _singleton = singleton;\\n        assembly {\\n            calldatacopy(0, 0, calldatasize())\\n            let success := delegatecall(gas(), _singleton, 0, calldatasize(), 0, 0)\\n            returndatacopy(0, 0, returndatasize())\\n            if eq(success, 0) {\\n                revert(0, returndatasize())\\n            }\\n            return(0, returndatasize())\\n        }\\n    }\\n}\\n\",\"keccak256\":\"0x76efc9f8b7a83bc4facd07507888fe78a5384e9822634a53601ec7b226dd69e7\",\"license\":\"LGPL-3.0-only\"}},\"version\":1}",
+  "bytecode": "0x60a060405234801561001057600080fd5b506040516107ee3803806107ee83398101604081905261002f916100cc565b6040516301ffc9a760e01b815263ae029e0b60e01b60048201526001600160a01b038216906301ffc9a790602401602060405180830381865afa15801561007a573d6000803e3d6000fd5b505050506040513d601f19601f8201168201806040525081019061009e91906100fc565b6100bb57604051630ddf64f360e31b815260040160405180910390fd5b6001600160a01b031660805261011e565b6000602082840312156100de57600080fd5b81516001600160a01b03811681146100f557600080fd5b9392505050565b60006020828403121561010e57600080fd5b815180151581146100f557600080fd5b6080516106a86101466000396000818160be015281816101c2015261032201526106a86000f3fe608060405234801561001057600080fd5b50600436106100675760003560e01c8063addacc0f11610050578063addacc0f146100b1578063b62654fb146100b9578063dff8028a146100e057600080fd5b8063393f2db81461006c57806353e5d9351461009c575b600080fd5b61007f61007a3660046103c6565b6100f3565b6040516001600160a01b0390911681526020015b60405180910390f35b6100a4610174565b604051610093919061049f565b6100a461019e565b61007f7f000000000000000000000000000000000000000000000000000000000000000081565b61007f6100ee3660046103c6565b6101b0565b60006100ff83836102ae565b905060008060008551602087016000865af19050806101315760405163356b2b3f60e01b815260040160405180910390fd5b6040516001600160a01b03831681527ff812ba9590f96dc11ce0bca0544c60f43047273e3bdd93bf8a820279d35442009060200160405180910390a15092915050565b60606040518060200161018690610397565b601f1982820381018352601f90910116604052919050565b606060405180602001610186906103a4565b6000806101bb610174565b90506000817f00000000000000000000000000000000000000000000000000000000000000006001600160a01b03166040516020016101fb9291906104d2565b60408051808303601f1901815282825287516020988901208884015282820196909652805180830382018152606080840183528151918901919091208751978901979097207fff0000000000000000000000000000000000000000000000000000000000000060808501523090911b6bffffffffffffffffffffffff19166081840152609583019690965260b5808301969096528051808303909601865260d59091019052505081519190920120919050565b6000808380519060200120836040516020016102d4929190918252602082015260400190565b6040516020818303038152906040528051906020012090506000604051806020016102fe90610397565b601f1982820381018352601f90910116604081905261034b91906001600160a01b037f000000000000000000000000000000000000000000000000000000000000000016906020016104d2565b6040516020818303038152906040529050818151826020016000f592506001600160a01b03831661038f5760405163348a593560e01b815260040160405180910390fd5b505092915050565b610108806104f583390190565b6076806105fd83390190565b634e487b7160e01b600052604160045260246000fd5b600080604083850312156103d957600080fd5b823567ffffffffffffffff808211156103f157600080fd5b818501915085601f83011261040557600080fd5b813581811115610417576104176103b0565b604051601f8201601f19908116603f0116810190838211818310171561043f5761043f6103b0565b8160405282815288602084870101111561045857600080fd5b826020860160208301376000602093820184015298969091013596505050505050565b60005b8381101561049657818101518382015260200161047e565b50506000910152565b60208152600082518060208401526104be81604085016020870161047b565b601f01601f19169190910160400192915050565b600083516104e481846020880161047b565b919091019182525060200191905056fe608060405234801561001057600080fd5b5060405161010838038061010883398101604081905261002f91610054565b600080546001600160a01b0319166001600160a01b0392909216919091179055610084565b60006020828403121561006657600080fd5b81516001600160a01b038116811461007d57600080fd5b9392505050565b6076806100926000396000f3fe60806040526000805473ffffffffffffffffffffffffffffffffffffffff169036908037600080366000845af43d6000803e80603a573d6000fd5b503d6000f3fea2646970667358221220ff94f79275dde665b954e24431abc1017d653e58c3fec5e0c388addab2a9d42d64736f6c6343000810003360806040526000805473ffffffffffffffffffffffffffffffffffffffff169036908037600080366000845af43d6000803e80603a573d6000fd5b503d6000f3fea2646970667358221220ff94f79275dde665b954e24431abc1017d653e58c3fec5e0c388addab2a9d42d64736f6c63430008100033a264697066735822122088032979056a197c9e5a38792d45a90666fe43a4f2ef800cbd9de4b1498362f464736f6c63430008100033",
+  "deployedBytecode": "0x608060405234801561001057600080fd5b50600436106100675760003560e01c8063addacc0f11610050578063addacc0f146100b1578063b62654fb146100b9578063dff8028a146100e057600080fd5b8063393f2db81461006c57806353e5d9351461009c575b600080fd5b61007f61007a3660046103c6565b6100f3565b6040516001600160a01b0390911681526020015b60405180910390f35b6100a4610174565b604051610093919061049f565b6100a461019e565b61007f7f000000000000000000000000000000000000000000000000000000000000000081565b61007f6100ee3660046103c6565b6101b0565b60006100ff83836102ae565b905060008060008551602087016000865af19050806101315760405163356b2b3f60e01b815260040160405180910390fd5b6040516001600160a01b03831681527ff812ba9590f96dc11ce0bca0544c60f43047273e3bdd93bf8a820279d35442009060200160405180910390a15092915050565b60606040518060200161018690610397565b601f1982820381018352601f90910116604052919050565b606060405180602001610186906103a4565b6000806101bb610174565b90506000817f00000000000000000000000000000000000000000000000000000000000000006001600160a01b03166040516020016101fb9291906104d2565b60408051808303601f1901815282825287516020988901208884015282820196909652805180830382018152606080840183528151918901919091208751978901979097207fff0000000000000000000000000000000000000000000000000000000000000060808501523090911b6bffffffffffffffffffffffff19166081840152609583019690965260b5808301969096528051808303909601865260d59091019052505081519190920120919050565b6000808380519060200120836040516020016102d4929190918252602082015260400190565b6040516020818303038152906040528051906020012090506000604051806020016102fe90610397565b601f1982820381018352601f90910116604081905261034b91906001600160a01b037f000000000000000000000000000000000000000000000000000000000000000016906020016104d2565b6040516020818303038152906040529050818151826020016000f592506001600160a01b03831661038f5760405163348a593560e01b815260040160405180910390fd5b505092915050565b610108806104f583390190565b6076806105fd83390190565b634e487b7160e01b600052604160045260246000fd5b600080604083850312156103d957600080fd5b823567ffffffffffffffff808211156103f157600080fd5b818501915085601f83011261040557600080fd5b813581811115610417576104176103b0565b604051601f8201601f19908116603f0116810190838211818310171561043f5761043f6103b0565b8160405282815288602084870101111561045857600080fd5b826020860160208301376000602093820184015298969091013596505050505050565b60005b8381101561049657818101518382015260200161047e565b50506000910152565b60208152600082518060208401526104be81604085016020870161047b565b601f01601f19169190910160400192915050565b600083516104e481846020880161047b565b919091019182525060200191905056fe608060405234801561001057600080fd5b5060405161010838038061010883398101604081905261002f91610054565b600080546001600160a01b0319166001600160a01b0392909216919091179055610084565b60006020828403121561006657600080fd5b81516001600160a01b038116811461007d57600080fd5b9392505050565b6076806100926000396000f3fe60806040526000805473ffffffffffffffffffffffffffffffffffffffff169036908037600080366000845af43d6000803e80603a573d6000fd5b503d6000f3fea2646970667358221220ff94f79275dde665b954e24431abc1017d653e58c3fec5e0c388addab2a9d42d64736f6c6343000810003360806040526000805473ffffffffffffffffffffffffffffffffffffffff169036908037600080366000845af43d6000803e80603a573d6000fd5b503d6000f3fea2646970667358221220ff94f79275dde665b954e24431abc1017d653e58c3fec5e0c388addab2a9d42d64736f6c63430008100033a264697066735822122088032979056a197c9e5a38792d45a90666fe43a4f2ef800cbd9de4b1498362f464736f6c63430008100033",
+  "devdoc": {
+    "kind": "dev",
+    "methods": {
+      "constructor": {
+        "params": {
+          "_singleton": "Base contract."
+        }
+      },
+      "createProxy(bytes,uint256)": {
+        "details": "Allows to create new proxy contact and execute a message call to the new proxy within one transaction.",
+        "params": {
+          "initializer": "Payload for message call sent to new proxy contract.",
+          "saltNonce": "Nonce that will be used to generate the salt to calculate the address of the new proxy contract."
+        }
+      },
+      "preComputeAddress(bytes,uint256)": {
+        "details": "Precomputes the address of a proxy that is created through 'create2'."
+      },
+      "proxyCreationCode()": {
+        "details": "Allows to retrieve the creation code used for the Proxy deployment. With this it is easily possible to calculate predicted address."
+      },
+      "proxyRuntimeCode()": {
+        "details": "Allows to retrieve the runtime code of a deployed Proxy. This can be used to check that the expected Proxy was deployed."
+      }
+    },
+    "title": "LaserFactory",
+    "version": 1
+  },
+  "userdoc": {
+    "kind": "user",
+    "methods": {},
+    "notice": "Factory that creates new Laser proxies, and has helper methods.",
+    "version": 1
+  },
+  "storageLayout": {
+    "storage": [],
+    "types": null
+  }
+}
