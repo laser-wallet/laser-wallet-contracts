@@ -38,19 +38,6 @@ contract LaserState is ILaserState, Access {
     WalletConfig walletConfig;
 
     /**
-     * @notice Locks the wallet. Can only be called by a recovery owner + recovery owner
-     *         or recovery owner + guardian.
-     *
-     * @dev    Restricted, can only be called by address(this).
-     */
-    function lock() external access {
-        walletConfig.isLocked = true;
-        walletConfig.timestamp = block.timestamp;
-
-        emit WalletLocked();
-    }
-
-    /**
      * @notice Unlocks the wallet. Can only be called by the owner + recovery owner
      *         or owner + guardian.
      *
@@ -59,6 +46,7 @@ contract LaserState is ILaserState, Access {
     function unlock() external access {
         walletConfig.isLocked = false;
         walletConfig.timestamp = 0;
+        walletConfig.newOwner = address(0);
 
         emit WalletUnlocked();
     }
@@ -72,19 +60,15 @@ contract LaserState is ILaserState, Access {
      * @param newOwner  Address of the new owner.
      */
     function recover(address newOwner) external access {
-        uint256 elapsedTime = block.timestamp - walletConfig.timestamp;
-
-        if (5 days > elapsedTime) revert LS__recover__timeLock();
-
         if (newOwner.code.length != 0 || newOwner == owner || newOwner == address(0)) {
             revert LS__recover__invalidAddress();
         }
 
-        owner = newOwner;
-        walletConfig.isLocked = false;
-        walletConfig.timestamp = 0;
+        walletConfig.isLocked = true;
+        walletConfig.timestamp = block.timestamp;
+        walletConfig.newOwner = newOwner;
 
-        emit WalletRecovered(newOwner);
+        emit RecoverActivated(newOwner);
     }
 
     /**
@@ -287,17 +271,43 @@ contract LaserState is ILaserState, Access {
     }
 
     /**
-     * @return Boolean if the wallet is locked.
+     * @return
+     * configTimestamp  Time when the recover was triggered.
+     * newOwner         Address of the new owner.
+     * _isLocked        Boolean if the wallet is currently locked.
      */
-    function isLocked() external view returns (bool) {
-        return walletConfig.isLocked;
+    function getConfig()
+        external
+        view
+        returns (
+            uint256 configTimestamp,
+            address newOwner,
+            bool _isLocked
+        )
+    {
+        configTimestamp = walletConfig.timestamp;
+        newOwner = walletConfig.newOwner;
+        _isLocked = walletConfig.isLocked;
     }
 
     /**
-     * @return The time (block.timestamp) when the wallet was locked.
+     * @notice Activates the recovery procedure (changes the owner) after
+     *         the time delay has passed.
      */
-    function getConfigTimestamp() external view returns (uint256) {
-        return walletConfig.timestamp;
+    function activateRecovery() internal {
+        // There is a 2 days time delay.
+        uint256 elapsedTime = block.timestamp - walletConfig.timestamp;
+        if (2 days > elapsedTime) revert LS__activateRecovery__timeLock();
+
+        address newOwner = walletConfig.newOwner;
+        if (newOwner == address(0)) revert LS__activateRecovery__invalidOwnerAddress();
+
+        owner = newOwner;
+        walletConfig.isLocked = false;
+        walletConfig.timestamp = 0;
+        walletConfig.newOwner = address(0);
+
+        emit RecoveryActivated(newOwner);
     }
 
     /**

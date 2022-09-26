@@ -2,22 +2,7 @@
 pragma solidity 0.8.16;
 
 import "../interfaces/IEIP1271.sol";
-
-interface ILaser {
-    function owner() external view returns (address);
-
-    function getGuardians() external view returns (address[] memory);
-
-    function getRecoveryOwners() external view returns (address[] memory);
-
-    function singleton() external view returns (address);
-
-    function isLocked() external view returns (bool);
-
-    function getConfigTimestamp() external view returns (uint256);
-
-    function nonce() external view returns (uint256);
-}
+import "../interfaces/ILaserState.sol";
 
 /**
  * @title LaserHelper
@@ -107,20 +92,20 @@ contract LaserHelper {
             address[] memory guardians,
             address[] memory recoveryOwners,
             address singleton,
-            bool isLocked,
+            bool _isLocked,
             uint256 configTimestamp,
             uint256 nonce,
-            uint256 balance
+            uint256 balance,
+            address newOwner
         )
     {
-        ILaser laser = ILaser(laserWallet);
+        ILaserState laser = ILaserState(laserWallet);
 
         owner = laser.owner();
         guardians = laser.getGuardians();
         recoveryOwners = laser.getRecoveryOwners();
         singleton = laser.singleton();
-        isLocked = laser.isLocked();
-        configTimestamp = laser.getConfigTimestamp();
+        (configTimestamp, newOwner, _isLocked) = laser.getConfig();
         nonce = laser.nonce();
         balance = address(laserWallet).balance;
     }

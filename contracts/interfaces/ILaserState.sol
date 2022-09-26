@@ -10,6 +10,7 @@ pragma solidity 0.8.16;
 struct WalletConfig {
     bool isLocked;
     uint256 timestamp;
+    address newOwner;
 }
 
 /**
@@ -27,11 +28,9 @@ interface ILaserState {
                                  EVENTS
     //////////////////////////////////////////////////////////////*/
 
-    event WalletLocked();
-
     event WalletUnlocked();
 
-    event WalletRecovered(address newOwner);
+    event RecoverActivated(address newOwner);
 
     event OwnerChanged(address newOwner);
 
@@ -45,11 +44,11 @@ interface ILaserState {
 
     event RecoveryOwnerRemoved(address removedRecoveryOwner);
 
+    event RecoveryActivated(address newOwner);
+
     /*//////////////////////////////////////////////////////////////
                                  ERRORS
     //////////////////////////////////////////////////////////////*/
-
-    error LS__recover__timeLock();
 
     error LS__recover__invalidAddress();
 
@@ -70,6 +69,10 @@ interface ILaserState {
     error LS__removeRecoveryOwner__invalidAddress();
 
     error LS__removeRecoveryOwner__incorrectPreviousGuardian();
+
+    error LS__activateRecovery__timeLock();
+
+    error LS__activateRecovery__invalidOwnerAddress();
 
     error LS__removeRecoveryOwner__underflow();
 
@@ -98,14 +101,6 @@ interface ILaserState {
     /*//////////////////////////////////////////////////////////////
                                 EXTERNAL
     //////////////////////////////////////////////////////////////*/
-
-    /**
-     * @notice Locks the wallet. Can only be called by a recovery owner + recovery owner
-     *         or recovery owner + guardian.
-     *
-     * @dev    Restricted, can only be called by address(this).
-     */
-    function lock() external;
 
     /**
      * @notice Unlocks the wallet. Can only be called by the owner + recovery owner
@@ -198,12 +193,17 @@ interface ILaserState {
     function getRecoveryOwners() external view returns (address[] memory);
 
     /**
-     * @return Boolean if the wallet is locked.
+     * @return
+     * configTimestamp  Time when the recover was triggered.
+     * newOwner         Address of the new owner.
+     * _isLocked        Boolean if the wallet is currently locked.
      */
-    function isLocked() external view returns (bool);
-
-    /**
-     * @return The time (block.timestamp) when the wallet was locked.
-     */
-    function getConfigTimestamp() external view returns (uint256);
+    function getConfig()
+        external
+        view
+        returns (
+            uint256 configTimestamp,
+            address newOwner,
+            bool _isLocked
+        );
 }

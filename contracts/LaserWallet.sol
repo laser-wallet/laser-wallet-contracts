@@ -92,8 +92,9 @@ contract LaserWallet is ILaserWallet, LaserState, Handler {
             if (nonce++ != _nonce) revert LW__exec__invalidNonce();
         }
 
-        // If the wallet is locked, further transactions cannot be executed from 'exec'.
-        if (walletConfig.isLocked) revert LW__exec__walletLocked();
+        if (walletConfig.isLocked) {
+            activateRecovery();
+        }
 
         // We get the hash for this transaction.
         bytes32 signedHash = keccak256(encodeOperation(to, value, callData, _nonce));
@@ -162,16 +163,7 @@ contract LaserWallet is ILaserWallet, LaserState, Handler {
 
         if (signer1 == signer2) revert LW__recovery__duplicateSigner();
 
-        if (functionSelector == 0xf83d08ba) {
-            // bytes4(keccak256("lock()"))
-
-            // Only a recovery owner + recovery owner || recovery owner + guardian
-            // can lock the wallet.
-            if (
-                recoveryOwners[signer1] == address(0) ||
-                (recoveryOwners[signer2] == address(0) && guardians[signer2] == address(0))
-            ) revert LW__recoveryLock__invalidSignature();
-        } else if (functionSelector == 0xa69df4b5) {
+        if (functionSelector == 0xa69df4b5) {
             // bytes4(keccak256("unlock()"))
 
             // Only the owner + recovery owner || owner + guardian can unlock the wallet.
