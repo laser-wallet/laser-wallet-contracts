@@ -216,7 +216,7 @@ describe("Core", () => {
             tx.signatures = "0x";
 
             await expect(wallet.exec(tx.to, tx.value, tx.callData, tx.nonce, tx.signatures)).to.be.revertedWith(
-                "LS__activateRecovery__timeLock()"
+                "LS__verifyTimeLock__timeLock()"
             );
         });
 

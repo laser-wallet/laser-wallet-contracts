@@ -84,9 +84,9 @@ export async function getConfigTimestamp(wallet: LaserWallet): Promise<BigNumber
     return config.configTimestamp;
 }
 
-export async function getNewOwner(wallet: LaserWallet): Promise<Address> {
+export async function getOldOwner(wallet: LaserWallet): Promise<Address> {
     const config = await wallet.getConfig();
-    return config.newOwner;
+    return config.oldOwner;
 }
 
 export async function isWalletLocked(wallet: LaserWallet): Promise<boolean> {

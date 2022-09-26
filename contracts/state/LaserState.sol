@@ -44,11 +44,15 @@ contract LaserState is ILaserState, Access {
      * @dev    Restricted, can only be called by address(this).
      */
     function unlock() external access {
+        address oldOwner = walletConfig.oldOwner;
+        owner = oldOwner;
+
         walletConfig.isLocked = false;
         walletConfig.timestamp = 0;
-        walletConfig.newOwner = address(0);
+        walletConfig.oldOwner = address(0);
 
         emit WalletUnlocked();
+        emit OwnerChanged(oldOwner);
     }
 
     /**
@@ -66,9 +70,10 @@ contract LaserState is ILaserState, Access {
 
         walletConfig.isLocked = true;
         walletConfig.timestamp = block.timestamp;
-        walletConfig.newOwner = newOwner;
+        walletConfig.oldOwner = owner;
 
-        emit RecoverActivated(newOwner);
+        owner = newOwner;
+        emit OwnerChanged(newOwner);
     }
 
     /**
@@ -273,7 +278,6 @@ contract LaserState is ILaserState, Access {
     /**
      * @return
      * configTimestamp  Time when the recover was triggered.
-     * newOwner         Address of the new owner.
      * _isLocked        Boolean if the wallet is currently locked.
      */
     function getConfig()
@@ -281,33 +285,25 @@ contract LaserState is ILaserState, Access {
         view
         returns (
             uint256 configTimestamp,
-            address newOwner,
-            bool _isLocked
+            bool _isLocked,
+            address oldOwner
         )
     {
         configTimestamp = walletConfig.timestamp;
-        newOwner = walletConfig.newOwner;
         _isLocked = walletConfig.isLocked;
+        oldOwner = walletConfig.oldOwner;
     }
 
     /**
-     * @notice Activates the recovery procedure (changes the owner) after
-     *         the time delay has passed.
+     * @notice Verifies that the time delay has passed.
      */
-    function activateRecovery() internal {
-        // There is a 2 days time delay.
+    function verifyTimelock() internal {
         uint256 elapsedTime = block.timestamp - walletConfig.timestamp;
-        if (2 days > elapsedTime) revert LS__activateRecovery__timeLock();
+        if (2 days > elapsedTime) revert LS__verifyTimeLock__timeLock();
 
-        address newOwner = walletConfig.newOwner;
-        if (newOwner == address(0)) revert LS__activateRecovery__invalidOwnerAddress();
-
-        owner = newOwner;
         walletConfig.isLocked = false;
         walletConfig.timestamp = 0;
-        walletConfig.newOwner = address(0);
-
-        emit RecoveryActivated(newOwner);
+        walletConfig.oldOwner = address(0);
     }
 
     /**

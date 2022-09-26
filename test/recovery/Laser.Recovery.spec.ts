@@ -15,7 +15,7 @@ import {
     signAndBundle,
     getRecoveryHash,
     getConfigTimestamp,
-    getNewOwner,
+    getOldOwner,
     isWalletLocked,
 } from "../utils";
 import { Address, Domain, Transaction } from "../types";
@@ -473,29 +473,27 @@ describe("Smart Social Recovery", () => {
         describe("unlock()", () => {
             let callData: string;
             let recoverData: string;
+            let newOwnerSigner: Wallet;
             let newOwner: Address;
 
             beforeEach(async () => {
                 callData = encodeFunctionData(abi, "unlock", []);
-                newOwner = ethers.Wallet.createRandom().address;
+                newOwnerSigner = ethers.Wallet.createRandom();
+                newOwner = newOwnerSigner.address;
                 recoverData = encodeFunctionData(abi, "recover", [newOwner]);
             });
 
             it("should not allow to call the function directly", async () => {
                 const { wallet } = await walletSetup();
-
                 await expect(wallet.unlock()).to.be.revertedWith("Access__notAllowed()");
             });
 
             it("should not be allowed to be called by a single signer", async () => {
                 const { wallet } = await walletSetup();
-
                 expect(await isWalletLocked(wallet)).to.equal(false);
                 expect(await getConfigTimestamp(wallet)).to.equal(0);
-
                 const hash = await getRecoveryHash(wallet, callData);
                 const signatures = await sign(signers.recoveryOwner1Signer, hash);
-
                 await expect(wallet.recovery(await wallet.nonce(), callData, signatures)).to.be.revertedWith(
                     "LW__recovery__invalidSignatureLength()"
                 );
@@ -503,14 +501,11 @@ describe("Smart Social Recovery", () => {
 
             it("should not be allowed to be called by a owner + random signer ", async () => {
                 const { wallet } = await walletSetup();
-
                 expect(await isWalletLocked(wallet)).to.equal(false);
                 expect(await getConfigTimestamp(wallet)).to.equal(0);
-
                 const hash = await getRecoveryHash(wallet, callData);
                 const signer = ethers.Wallet.createRandom();
                 const signatures = await signAndBundle(signers.ownerSigner, signer, hash);
-
                 await expect(wallet.recovery(await wallet.nonce(), callData, signatures)).to.be.revertedWith(
                     "LW__recoveryUnlock__invalidSignature()"
                 );
@@ -518,22 +513,17 @@ describe("Smart Social Recovery", () => {
 
             it("should not be allowed to be called by a guardian + owner (reverse) ", async () => {
                 const { wallet } = await walletSetup();
-
                 expect(await isWalletLocked(wallet)).to.equal(false);
                 expect(await getConfigTimestamp(wallet)).to.equal(0);
-
                 const hash = await getRecoveryHash(wallet, callData);
-
                 const signatures = await signAndBundle(signers.guardian1Signer, signers.ownerSigner, hash);
-
                 await expect(wallet.recovery(await wallet.nonce(), callData, signatures)).to.be.revertedWith(
                     "LW__recoveryUnlock__invalidSignature()"
                 );
             });
 
-            it("should unlock the wallet (owner + recovery owner) ", async () => {
+            it("should not be allowed to be called by the owner + recovery owner ", async () => {
                 const { wallet } = await walletSetup();
-
                 // First we lock the wallet.
                 const recoverHash = await getRecoveryHash(wallet, recoverData);
                 const recoverSignatures = await signAndBundle(
@@ -545,19 +535,15 @@ describe("Smart Social Recovery", () => {
                 // Wallet should be locked.
                 expect(await isWalletLocked(wallet)).to.equal(true);
                 expect(await getConfigTimestamp(wallet)).to.not.equal(0);
-
                 const hash = await getRecoveryHash(wallet, callData);
-                const signatures = await signAndBundle(signers.ownerSigner, signers.recoveryOwner1Signer, hash);
-
-                await wallet.recovery(await wallet.nonce(), callData, signatures);
-
-                expect(await isWalletLocked(wallet)).to.equal(false);
-                expect(await getConfigTimestamp(wallet)).to.equal(0);
+                const signatures = await signAndBundle(newOwnerSigner, signers.recoveryOwner1Signer, hash);
+                await expect(wallet.recovery(await wallet.nonce(), callData, signatures)).to.be.revertedWith(
+                    "LW__recoveryUnlock__invalidSignature()"
+                );
             });
 
-            it("should unlock the wallet (owner + guardian) ", async () => {
+            it("should unlock the wallet (old owner + guardian) ", async () => {
                 const { wallet } = await walletSetup();
-
                 // First we lock the wallet.
                 const recoverHash = await getRecoveryHash(wallet, recoverData);
                 const recoverSignatures = await signAndBundle(
@@ -569,19 +555,17 @@ describe("Smart Social Recovery", () => {
                 // Wallet should be locked.
                 expect(await isWalletLocked(wallet)).to.equal(true);
                 expect(await getConfigTimestamp(wallet)).to.not.equal(0);
-
+                expect(await wallet.owner()).to.equal(newOwner);
                 const hash = await getRecoveryHash(wallet, callData);
                 const signatures = await signAndBundle(signers.ownerSigner, signers.guardian2Signer, hash);
-
                 await wallet.recovery(await wallet.nonce(), callData, signatures);
-
                 expect(await isWalletLocked(wallet)).to.equal(false);
                 expect(await getConfigTimestamp(wallet)).to.equal(0);
+                expect(await wallet.owner()).to.equal(await signers.ownerSigner.getAddress());
             });
 
             it("should unlock the wallet and emit event ", async () => {
                 const { wallet } = await walletSetup();
-
                 // First we lock the wallet.
                 const recoverHash = await getRecoveryHash(wallet, recoverData);
                 const recoverSignatures = await signAndBundle(
@@ -593,10 +577,8 @@ describe("Smart Social Recovery", () => {
                 // Wallet should be locked.
                 expect(await isWalletLocked(wallet)).to.equal(true);
                 expect(await getConfigTimestamp(wallet)).to.not.equal(0);
-
                 const hash = await getRecoveryHash(wallet, callData);
                 const signatures = await signAndBundle(signers.ownerSigner, signers.guardian2Signer, hash);
-
                 expect(await wallet.recovery(await wallet.nonce(), callData, signatures)).to.emit(
                     abi,
                     "WalletUnlocked"
@@ -612,24 +594,18 @@ describe("Smart Social Recovery", () => {
                 newOwner = ethers.Wallet.createRandom().address;
                 callData = encodeFunctionData(abi, "recover", [newOwner]);
             });
-
             it("should not allow to call the function directly", async () => {
                 const { wallet } = await walletSetup();
-
                 await expect(wallet.recover(ethers.Wallet.createRandom().address)).to.be.revertedWith(
                     "Access__notAllowed()"
                 );
             });
-
             it("should not be allowed to be called by a single signer", async () => {
                 const { wallet } = await walletSetup();
-
                 expect(await isWalletLocked(wallet)).to.equal(false);
                 expect(await getConfigTimestamp(wallet)).to.equal(0);
-
                 const hash = await getRecoveryHash(wallet, callData);
                 const signatures = await sign(signers.recoveryOwner1Signer, hash);
-
                 await expect(wallet.recovery(await wallet.nonce(), callData, signatures)).to.be.revertedWith(
                     "LW__recovery__invalidSignatureLength()"
                 );
@@ -637,14 +613,11 @@ describe("Smart Social Recovery", () => {
 
             it("should not be allowed to be called by a recovery owner + random signer ", async () => {
                 const { wallet } = await walletSetup();
-
                 expect(await isWalletLocked(wallet)).to.equal(false);
                 expect(await getConfigTimestamp(wallet)).to.equal(0);
-
                 const hash = await getRecoveryHash(wallet, callData);
                 const signer = ethers.Wallet.createRandom();
                 const signatures = await signAndBundle(signers.recoveryOwner1Signer, signer, hash);
-
                 await expect(wallet.recovery(await wallet.nonce(), callData, signatures)).to.be.revertedWith(
                     "LW__recoveryRecover__invalidSignature()"
                 );
@@ -652,13 +625,10 @@ describe("Smart Social Recovery", () => {
 
             it("should not be allowed to be called by a guardian + recovery owner (reversed order)", async () => {
                 const { wallet } = await walletSetup();
-
                 expect(await isWalletLocked(wallet)).to.equal(false);
                 expect(await getConfigTimestamp(wallet)).to.equal(0);
-
                 const hash = await getRecoveryHash(wallet, callData);
                 const signatures = await signAndBundle(signers.guardian1Signer, signers.recoveryOwner1Signer, hash);
-
                 await expect(wallet.recovery(await wallet.nonce(), callData, signatures)).to.be.revertedWith(
                     "LW__recoveryRecover__invalidSignature()"
                 );
@@ -666,111 +636,94 @@ describe("Smart Social Recovery", () => {
 
             it("should fail if we provide the current owner as new owner", async () => {
                 const { wallet } = await walletSetup();
-
                 expect(await isWalletLocked(wallet)).to.equal(false);
                 expect(await getConfigTimestamp(wallet)).to.equal(0);
-
                 const badData = encodeFunctionData(abi, "recover", [await wallet.owner()]);
                 const hash = await getRecoveryHash(wallet, badData);
                 const signatures = await signAndBundle(signers.recoveryOwner1Signer, signers.guardian1Signer, hash);
-
                 await expect(wallet.recovery(await wallet.nonce(), badData, signatures)).to.be.revertedWith(
                     "LW__recovery__callFailed()"
                 );
-
                 expect(await isWalletLocked(wallet)).to.equal(false);
                 expect(await getConfigTimestamp(wallet)).to.equal(0);
             });
 
             it("should fail if we provide address 0 as new owner", async () => {
                 const { wallet } = await walletSetup();
-
                 expect(await isWalletLocked(wallet)).to.equal(false);
                 expect(await getConfigTimestamp(wallet)).to.equal(0);
-
                 const badData = encodeFunctionData(abi, "recover", [ethers.constants.AddressZero]);
                 const hash = await getRecoveryHash(wallet, badData);
                 const signatures = await signAndBundle(signers.recoveryOwner1Signer, signers.guardian1Signer, hash);
-
                 await expect(wallet.recovery(await wallet.nonce(), badData, signatures)).to.be.revertedWith(
                     "LW__recovery__callFailed()"
                 );
-
                 expect(await isWalletLocked(wallet)).to.equal(false);
                 expect(await getConfigTimestamp(wallet)).to.equal(0);
             });
 
             it("should fail if we provide an address with code as new owner", async () => {
                 const { wallet } = await walletSetup();
-
                 expect(await isWalletLocked(wallet)).to.equal(false);
                 expect(await getConfigTimestamp(wallet)).to.equal(0);
-
                 const Caller = await ethers.getContractFactory("Caller");
                 const caller = await Caller.deploy();
                 const badData = encodeFunctionData(abi, "recover", [caller.address]);
                 const hash = await getRecoveryHash(wallet, badData);
                 const signatures = await signAndBundle(signers.recoveryOwner1Signer, signers.guardian1Signer, hash);
-
                 await expect(wallet.recovery(await wallet.nonce(), badData, signatures)).to.be.revertedWith(
                     "LW__recovery__callFailed()"
                 );
-
                 expect(await isWalletLocked(wallet)).to.equal(false);
                 expect(await getConfigTimestamp(wallet)).to.equal(0);
             });
 
-            it("should set the recover state (recovery owner + guardian)", async () => {
+            it("should recover and set proper state (recovery owner + guardian)", async () => {
                 const { wallet } = await walletSetup();
-
                 expect(await isWalletLocked(wallet)).to.equal(false);
                 expect(await getConfigTimestamp(wallet)).to.equal(0);
-                expect(await getNewOwner(wallet)).to.equal(ethers.constants.AddressZero);
-
+                expect(await getOldOwner(wallet)).to.equal(ethers.constants.AddressZero);
                 const hash = await getRecoveryHash(wallet, callData);
                 const signatures = await signAndBundle(signers.recoveryOwner1Signer, signers.guardian1Signer, hash);
-
                 await wallet.recovery(await wallet.nonce(), callData, signatures);
-
                 expect(await isWalletLocked(wallet)).to.equal(true);
                 expect(await getConfigTimestamp(wallet)).to.not.equal(0);
-                expect(await getNewOwner(wallet)).to.equal(newOwner);
+                expect(await getOldOwner(wallet)).to.equal(await signers.ownerSigner.getAddress());
+                expect(await wallet.owner()).to.equal(newOwner);
             });
 
             it("should recover the wallet (recovery owner + recovery owner)", async () => {
                 const { wallet } = await walletSetup();
-
                 expect(await isWalletLocked(wallet)).to.equal(false);
                 expect(await getConfigTimestamp(wallet)).to.equal(0);
-                expect(await getNewOwner(wallet)).to.equal(ethers.constants.AddressZero);
-
+                expect(await getOldOwner(wallet)).to.equal(ethers.constants.AddressZero);
                 const hash = await getRecoveryHash(wallet, callData);
                 const signatures = await signAndBundle(
                     signers.recoveryOwner1Signer,
                     signers.recoveryOwner2Signer,
                     hash
                 );
-
                 await wallet.recovery(await wallet.nonce(), callData, signatures);
-
                 expect(await isWalletLocked(wallet)).to.equal(true);
                 expect(await getConfigTimestamp(wallet)).to.not.equal(0);
-                expect(await getNewOwner(wallet)).to.equal(newOwner);
+                expect(await getOldOwner(wallet)).to.equal(await signers.ownerSigner.getAddress());
+                expect(await wallet.owner()).to.equal(newOwner);
             });
         });
     });
 
-    describe("activateRecovery()", () => {
+    describe("timeLock", () => {
         let callData: string;
         let newOwner: Address;
         let newOwnerSigner: Wallet;
+        let oldOwner: Address;
+        let unlockData: string;
         let tx: any;
 
         beforeEach(async () => {
             newOwnerSigner = ethers.Wallet.createRandom();
             newOwner = newOwnerSigner.address;
             callData = encodeFunctionData(abi, "recover", [newOwner]);
-
             tx = {
                 to: ethers.Wallet.createRandom().address,
                 value: 0,
@@ -778,64 +731,119 @@ describe("Smart Social Recovery", () => {
                 nonce: 0,
                 signatures: "0x",
             };
+            oldOwner = await signers.ownerSigner.getAddress();
+            unlockData = encodeFunctionData(abi, "unlock", []);
         });
 
-        it("should block transaction from 'exec' if wallet is locked and the time delay is still active", async () => {
+        it("should recover wallet and update state", async () => {
             const { wallet } = await walletSetup();
-
             expect(await isWalletLocked(wallet)).to.equal(false);
             expect(await getConfigTimestamp(wallet)).to.equal(0);
-            expect(await getNewOwner(wallet)).to.equal(ethers.constants.AddressZero);
-
+            expect(await getOldOwner(wallet)).to.equal(ethers.constants.AddressZero);
             const hash = await getRecoveryHash(wallet, callData);
             const signatures = await signAndBundle(signers.recoveryOwner1Signer, signers.recoveryOwner2Signer, hash);
-
             await wallet.recovery(await wallet.nonce(), callData, signatures);
-
             expect(await isWalletLocked(wallet)).to.equal(true);
             expect(await getConfigTimestamp(wallet)).to.not.equal(0);
-            expect(await getNewOwner(wallet)).to.equal(newOwner);
-
-            tx.nonce = await wallet.nonce();
-
-            await expect(wallet.exec(tx.to, tx.value, tx.callData, tx.nonce, "0x")).to.be.revertedWith(
-                "LS__activateRecovery__timeLock()"
-            );
+            expect(await getOldOwner(wallet)).to.equal(oldOwner);
+            expect(await wallet.owner()).to.equal(newOwner);
         });
 
-        it("should recover the wallet to the new owner after the security time period", async () => {
+        it("should allow the old owner to recover the wallet within the time delay", async () => {
             const { wallet } = await walletSetup();
-
             expect(await isWalletLocked(wallet)).to.equal(false);
             expect(await getConfigTimestamp(wallet)).to.equal(0);
-            expect(await getNewOwner(wallet)).to.equal(ethers.constants.AddressZero);
-
+            expect(await getOldOwner(wallet)).to.equal(ethers.constants.AddressZero);
             const hash = await getRecoveryHash(wallet, callData);
             const signatures = await signAndBundle(signers.recoveryOwner1Signer, signers.recoveryOwner2Signer, hash);
-
             await wallet.recovery(await wallet.nonce(), callData, signatures);
-
             expect(await isWalletLocked(wallet)).to.equal(true);
             expect(await getConfigTimestamp(wallet)).to.not.equal(0);
-            expect(await getNewOwner(wallet)).to.equal(newOwner);
+            expect(await getOldOwner(wallet)).to.equal(oldOwner);
+            expect(await wallet.owner()).to.equal(newOwner);
 
-            tx.nonce = await wallet.nonce();
+            // Now we unlock the wallet.
+            const unlockHash = await getRecoveryHash(wallet, unlockData);
+            const sigs = await signAndBundle(signers.ownerSigner, signers.guardian1Signer, unlockHash);
+            await wallet.recovery(await wallet.nonce(), unlockData, sigs);
+            expect(await isWalletLocked(wallet)).to.equal(false);
+            expect(await getConfigTimestamp(wallet)).to.equal(0);
+            expect(await getOldOwner(wallet)).to.equal(ethers.constants.AddressZero);
+            expect(await wallet.owner()).to.equal(oldOwner);
+        });
+
+        it("old owner should not be able to unlock the wallet after the time delay", async () => {
+            const { wallet } = await walletSetup();
+            expect(await isWalletLocked(wallet)).to.equal(false);
+            expect(await getConfigTimestamp(wallet)).to.equal(0);
+            expect(await getOldOwner(wallet)).to.equal(ethers.constants.AddressZero);
+            const hash = await getRecoveryHash(wallet, callData);
+            const signatures = await signAndBundle(signers.recoveryOwner1Signer, signers.recoveryOwner2Signer, hash);
+            await wallet.recovery(await wallet.nonce(), callData, signatures);
+            expect(await isWalletLocked(wallet)).to.equal(true);
+            expect(await getConfigTimestamp(wallet)).to.not.equal(0);
+            expect(await getOldOwner(wallet)).to.equal(oldOwner);
+            expect(await wallet.owner()).to.equal(newOwner);
+
             // We increase the time by 2 days.
             await hre.network.provider.request({
                 method: "evm_increaseTime",
                 params: [180000],
             });
             await hre.network.provider.send("evm_mine");
-            const opHash = await getHash(wallet, tx);
 
-            tx.signatures = await signAndBundle(newOwnerSigner, signers.recoveryOwner2Signer, opHash);
+            // Now we try to unlock the wallet.
+            const unlockHash = await getRecoveryHash(wallet, unlockData);
+            const sigs = await signAndBundle(signers.ownerSigner, signers.guardian1Signer, unlockHash);
+            await expect(wallet.recovery(await wallet.nonce(), unlockData, sigs)).to.be.revertedWith(
+                "LW__recoveryUnlock__time()"
+            );
+        });
 
-            await wallet.exec(tx.to, tx.value, tx.callData, tx.nonce, tx.signatures);
-
-            expect(await wallet.owner()).to.equal(newOwner);
+        it("new owner should not be able to do operations within the time delay", async () => {
+            const { wallet } = await walletSetup();
             expect(await isWalletLocked(wallet)).to.equal(false);
-            expect(await getNewOwner(wallet)).to.equal(ethers.constants.AddressZero);
             expect(await getConfigTimestamp(wallet)).to.equal(0);
+            expect(await getOldOwner(wallet)).to.equal(ethers.constants.AddressZero);
+            const hash = await getRecoveryHash(wallet, callData);
+            const signatures = await signAndBundle(signers.recoveryOwner1Signer, signers.recoveryOwner2Signer, hash);
+            await wallet.recovery(await wallet.nonce(), callData, signatures);
+            expect(await isWalletLocked(wallet)).to.equal(true);
+            expect(await getConfigTimestamp(wallet)).to.not.equal(0);
+            expect(await getOldOwner(wallet)).to.equal(oldOwner);
+            expect(await wallet.owner()).to.equal(newOwner);
+
+            await expect(
+                wallet.exec(tx.to, tx.value, tx.callData, await wallet.nonce(), tx.signatures)
+            ).to.be.revertedWith("LS__verifyTimeLock__timeLock()");
+        });
+
+        it("new owner should be able to do operations after the time delay and reset state", async () => {
+            const { wallet } = await walletSetup();
+
+            const hash = await getRecoveryHash(wallet, callData);
+            const signatures = await signAndBundle(signers.recoveryOwner1Signer, signers.recoveryOwner2Signer, hash);
+            await wallet.recovery(await wallet.nonce(), callData, signatures);
+            expect(await wallet.owner()).to.equal(newOwner);
+
+            // We increase the time by 2 days.
+            await hre.network.provider.request({
+                method: "evm_increaseTime",
+                params: [180000],
+            });
+            await hre.network.provider.send("evm_mine");
+
+            expect(await getOldOwner(wallet)).to.equal(oldOwner);
+
+            tx.nonce = await wallet.nonce();
+            const opHash = await wallet.operationHash(tx.to, tx.value, tx.callData, tx.nonce);
+            tx.signatures = await signAndBundle(newOwnerSigner, signers.recoveryOwner2Signer, opHash);
+            await sendTx(wallet, tx);
+
+            // Should be clan.
+            expect(await getOldOwner(wallet)).to.equal(ethers.constants.AddressZero);
+            expect(await getConfigTimestamp(wallet)).to.equal(0);
+            expect(await isWalletLocked(wallet)).to.equal(false);
         });
     });
 
