@@ -29,6 +29,8 @@ describe("MultiCall", () => {
     });
 
     describe("multiCall()", () => {
-        it("should exec a batch of transactions", async () => {});
+        it("should exec a batch of transactions", async () => {
+            
+        });
     });
 });

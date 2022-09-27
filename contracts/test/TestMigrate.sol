@@ -8,3 +8,6 @@ contract TestMigrate is LaserWallet {
         return "New";
     }
 }
+
+
+

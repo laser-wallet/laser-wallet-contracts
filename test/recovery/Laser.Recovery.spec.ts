@@ -772,6 +772,23 @@ describe("Smart Social Recovery", () => {
             expect(await wallet.owner()).to.equal(oldOwner);
         });
 
+        it("old owner should not be able to do transactions once recovered", async () => {
+            const { wallet } = await walletSetup();
+            const hash = await getRecoveryHash(wallet, callData);
+            const signatures = await signAndBundle(signers.recoveryOwner1Signer, signers.recoveryOwner2Signer, hash);
+            await wallet.recovery(await wallet.nonce(), callData, signatures);
+            expect(await isWalletLocked(wallet)).to.equal(true);
+
+            tx.nonce = await wallet.nonce();
+
+            const opHash = await getHash(wallet, tx);
+            tx.signatures = await signAndBundle(signers.ownerSigner, signers.guardian1Signer, opHash);
+
+            await expect(
+                wallet.exec(tx.to, tx.value, tx.callData, await wallet.nonce(), tx.signatures)
+            ).to.be.revertedWith("LS__verifyTimeLock__timeLock()");
+        });
+
         it("old owner should not be able to unlock the wallet after the time delay", async () => {
             const { wallet } = await walletSetup();
             expect(await isWalletLocked(wallet)).to.equal(false);
@@ -845,9 +862,5 @@ describe("Smart Social Recovery", () => {
             expect(await getConfigTimestamp(wallet)).to.equal(0);
             expect(await isWalletLocked(wallet)).to.equal(false);
         });
-    });
-
-    describe("multi call", () => {
-        // Repeat the process.
     });
 });

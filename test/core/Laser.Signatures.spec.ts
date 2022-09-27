@@ -55,41 +55,35 @@ describe("Signatures", () => {
     });
 
     describe("Correct data", () => {
-        // it("should have correct domain separator", async () => {
-        //     const { address, wallet } = await walletSetup();
-        //     const domainSeparator = ethers.utils._TypedDataEncoder.hashDomain({
-        //         verifyingContract: address,
-        //         chainId: await wallet.getChainId(),
-        //     });
-        //     expect(domainSeparator).to.equal(await wallet.domainSeparator());
-        // });
-        // it("should calculate correctly the transaction hash", async () => {
-        //     const { address, wallet } = await walletSetup();
-        //     tx.to = address;
-        //     const transactionHash = ethers.utils._TypedDataEncoder.hash(
-        //         {
-        //             verifyingContract: wallet.address,
-        //             chainId: await wallet.getChainId(),
-        //         },
-        //         types,
-        //         tx
-        //     );
-        //     const walletTxHash = await wallet.operationHash(
-        //         tx.to,
-        //         tx.value,
-        //         tx.callData,
-        //         tx.nonce,
-        //         tx.maxFeePerGas,
-        //         tx.maxPriorityFeePerGas,
-        //         tx.gasLimit
-        //     );
-        //     expect(transactionHash).to.equal(walletTxHash);
-        // });
-        // it("should return correct chain id", async () => {
-        //     const { wallet } = await walletSetup();
-        //     const { chainId } = await ethers.provider.getNetwork();
-        //     expect(chainId).to.equal(await wallet.getChainId());
-        // });
+        it("should have correct domain separator", async () => {
+            const { address, wallet } = await walletSetup();
+            const domainSeparator = ethers.utils._TypedDataEncoder.hashDomain({
+                verifyingContract: address,
+                chainId: await wallet.getChainId(),
+            });
+            expect(domainSeparator).to.equal(await wallet.domainSeparator());
+        });
+
+        it("should calculate correctly the transaction hash", async () => {
+            const { address, wallet } = await walletSetup();
+            tx.to = address;
+            const transactionHash = ethers.utils._TypedDataEncoder.hash(
+                {
+                    verifyingContract: wallet.address,
+                    chainId: await wallet.getChainId(),
+                },
+                types,
+                tx
+            );
+            const walletTxHash = await wallet.operationHash(tx.to, tx.value, tx.callData, tx.nonce);
+            expect(transactionHash).to.equal(walletTxHash);
+        });
+
+        it("should return correct chain id", async () => {
+            const { wallet } = await walletSetup();
+            const { chainId } = await ethers.provider.getNetwork();
+            expect(chainId).to.equal(await wallet.getChainId());
+        });
     });
 
     describe("Contract signatures", () => {
@@ -103,6 +97,36 @@ describe("Signatures", () => {
             owner = ethers.Wallet.createRandom();
             recoveryOwner = ethers.Wallet.createRandom();
             guardian = ethers.Wallet.createRandom();
+        });
+
+        it("should revert if the EOA signature is incorrect", async () => {
+            const { address2, wallet2 } = await mockSetup(
+                owner.address,
+                [recoveryOwner.address],
+                [guardian.address],
+                owner
+            );
+
+            const badHash = ethers.utils.keccak256("0xbeef");
+            const sig1 = await sign(owner, mockHash);
+            const sig2 = await sign(recoveryOwner, mockHash);
+            const contractSigs = sig1.slice(2) + sig2.slice(2);
+
+            // data position is encoded into s.
+            let { r, s, v, signatureLength } = generateContractSignature(address2, contractSigs);
+            s = s.replace("%&/", "0A2");
+
+            // We generate the owner signature.
+            const { address, wallet } = await walletSetup(undefined, [address2]);
+            const { ownerSigner } = await signersForTest();
+            const ownerSignature = await sign(ownerSigner, mockHash);
+
+            // We concatenate the signatures.
+            const signatures = ownerSignature + r + s + v + signatureLength + contractSigs;
+
+            await expect(wallet.isValidSignature(badHash, signatures)).to.be.revertedWith(
+                "LaserWallet__invalidSignature()"
+            );
         });
 
         it("should sign (normal EOA + contract signature)", async () => {

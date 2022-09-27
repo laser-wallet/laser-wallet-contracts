@@ -10,3 +10,4 @@ typechain-types/
 foundry-artifacts/
 foundry-cache/
 .gitmodules
+coverage/
