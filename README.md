@@ -18,7 +18,7 @@ The contracts act as a safe multi-sig vault for a Laser wallet.
 |Contract|Address|
 |---|---|
 |LaserWallet (singleton)|0xc0c50cD7b8bD3dd34768418D6Debfb3Cd246E1fA|
-|LaserFactory| 0xFb41dbf20eC450C3a5fFE82ef410BaDe83790Cb1]
+|LaserFactory| 0xFb41dbf20eC450C3a5fFE82ef410BaDe83790Cb1
 
 
 Supported networks: 
