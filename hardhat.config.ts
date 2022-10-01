@@ -46,10 +46,6 @@ const config: HardhatUserConfig = {
             url: `https://goerli.infura.io/v3/${INFURA_KEY}`,
             accounts: [`0x${DEPLOYER_PRIVATE_KEY}`],
         },
-        ropsten: {
-            url: `https://ropsten.infura.io/v3/${INFURA_KEY}`,
-            accounts: [`0x${DEPLOYER_PRIVATE_KEY}`],
-        },
         hardhat: {
             forking: {
                 enabled: process.env.FORKING === "true",
